@@ -1,0 +1,19 @@
+# - Compilación / dependencias
+/node_modules
+/dist
+/coverage
+
+# - Variables de entorno (nunca commitear secretos)
+.env
+.env.local
+.env.*.local
+
+# - Logs
+*.log
+.npm-debug.log*
+
+# - Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
