@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import databaseConfig from './core/config/database.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UsuariosModule } from './modules/usuarios/usuarios.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AppService } from './app.service';
       isGlobal: true,
       load: [databaseConfig],
     }),
+    UsuariosModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) =>
