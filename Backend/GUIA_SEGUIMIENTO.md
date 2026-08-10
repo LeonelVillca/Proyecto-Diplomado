@@ -39,8 +39,8 @@ Stack técnico obligatorio:
 ## Checklist de módulos
 
 - [x] 01. usuarios — entidad, DTOs, service, controller, module
-- [ ] 02. rol — entidad, DTOs, service, controller, module
-- [ ] 03. permiso — entidad, DTOs, service, controller, module
+- [x] 02. rol — entidad, DTOs, service, controller, module
+- [x] 03. permiso — entidad, DTOs, service, controller, module
 - [ ] 04. usuario_rol (tabla pivote: usuarios + rol) — entidad, DTOs, service, controller, module
 - [ ] 05. rol_permiso (tabla pivote: rol + permiso) — entidad, DTOs, service, controller, module
 - [ ] 06. cuentas_auth (login local: correo/contraseña) — entidad, DTOs, service, controller, module
@@ -68,3 +68,5 @@ Stack técnico obligatorio:
 ## Notas y decisiones tomadas
 
 - Módulo 01 (usuarios): la entidad mapea a la tabla `usuarios` con `synchronize: false` (ya se dejó `DB_SYNCHRONIZE=false` en `.env` y se fijó en `false` en `database.config.ts`). Endpoints CRUD básicos sin guards de rol, porque la infraestructura de autenticación y roles (JwtStrategy, RolesGuard, decoradores `@Roles`, `@Public`) se construye recién en el paso 07. Cuando exista, se aplican los guards a los endpoints que requieran `Admin_Sistema` (listar, asignar roles, gestionar estado/eliminar usuarios).
+- Módulo 02 (rol): CRUD básico sobre `rol`. Las relaciones con `usuarios` y `permiso` (vía tablas pivote `usuario_rol` y `rol_permiso`) se agregarán con TypeORM recién cuando se construyan los módulos 04 y 05.
+- Módulo 03 (permiso): CRUD básico sobre `permiso` (código UNIQUE). Relación con `rol` se agregará en el módulo 05.

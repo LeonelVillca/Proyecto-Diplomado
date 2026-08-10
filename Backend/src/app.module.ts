@@ -6,6 +6,8 @@ import databaseConfig from './core/config/database.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
+import { RolesModule } from './modules/rol/roles.module';
+import { PermisosModule } from './modules/permiso/permisos.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module';
       load: [databaseConfig],
     }),
     UsuariosModule,
+    RolesModule,
+    PermisosModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) =>
