@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "896002873995",
+    "project_id": "resttarija",
+    "storage_bucket": "resttarija.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:896002873995:android:8f51346c61ac7428d9128e",
+        "android_client_info": {
+          "package_name": "com.proyecto.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "896002873995-hc3p5d7u19si5hhh0nuftd8o9bnc6oap.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9ypnPkO2i6To2KD7IHnloUsRLEnO4llE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "896002873995-hc3p5d7u19si5hhh0nuftd8o9bnc6oap.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

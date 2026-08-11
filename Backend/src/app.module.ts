@@ -8,6 +8,10 @@ import { AppService } from './app.service';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { RolesModule } from './modules/rol/roles.module';
 import { PermisosModule } from './modules/permiso/permisos.module';
+import { UsuarioRolModule } from './modules/usuario-rol/usuario-rol.module';
+import { CuentasAuthModule } from './modules/cuentas-auth/cuentas-auth.module';
+import { OauthCuentasModule } from './modules/oauth-cuenta/oauth-cuentas.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -18,6 +22,10 @@ import { PermisosModule } from './modules/permiso/permisos.module';
     UsuariosModule,
     RolesModule,
     PermisosModule,
+    UsuarioRolModule,
+    CuentasAuthModule,
+    OauthCuentasModule,
+    AuthModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) =>
