@@ -1,37 +1,22 @@
-import 'package:flutter/foundation.dart';
+import '../../core/network/api_endpoints.dart';
 
 /// Configuración de red hacia el backend de Mesa Chapaca (NestJS).
 ///
-/// El backend corre en `http://localhost:3000` con el prefijo global
-/// `/api/v1`, pero el destino varía según dónde corra la app:
+/// [ApiConfig] es un alias de compatibilidad: la fuente única de verdad de
+/// la URL base es [ApiEndpoints] (ver `lib/core/network/api_endpoints.dart`).
 ///
-/// - **PC / Web**: `http://localhost:3000` (misma máquina).
-/// - **Emulador Android**: `http://10.0.2.2:3000` (alias del host).
-/// - **Teléfono físico por USB**: usa `adb reverse tcp:3000 tcp:3000` y la
-///   app se conecta a `http://127.0.0.1:3000` (loopback del dispositivo,
-///   redirigido por el túnel hacia el host).
-/// - **Teléfono físico por Wi-Fi**: debe pasarse la IP local del PC en la red
-///   Wi-Fi al momento de compilar:
-///
-///   ```sh
-///   flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000
-///   ```
+/// El backend corre con el prefijo global `/api/v1` y escucha en `0.0.0.0`
+/// para ser accesible desde el dispositivo físico. Para cambiar de entorno
+/// (emulador, teléfono físico o producción) solo se ajusta
+/// `ApiEndpoints.currentEnv`.
 class ApiConfig {
   ApiConfig._();
 
-  /// Sobrescritura aportada en tiempo de compilación con `--dart-define`.
-  static const String _override = String.fromEnvironment('API_BASE_URL');
+  /// URL base del backend según el entorno configurado.
+  static String get baseUrl => ApiEndpoints.baseUrl;
 
-  static String get baseUrl {
-    if (_override.isNotEmpty) return _override;
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://127.0.0.1:3000';
-    }
-    return 'http://localhost:3000';
-  }
-
-  static String get authLogin => '$baseUrl/api/v1/auth/login';
-  static String get authRegister => '$baseUrl/api/v1/auth/register';
-  static String get authGoogle => '$baseUrl/api/v1/auth/google';
-  static String get authPerfil => '$baseUrl/api/v1/auth/perfil';
+  static String get authLogin => ApiEndpoints.authLogin;
+  static String get authRegister => ApiEndpoints.authRegister;
+  static String get authGoogle => ApiEndpoints.authGoogle;
+  static String get authPerfil => ApiEndpoints.authPerfil;
 }

@@ -1,0 +1,54 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import { HorarioAtencionService } from './horario-atencion.service';
+import { CrearHorarioAtencionDto } from './dto/crear-horario-atencion.dto';
+import { ActualizarHorarioAtencionDto } from './dto/actualizar-horario-atencion.dto';
+import { HorarioAtencion } from './horario-atencion.entity';
+
+@Controller('horario-atencion')
+export class HorarioAtencionController {
+  constructor(private readonly horarioAtencionService: HorarioAtencionService) {}
+
+  @Post()
+  crear(@Body() dto: CrearHorarioAtencionDto): Promise<HorarioAtencion> {
+    return this.horarioAtencionService.crear(dto);
+  }
+
+  @Get()
+  listarTodos(): Promise<HorarioAtencion[]> {
+    return this.horarioAtencionService.listarTodos();
+  }
+
+  @Get('restaurante/:idRestaurante')
+  listarPorRestaurante(
+    @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
+  ): Promise<HorarioAtencion[]> {
+    return this.horarioAtencionService.listarPorRestaurante(idRestaurante);
+  }
+
+  @Get(':id')
+  buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<HorarioAtencion> {
+    return this.horarioAtencionService.buscarPorId(id);
+  }
+
+  @Patch(':id')
+  actualizar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarHorarioAtencionDto,
+  ): Promise<HorarioAtencion> {
+    return this.horarioAtencionService.actualizar(id, dto);
+  }
+
+  @Delete(':id')
+  eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.horarioAtencionService.eliminar(id);
+  }
+}

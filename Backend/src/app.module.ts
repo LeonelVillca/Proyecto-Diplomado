@@ -9,6 +9,21 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module';
 import { RolesModule } from './modules/rol/roles.module';
 import { PermisosModule } from './modules/permiso/permisos.module';
 import { UsuarioRolModule } from './modules/usuario-rol/usuario-rol.module';
+import { RolPermisoModule } from './modules/rol-permiso/rol-permiso.module';
+import { SolicitudModule } from './modules/solicitud/solicitud.module';
+import { DocumentoAdjuntoModule } from './modules/documento-adjunto/documento-adjunto.module';
+import { RestauranteModule } from './modules/restaurante/restaurante.module';
+import { UbicacionModule } from './modules/ubicacion/ubicacion.module';
+import { HorarioAtencionModule } from './modules/horario-atencion/horario-atencion.module';
+import { MesaModule } from './modules/mesa/mesa.module';
+import { MenuModule } from './modules/menu/menu.module';
+import { PlatoModule } from './modules/plato/plato.module';
+import { ImagenModule } from './modules/imagen/imagen.module';
+import { CategoriaSoporteModule } from './modules/categoria-soporte/categoria-soporte.module';
+import { SoporteModule } from './modules/soporte/soporte.module';
+import { ReportesModule } from './modules/reportes/reportes.module';
+import { NotificacionModule } from './modules/notificacion/notificacion.module';
+import { VisitaModule } from './modules/visita/visita.module';
 import { CuentasAuthModule } from './modules/cuentas-auth/cuentas-auth.module';
 import { OauthCuentasModule } from './modules/oauth-cuenta/oauth-cuentas.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -23,6 +38,21 @@ import { AuthModule } from './modules/auth/auth.module';
     RolesModule,
     PermisosModule,
     UsuarioRolModule,
+    RolPermisoModule,
+    SolicitudModule,
+    DocumentoAdjuntoModule,
+    RestauranteModule,
+    UbicacionModule,
+    HorarioAtencionModule,
+    MesaModule,
+    MenuModule,
+    PlatoModule,
+    ImagenModule,
+    CategoriaSoporteModule,
+    SoporteModule,
+    ReportesModule,
+    NotificacionModule,
+    VisitaModule,
     CuentasAuthModule,
     OauthCuentasModule,
     AuthModule,

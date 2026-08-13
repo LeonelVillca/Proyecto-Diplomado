@@ -184,26 +184,26 @@ Stack técnico obligatorio:
 - [x] 02. rol — entidad, DTOs, service, controller, module
 - [x] 03. permiso — entidad, DTOs, service, controller, module
 - [x] 04. usuario_rol (tabla pivote: usuarios + rol) — entidad, DTOs, service, controller, module
-- [ ] 05. rol_permiso (tabla pivote: rol + permiso) — entidad, DTOs, service, controller, module
+- [x] 05. rol_permiso (tabla pivote: rol + permiso) — entidad, DTOs, service, controller, module
 - [x] 06. cuentas_auth (login local: correo/contraseña) — entidad, DTOs, service, controller, module
 - [x] 07. oauth_cuenta (login Google) + MÓDULO AUTH COMPLETO (LocalStrategy, GoogleStrategy, JwtStrategy, login/register/callback Google, emisión de JWT) — entidad, DTOs, service, controller, module
-- [ ] 08. solicitud — entidad, DTOs, service, controller, module
-- [ ] 09. documento_adjunto — entidad, DTOs, service, controller, module
-- [ ] 10. restaurante — entidad, DTOs, service, controller, module
-- [ ] 11. ubicacion — entidad, DTOs, service, controller, module
-- [ ] 12. horario_atencion — entidad, DTOs, service, controller, module
-- [ ] 13. mesa — entidad, DTOs, service, controller, module
-- [ ] 14. menu — entidad, DTOs, service, controller, module
-- [ ] 15. plato — entidad, DTOs, service, controller, module
-- [ ] 16. imagen — entidad, DTOs, service, controller, module
+- [x] 08. solicitud — entidad, DTOs, service, controller, module
+- [x] 09. documento_adjunto — entidad, DTOs, service, controller, module
+- [x] 10. restaurante — entidad, DTOs, service, controller, module
+- [x] 11. ubicacion — entidad, DTOs, service, controller, module
+- [x] 12. horario_atencion — entidad, DTOs, service, controller, module
+- [x] 13. mesa — entidad, DTOs, service, controller, module
+- [x] 14. menu — entidad, DTOs, service, controller, module
+- [x] 15. plato — entidad, DTOs, service, controller, module
+- [x] 16. imagen — entidad, DTOs, service, controller, module
 - [ ] 17. reservas (incluye Gateway de WebSocket) — entidad, DTOs, service, controller, module
 - [ ] 18. resenas — entidad, DTOs, service, controller, module
 - [ ] 19. respuesta_resena — entidad, DTOs, service, controller, module
-- [ ] 20. categoria_soporte — entidad, DTOs, service, controller, module
-- [ ] 21. soporte — entidad, DTOs, service, controller, module
-- [ ] 22. reportes — entidad, DTOs, service, controller, module
-- [ ] 23. notificacion — entidad, DTOs, service, controller, module
-- [ ] 24. visita — entidad, DTOs, service, controller, module
+- [x] 20. categoria_soporte — entidad, DTOs, service, controller, module
+- [x] 21. soporte — entidad, DTOs, service, controller, module
+- [x] 22. reportes — entidad, DTOs, service, controller, module
+- [x] 23. notificacion — entidad, DTOs, service, controller, module
+- [x] 24. visita — entidad, DTOs, service, controller, module
 
 > Pendientes fuera de este ciclo: módulo de promoción (tabla aún no existe en la BD actual) y la vista `vista_ranking_restaurantes`, que **ya existe** en PostgreSQL y mapea 5 columnas (ver Esquema de tablas); se consumirá cuando corresponda su módulo.
 
@@ -213,6 +213,23 @@ Stack técnico obligatorio:
 - Módulo 02 (rol): CRUD básico sobre `rol`. Las relaciones con `usuarios` y `permiso` (vía tablas pivote `usuario_rol` y `rol_permiso`) se agregarán con TypeORM recién cuando se construyan los módulos 04 y 05.
 - Módulo 03 (permiso): CRUD básico sobre `permiso` (código UNIQUE). Relación con `rol` se agregará en el módulo 05.
 - Módulo 04 (usuario_rol): pivote con PK compuesta (`id_usuario`, `id_rol`) y relaciones reales `@ManyToOne` con `Usuario` y `Rol`. Nota técnica: esta versión de TypeORM (1.1.0) no soporta la opción `primary` en `@ManyToOne`, por eso se declaró `@PrimaryColumn` + `@JoinColumn` sobre las mismas columnas. La app levantó y conectó con `restaurantes_tarija` (25 tablas + vista) sin errores.
+- Módulo 05 (rol_permiso): pivote simétrico a `usuario_rol` con PK compuesta (`id_rol`, `id_permiso`) y relaciones reales `@ManyToOne` con `Rol` y `Permiso` (ambas `CASCADE`, igual que en el esquema). Usa el mismo patrón `@PrimaryColumn` + `@JoinColumn` (sin `primary` en `@ManyToOne`). Sin columna de fecha (el esquema no la tiene). Módulo `RolPermisoModule` registrado en `app.module.ts`. Endpoints: `POST /rol-permiso`, `GET /rol-permiso`, `GET /rol-permiso/rol/:idRol`, `GET /rol-permiso/permiso/:idPermiso`, `DELETE /rol-permiso/rol/:idRol/permiso/:idPermiso`. El servicio valida que existan `rol` y `permiso` (404 si no) y evita duplicados (idempotente). Probado: `npm run build` OK y arranque con `PORT=3001` conectó a `restaurantes_tarija` con `GET /api/v1/rol-permiso` → 200 `[]`. Las tablas `rol`, `permiso` y `rol_permiso` están vacías en la BD actual (no se insertó data de prueba). Sin guards de rol todavía (la infraestructura `@Roles`/`RolesGuard` no existe aún; se aplicará cuando se construya).
+- Módulo 08 (solicitud): entidad `Solicitud` con FK real `@ManyToOne → usuarios` (CASCADE) y su columna correspondiente `id_usuario`. Campos mapeados exactos al esquema; `estado` tipado con `ESTADO_SOLICITUD = ['pendiente','aprobada','rechazada']` (mismo CHECK de la BD) y `fecha` con `default: () => 'CURRENT_DATE'` (la BD también lo tiene; no va en el DTO). `ActualizarSolicitudDto = OmitType(PartialType(CrearSolicitudDto), ['idUsuario'])` para no poder reasignar el dueño (evita el choque entre el DTO numérico `idUsuario` y la relación `usuario` al hacer `Object.assign`). Endpoints: `POST /solicitud`, `GET /solicitud`, `GET /solicitud/usuario/:idUsuario`, `GET /solicitud/:id`, `PATCH /solicitud/:id`, `DELETE /solicitud/:id`. El servicio valida que el `usuario` exista (404 si no). Probado sobre la BD real (PUERTO 3001): arranque OK, POST → 201 con `usuario` embebido y `estado='pendiente'`, GET por id OK, DELETE OK y `GET /solicitud` final `[]` (la fila de prueba se eliminó; la BD quedó limpia).
+- BLOQUE ADMINISTRACIÓN (web): por decisión del usuario, se construyeron los módulos de administración (09-16 y 20-24) dejando los de reservas/reseñas (17-19) para el final, porque la parte móvil será solo de reservas y visualización y la web de administración.
+- Módulo 09 (documento_adjunto): FK real a `solicitud` (CASCADE). Endpoints `POST/GET/GET :id/GET solicitud/:idSolicitud/PATCH/DELETE /documento-adjunto`.
+- Módulo 10 (restaurante): FK real a `solicitud` (SET NULL, nullable). Endpoints CRUD `/restaurante`. En `crear`/`actualizar`, `idSolicitud` es opcional y se resuelve a la relación (se valida existencia si viene).
+- Módulo 11 (ubicacion): FK real a `restaurante` (CASCADE). Ídem patrones; `latitud`/`longitud` como `double precision` con `@IsNumber`.
+- Módulo 12 (horario_atencion): FK real a `restaurante` (CASCADE). `dia_semana` es `smallint` con validación 0-6 (mismo CHECK de la BD); `hora_inicio`/`hora_fin` tipo `time` con regex HH:MM[:SS].
+- Módulo 13 (mesa): FK real a `restaurante` (CASCADE). `ESTADO_MESA = ['libre','ocupada','reservada','inactiva']` (mismo CHECK de la BD), default `libre`.
+- Módulo 14 (menu): FK real a `restaurante` (CASCADE). `disponibilidad` boolean default `true`.
+- Módulo 15 (plato): FK real a `menu` (CASCADE). `precio` tipo `numeric` (sin precisión inventada, como indica el esquema) con `transformer` para devolver `number` y CHECK `precio >= 0` replicado en el DTO con `@Min(0)`.
+- Módulo 16 (imagen): FKs reales a `plato` y `restaurante` (ambas CASCADE, ambas nullable). El CHECK de la BD exige que la imagen pertenezca EXACTAMENTE a un plato O a un restaurante; se replicó con `BadRequestException` en `validarExclusividad` (crear y actualizar).
+- Módulo 20 (categoria_soporte): sin FKs. CRUD simple `/categoria-soporte`.
+- Módulo 21 (soporte): FKs reales a `usuarios` (CASCADE) y `categoria_soporte` (RESTRICT). `ESTADO_SOPORTE = ['pendiente','respondida']`. DECISIÓN: en `actualizar`, si se manda `respuesta` y no viene `estado`, se marca `respondida` y se sella `fecha_respuesta` automáticamente (igual si explícitamente se pasa `estado='respondida'` y aún no hay fecha).
+- Módulo 22 (reportes): FK real a `usuarios` (CASCADE). `tipo` varchar(50); fechas opcionales con `@IsISO8601`; `estado` opcional varchar.
+- Módulo 23 (notificacion): FK real a `usuarios` (CASCADE). Endpoint extra `PATCH /notificacion/:id/leer` para marcar leída.
+- Módulo 24 (visita): FKs reales a `restaurante` (CASCADE) y `usuarios` (SET NULL, nullable — idUsuario opcional).
+- VERIFICACIÓN BLOQUE ADMINISTRACIÓN: `npm run build` OK y arranque en `PORT=3001`; los 13 endpoints (`restaurante`, `documento-adjunto`, `ubicacion`, `horario-atencion`, `mesa`, `menu`, `plato`, `imagen`, `categoria-soporte`, `soporte`, `reportes`, `notificacion`, `visita`) respondieron 200 sin errores en stderr y sin insertar data (quedan vacías). Sin guards de rol todavía (la infraestructura `@Roles`/`RolesGuard` sigue pendiente).
 - CONFIGURACIÓN BD: la clave real de PostgreSQL que funciona es `12345` (no `1234`, que es la que se indicó). Quedó seteado en `.env` (`DB_PASSWORD=12345`) y en el `database.config.ts`; `DB_NAME=restaurantes_tarija`.
 - Módulo 06 (cuentas_auth): entidad `CuentaAuth` con FK real `@ManyToOne → usuários` (CASCADE). La columna `password_hash` es nullable (como en el esquema). El servicio expone `crear`, `asegurarCuenta` (crea la cuenta si el usuario aún no tiene y actualiza el hash si llega contraseña) y `registrarUltimoIngreso` (también resetea `intentos_fallidos`). Contraseñas con `bcryptjs`.
 - Módulo 07 (oauth_cuenta + auth completo): entidad `OauthCuenta` con FK real a `usuarios`. El módulo `auth` incluye `POST /auth/login` (JSON `{ correo, password? }`), `POST /auth/register` (JSON `{ nombre, apellido?, correo, password? }`), `GET /auth/perfil` (protegido) y `JwtStrategy` + `JwtAuthGuard` (passport-jwt, secreto en `JWT_SECRET`). DECISIÓN: el login por correo hace auto-registro — si el correo no existe se crea el usuario con nombre derivado de la dirección (ej. `kevin.villca.herrera@gmail.com` → "Kevin Villca Herrera") y su fila en `cuentas_auth`. No se asigna rol automáticamente (eso toca permisos, módulo 04+05) y no se verifican contraseñas al hacer login sin password (campo opcional por ahora, se validará cuando se active LocalStrategy con contraseña obligatoria). PENDIENTE: `GoogleStrategy` + callback OAuth requiere credenciales de cliente Google (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`); el frontend ya usa Firebase Google Sign-In y el módulo `oauth_cuenta` está listo para guardar el resultado. Probar `npm run build` y `POST /api/v1/auth/login`.

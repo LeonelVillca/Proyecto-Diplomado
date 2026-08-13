@@ -8,7 +8,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  app.enableCors();
+  app.enableCors({
+    origin: true, // en desarrollo; restringir en producción
+    credentials: true,
+  });
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(
     new ValidationPipe({
@@ -19,12 +22,10 @@ async function bootstrap() {
   );
 
   const port = configService.get<number>('PORT', 3000);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
-  Logger.log(
-    `🚀 API corriendo en http://localhost:${port}/api/v1`,
-    'Bootstrap',
-  );
+  Logger.log(`Servidor corriendo en http://0.0.0.0:${port}`, 'Bootstrap');
+  Logger.log(`🚀 API corriendo en http://localhost:${port}/api/v1`, 'Bootstrap');
 }
 
 void bootstrap();
