@@ -7,13 +7,19 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../core/guards/roles.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { CategoriaSoporteService } from './categoria-soporte.service';
 import { CrearCategoriaSoporteDto } from './dto/crear-categoria-soporte.dto';
 import { ActualizarCategoriaSoporteDto } from './dto/actualizar-categoria-soporte.dto';
 import { CategoriaSoporte } from './categoria-soporte.entity';
 
 @Controller('categoria-soporte')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin_sistema')
 export class CategoriaSoporteController {
   constructor(private readonly categoriaSoporteService: CategoriaSoporteService) {}
 

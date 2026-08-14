@@ -3,5 +3,5 @@ import { CrearSolicitudDto } from './crear-solicitud.dto';
 
 export class ActualizarSolicitudDto extends OmitType(
   PartialType(CrearSolicitudDto),
-  ['idUsuario'],
+  ['nombreUsuario', 'apellidoUsuario', 'correoUsuario'],
 ) {}

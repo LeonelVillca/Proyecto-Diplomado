@@ -9,9 +9,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthService, UsuarioPublico } from './auth.service';
-import { LoginDto } from './dto/login.dto';
 import { RegistroDto } from './dto/registro.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
+import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 interface RequestConUsuario {
@@ -21,12 +21,6 @@ interface RequestConUsuario {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @Post('login')
-  @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
-  }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -40,9 +34,15 @@ export class AuthController {
     return this.authService.loginGoogle(dto);
   }
 
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('perfil')
-  perfil(@Req() request: RequestConUsuario) {
-    return request.user;
+  perfil(@Req() request: any) {
+    return this.authService.perfil(request.user.id);
   }
 }

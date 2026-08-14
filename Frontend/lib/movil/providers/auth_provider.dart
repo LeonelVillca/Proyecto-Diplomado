@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
+import '../../core/services/session_service.dart';
 import '../core/api_config.dart';
 
 /// Estados posibles del flujo de inicio de sesión.
@@ -32,16 +33,29 @@ enum AuthStatus {
 /// el paquete `google_sign_in` (Android / iOS). Expone el estado de carga
 /// para que la UI pueda mostrar feedback y escucha los cambios de sesión.
 ///
+/// La autenticación es **exclusivamente vía Google**: tras autenticar se
+/// manda el ID Token de Firebase al backend (`POST /auth/google`), que lo
+/// verifica server-side y devuelve el JWT propio, guardado en
+/// [SessionService] (storage seguro). El login por correo fue eliminado por
+/// ser vulnerable a suplantación.
+///
 /// Si [demoFallback] está activo y el inicio de sesión falla (o no hay
 /// Google disponible, p. ej. en Windows), se entra automáticamente en un
 /// modo de simulación con un perfil de demostración para poder recorrer la
 /// app sin depender de la cuenta de Google.
 class AuthProvider extends ChangeNotifier {
-  AuthProvider({this._firebaseAuth, this.demoFallback = true}) {
+  AuthProvider({
+    this._firebaseAuth,
+    this.demoFallback = true,
+    SessionService? session,
+  })  : _session = session ?? SessionService() {
     _subscribeToAuthChanges();
   }
 
   final FirebaseAuth? _firebaseAuth;
+
+  /// Persistencia segura del JWT del backend.
+  final SessionService _session;
 
   /// Si es `true`, los fallos de Google caen a un perfil simulado.
   final bool demoFallback;
@@ -55,27 +69,27 @@ class AuthProvider extends ChangeNotifier {
   String? _demoName;
   String? _demoEmail;
 
-  // Sesión con el backend (login por correo). No usa Firebase.
+  // Sesión con el backend (vía Google). El JWT vive en `SessionService`.
   String? _token;
   String? _backendNombre;
   String? _backendApellido;
   String? _backendEmail;
+  List<String> _roles = [];
 
   AuthStatus get status => _status;
   User? get user => _user;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _status == AuthStatus.loading;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
+  List<String> get roles => _roles;
+
+  bool hasRole(String role) => _roles.contains(role);
 
   /// `true` cuando se está navegando con el perfil de demostración.
   bool get isDemo => _demoMode;
 
-  /// Token JWT emitido por el backend para la sesión por correo.
+  /// Token JWT emitido por el backend para la sesión activa.
   String? get token => _token;
-
-  /// `true` cuando la sesión vino del login por correo del backend.
-  bool get isEmailSession =>
-      _backendEmail != null || _backendNombre != null;
 
   // Los getters de perfil usan primero el usuario del backend y luego el
   // perfil de Firebase o el simulado, así la UI no necesita saber de dónde
@@ -126,12 +140,70 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Intenta restaurar una sesión previa guardada en [SessionService].
+  ///
+  /// Lee el JWT y lo valida contra `GET /auth/perfil`. Si el backend
+  /// responde 401 (token vencido/inválido) se limpia el storage y se
+  /// retorna `false` (el usuario vuelve al login). Si no hay token o hay
+  /// problemas de conexión se retorna `false` sin tocar el storage.
+  ///
+  /// Retorna `true` si la sesión quedó activa.
+  Future<bool> restaurarSesion() async {
+    final token = await _session.obtenerToken();
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+
+    try {
+      final response = await http
+          .get(
+            Uri.parse(ApiConfig.authPerfil),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes))
+            as Map<String, dynamic>;
+        _token = token;
+        _backendNombre = (data['nombre'] as String?)?.trim();
+        _backendApellido = data['apellido'] as String?;
+        _backendEmail = data['correo'] as String?;
+        _roles = (data['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      }
+
+      // 401 (u otro error): token inválido/vencido → limpiar sesión.
+      await _session.eliminarToken();
+      _limpiarSesionBackend();
+      _status = AuthStatus.idle;
+      notifyListeners();
+      return false;
+    } catch (_) {
+      // Sin conexión no podemos validar; se va al login pero se conserva
+      // el token para intentarlo de nuevo en el próximo arranque.
+      _status = AuthStatus.idle;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Método especial para el flujo administrativo web (login local).
+  /// Guarda el JWT devuelto por `/auth/login` y restaura el perfil.
+  Future<bool> restaurarSesionLocalDesdeAdmin(String newToken) async {
+    await _session.guardarToken(newToken);
+    return restaurarSesion();
+  }
+
   /// Inicia sesión con la cuenta de Google del usuario.
   ///
   /// Primero entra con Firebase/Google y luego registra la sesión en el
-  /// backend (`POST /auth/google`), que guarda el usuario en `usuarios`,
-  /// vincula `oauth_cuenta` y devuelve un JWT. Así el login por Google
-  /// queda en la base de datos como el de correo.
+  /// backend (`POST /auth/google`) mandando el ID Token de Firebase, que el
+  /// backend verifica server-side. A cambio guarda el usuario en `usuarios`,
+  /// vincula `oauth_cuenta` y devuelve un JWT, que se persiste en
+  /// [SessionService].
   ///
   /// Si el backend no responde, se cierra la sesión de Google y se muestra
   /// el error (ya no se cae a demo). Solo si el propio Google falla o el
@@ -184,25 +256,26 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Envía el perfil de Google/Firebase al backend para guardarlo en la BD.
+  /// Envía el ID Token de Firebase al backend para verificar la identidad
+  /// y guardar el usuario en la BD.
   ///
   /// Retorna `false` (y deja `_errorMessage` listo) si el servidor no
-  /// respondió o rechazó el registro.
+  /// respondió o rechazó el token.
   Future<bool> _registrarGoogleEnBackend(User firebaseUser) async {
     try {
+      final idToken = await firebaseUser.getIdToken();
+      if (idToken == null) {
+        _errorMessage =
+            'No pudimos obtener el token de tu sesión de Google. '
+            'Inténtalo de nuevo.';
+        return false;
+      }
+
       final response = await http
           .post(
             Uri.parse(ApiConfig.authGoogle),
             headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'correo': firebaseUser.email,
-              'nombre': (firebaseUser.displayName ?? '').isNotEmpty
-                  ? firebaseUser.displayName!
-                  : _nombreDesdeCorreo(firebaseUser.email!),
-              'foto': firebaseUser.photoURL,
-              'proveedorId': firebaseUser.uid,
-              'emailVerificado': firebaseUser.emailVerified,
-            }),
+            body: jsonEncode({'idToken': idToken}),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -215,6 +288,9 @@ class AuthProvider extends ChangeNotifier {
         _backendNombre = (usuario['nombre'] as String?)?.trim();
         _backendApellido = usuario['apellido'] as String?;
         _backendEmail = usuario['correo'] as String?;
+        if (_token != null) {
+          await _session.guardarToken(_token!);
+        }
         return true;
       }
 
@@ -239,20 +315,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Deriva un nombre legible a partir del correo cuando Google no trae
-  /// `displayName` (ej. `carla.ruiz@gmail.com` -> "Carla Ruiz").
-  String _nombreDesdeCorreo(String correo) {
-    final local = correo.split('@').first;
-    final partes = local
-        .split(RegExp(r'[._\-\d]+'))
-        .where((p) => p.isNotEmpty)
-        .toList();
-    final base = partes.isEmpty ? [local] : partes;
-    return base
-        .map((p) => p[0].toUpperCase() + p.substring(1).toLowerCase())
-        .join(' ');
-  }
-
   /// Entra manualmente al modo de demostración (útil para maquetas).
   void enterSimulation() {
     _demoMode = true;
@@ -260,61 +322,6 @@ class AuthProvider extends ChangeNotifier {
     _demoEmail = 'demo@mesachapaca.dev';
     _status = AuthStatus.authenticated;
     notifyListeners();
-  }
-
-  /// Inicia sesión con el correo en el backend de Mesa Chapaca.
-  ///
-  /// Llama a `POST /api/v1/auth/login` con `{ correo }`. El backend hace
-  /// auto-registro: si el correo aún no existe crea el usuario (nombre
-  /// derivado de la dirección) y guarda su fila en `cuentas_auth`, y a
-  /// cambio devuelve un JWT junto con el perfil.
-  ///
-  /// A diferencia de Google, este flujo es real: si el servidor no está
-  /// disponible se muestra el error y NO se cae al modo demo, para que el
-  /// usuario sepa que su correo no se llegó a guardar. Retorna `true` si la
-  /// sesión quedó activa.
-  Future<bool> signInWithEmail(String correo) async {
-    if (isLoading) return false;
-
-    _status = AuthStatus.loading;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      final response = await http
-          .post(
-            Uri.parse(ApiConfig.authLogin),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'correo': correo.trim()}),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes))
-            as Map<String, dynamic>;
-        final usuario =
-            (data['usuario'] as Map?)?.cast<String, dynamic>() ?? {};
-        _token = data['token'] as String?;
-        _backendNombre = (usuario['nombre'] as String?)?.trim();
-        _backendApellido = usuario['apellido'] as String?;
-        _backendEmail = usuario['correo'] as String?;
-        _status = AuthStatus.authenticated;
-        notifyListeners();
-        return true;
-      }
-
-      _status = AuthStatus.error;
-      _errorMessage =
-          'No pudimos procesar ese correo. Revisa que esté bien escrito '
-          'e inténtalo de nuevo.';
-      notifyListeners();
-      return false;
-    } catch (_) {
-      _status = AuthStatus.error;
-      _errorMessage = _errorDeConexion;
-      notifyListeners();
-      return false;
-    }
   }
 
   /// Mensaje descriptivo cuando el backend no responde.
@@ -332,6 +339,14 @@ class AuthProvider extends ChangeNotifier {
     await _auth.signInWithCredential(credential);
   }
 
+  void _limpiarSesionBackend() {
+    _token = null;
+    _backendNombre = null;
+    _backendApellido = null;
+    _backendEmail = null;
+    _roles = [];
+  }
+
   /// Cierra la sesión (real o simulada) y vuelve al inicio.
   Future<void> signOut() async {
     try {
@@ -344,14 +359,12 @@ class AuthProvider extends ChangeNotifier {
     if (!_demoMode) {
       await _auth.signOut();
     }
+    await _session.eliminarToken();
     _user = null;
     _demoMode = false;
     _demoName = null;
     _demoEmail = null;
-    _token = null;
-    _backendNombre = null;
-    _backendApellido = null;
-    _backendEmail = null;
+    _limpiarSesionBackend();
     _status = AuthStatus.idle;
     notifyListeners();
   }

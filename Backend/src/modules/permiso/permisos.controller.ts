@@ -7,13 +7,19 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../core/guards/roles.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { PermisosService } from './permisos.service';
 import { CrearPermisoDto } from './dto/crear-permiso.dto';
 import { ActualizarPermisoDto } from './dto/actualizar-permiso.dto';
 import { Permiso } from './permiso.entity';
 
 @Controller('permisos')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin_sistema')
 export class PermisosController {
   constructor(private readonly permisosService: PermisosService) {}
 

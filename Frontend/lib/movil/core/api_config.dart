@@ -15,7 +15,6 @@ class ApiConfig {
   /// URL base del backend según el entorno configurado.
   static String get baseUrl => ApiEndpoints.baseUrl;
 
-  static String get authLogin => ApiEndpoints.authLogin;
   static String get authRegister => ApiEndpoints.authRegister;
   static String get authGoogle => ApiEndpoints.authGoogle;
   static String get authPerfil => ApiEndpoints.authPerfil;

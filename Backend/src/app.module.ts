@@ -24,6 +24,9 @@ import { SoporteModule } from './modules/soporte/soporte.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
 import { NotificacionModule } from './modules/notificacion/notificacion.module';
 import { VisitaModule } from './modules/visita/visita.module';
+import { ReservasModule } from './modules/reservas/reservas.module';
+import { ResenasModule } from './modules/resenas/resenas.module';
+import { RespuestaResenaModule } from './modules/respuesta-resena/respuesta-resena.module';
 import { CuentasAuthModule } from './modules/cuentas-auth/cuentas-auth.module';
 import { OauthCuentasModule } from './modules/oauth-cuenta/oauth-cuentas.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -53,6 +56,9 @@ import { AuthModule } from './modules/auth/auth.module';
     ReportesModule,
     NotificacionModule,
     VisitaModule,
+    ReservasModule,
+    ResenasModule,
+    RespuestaResenaModule,
     CuentasAuthModule,
     OauthCuentasModule,
     AuthModule,

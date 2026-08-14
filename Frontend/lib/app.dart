@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'movil/core/theme.dart';
 import 'movil/providers/auth_provider.dart';
 import 'movil/providers/favorites_provider.dart';
 import 'movil/screens/root_screen.dart';
+import 'admin/screens/landing_screen.dart';
 
 /// Configuración principal de la aplicación (MaterialApp).
 class App extends StatelessWidget {
@@ -25,7 +28,7 @@ class App extends StatelessWidget {
           title: 'Mesa Chapaca',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
-          home: const RootScreen(),
+          home: kIsWeb ? const AdminLandingScreen() : const RootScreen(),
         ),
       ),
     );

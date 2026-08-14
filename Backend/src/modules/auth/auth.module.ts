@@ -9,6 +9,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { FirebaseAdminService } from './firebase-admin.service';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
       useFactory: (configService: ConfigService) => {
         const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '7d';
         return {
-          secret: configService.get<string>('JWT_SECRET') ?? 'secreto-diplomado',
+          secret:
+            configService.get<string>('JWT_SECRET') ?? 'secreto-diplomado',
           signOptions: { expiresIn: expiresIn as JwtSignOptions['expiresIn'] },
         };
       },
@@ -29,7 +31,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     OauthCuentasModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, FirebaseAdminService],
   exports: [JwtAuthGuard],
 })
 export class AuthModule {}

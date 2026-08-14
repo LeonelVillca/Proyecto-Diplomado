@@ -16,18 +16,28 @@ export class SolicitudService {
   ) {}
 
   async crear(dto: CrearSolicitudDto): Promise<Solicitud> {
-    const usuario = await this.usuarioRepository.findOneBy({ id: dto.idUsuario });
+    let usuario = await this.usuarioRepository.findOneBy({ correo: dto.correoUsuario });
     if (!usuario) {
-      throw new NotFoundException(`Usuario con id ${dto.idUsuario} no encontrado`);
+      usuario = this.usuarioRepository.create({
+        nombre: dto.nombreUsuario,
+        apellido: dto.apellidoUsuario,
+        correo: dto.correoUsuario,
+      });
+      usuario = await this.usuarioRepository.save(usuario);
     }
 
-    const { idUsuario, ...datos } = dto;
+    const { nombreUsuario, apellidoUsuario, correoUsuario, ...datos } = dto;
     const solicitud = this.solicitudRepository.create({ ...datos, usuario });
     return this.solicitudRepository.save(solicitud);
   }
 
-  listarTodos(): Promise<Solicitud[]> {
-    return this.solicitudRepository.find({ relations: { usuario: true } });
+  listarTodos(estado?: string): Promise<Solicitud[]> {
+    const whereCondition = estado ? { estado: estado as Solicitud['estado'] } : {};
+    return this.solicitudRepository.find({
+      where: whereCondition,
+      relations: { usuario: true },
+      order: { fecha: 'DESC' },
+    });
   }
 
   async buscarPorId(id: number): Promise<Solicitud> {

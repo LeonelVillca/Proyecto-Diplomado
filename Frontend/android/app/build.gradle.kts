@@ -9,11 +9,12 @@ plugins {
 
 android {
     namespace = "com.proyecto.frontend"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
+
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_17 // Esto sí está perfecto (Java 17)
         targetCompatibility = JavaVersion.VERSION_17
     }
 

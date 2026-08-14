@@ -1,15 +1,21 @@
-import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsIn, IsOptional, IsString, MaxLength, IsEmail } from 'class-validator';
 import { ESTADO_SOLICITUD } from '../solicitud.entity';
 
 export class CrearSolicitudDto {
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  idUsuario: number;
+  @IsString()
+  @MaxLength(100)
+  nombreUsuario: string;
 
   @IsString()
-  @IsNotEmpty()
+  @MaxLength(100)
+  apellidoUsuario: string;
+
+  @IsString()
+  @IsEmail()
+  @MaxLength(150)
+  correoUsuario: string;
+
+  @IsString()
   @MaxLength(150)
   nombreRestaurante: string;
 

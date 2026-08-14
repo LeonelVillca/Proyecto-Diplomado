@@ -11,16 +11,16 @@ import { Restaurante } from '../restaurante/restaurante.entity';
 @Entity('imagen')
 export class Imagen {
   @PrimaryGeneratedColumn({ name: 'id_imagen' })
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Plato, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'id_plato' })
-  plato: Plato | null;
+  plato!: Plato | null;
 
   @ManyToOne(() => Restaurante, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'id_restaurante' })
-  restaurante: Restaurante | null;
+  restaurante!: Restaurante | null;
 
   @Column({ name: 'url', type: 'varchar', length: 255 })
-  url: string;
+  url!: string;
 }

@@ -12,5 +12,8 @@ Future<void> main() async {
   );
   final auth = AuthProvider();
   await auth.initialize();
+  // Restaura la sesión guardada (JWT en secure storage): si el token sigue
+  // siendo válido contra el backend se entra directo, si no vuelve al login.
+  await auth.restaurarSesion();
   runApp(App(authProvider: auth));
 }

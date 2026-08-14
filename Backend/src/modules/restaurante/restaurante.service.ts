@@ -37,6 +37,13 @@ export class RestauranteService {
     return this.restauranteRepository.find({ relations: { solicitud: true } });
   }
 
+  listarPorUsuario(idUsuario: number): Promise<Restaurante[]> {
+    return this.restauranteRepository.find({
+      where: { solicitud: { usuario: { id: idUsuario } } },
+      relations: { solicitud: { usuario: true } },
+    });
+  }
+
   async buscarPorId(id: number): Promise<Restaurante> {
     const restaurante = await this.restauranteRepository.findOne({
       where: { id },

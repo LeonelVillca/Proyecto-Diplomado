@@ -5,16 +5,15 @@ import '../core/theme.dart';
 import '../providers/auth_provider.dart';
 import 'google_sign_in_button.dart';
 
-/// Tarjeta flotante con las acciones de acceso.
+/// Tarjeta flotante con la acción de acceso.
 ///
 /// Fondo blanco, esquinas redondeadas y una sombra suave en capas para
-/// flotar sobre el fondo crema. Contiene el título, el botón de Google, la
-/// alternativa de entrar con el correo (que el backend guarda y con la que
-/// la app saluda por nombre) y el texto legal.
+/// flotar sobre el fondo crema. Contiene el título, el botón de Google y el
+/// texto legal. La autenticación es exclusivamente vía Google.
 class AuthBottomCard extends StatefulWidget {
   const AuthBottomCard({super.key, required this.auth});
 
-  /// Proveedor de autenticación que alimenta las acciones de acceso.
+  /// Proveedor de autenticación que alimenta la acción de acceso.
   final AuthProvider auth;
 
   @override
@@ -22,24 +21,7 @@ class AuthBottomCard extends StatefulWidget {
 }
 
 class _AuthBottomCardState extends State<AuthBottomCard> {
-  final TextEditingController _emailController = TextEditingController();
-
   AuthProvider get auth => widget.auth;
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _enviarCorreo() async {
-    final correo = _emailController.text.trim();
-    if (correo.isEmpty) {
-      return;
-    }
-    FocusScope.of(context).unfocus();
-    await auth.signInWithEmail(correo);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,75 +74,6 @@ class _AuthBottomCardState extends State<AuthBottomCard> {
                   onPressed: () => auth.signInWithGoogle(),
                 ),
               ),
-              _OrDivider(),
-              TextField(
-                controller: _emailController,
-                enabled: !auth.isLoading,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.done,
-                autocorrect: false,
-                onSubmitted: (_) => _enviarCorreo(),
-                decoration: InputDecoration(
-                  hintText: 'tu@correo.com',
-                  prefixIcon: const Icon(
-                    Icons.mail_outline_rounded,
-                    size: 20,
-                    color: AppColors.onCardMuted,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.background,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(
-                      color: AppColors.gold,
-                      width: 1.6,
-                    ),
-                  ),
-                ),
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 10),
-              ListenableBuilder(
-                listenable: auth,
-                builder: (context, _) => FilledButton(
-                  onPressed: auth.isLoading ? null : _enviarCorreo,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.wine,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          'Continuar con mi correo',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-              ),
               const SizedBox(height: 16),
               Text(
                 'Al continuar aceptas nuestros Términos de Uso '
@@ -173,53 +86,9 @@ class _AuthBottomCardState extends State<AuthBottomCard> {
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 4),
-              TextButton(
-                onPressed: auth.enterSimulation,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: const Size(0, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  foregroundColor: AppColors.gold,
-                ),
-                child: Text(
-                  'Entrar en modo demo 👀',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Separador "o" entre el acceso con Google y el correo.
-class _OrDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      child: Row(
-        children: [
-          const Expanded(child: Divider(color: Color(0xFFE9E2D5))),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              'o',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.onCardMuted,
-              ),
-            ),
-          ),
-          const Expanded(child: Divider(color: Color(0xFFE9E2D5))),
-        ],
       ),
     );
   }

@@ -1,29 +1,10 @@
-import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsString, MaxLength } from 'class-validator';
 
 export class GoogleLoginDto {
-  @IsEmail()
-  @MaxLength(150)
-  correo: string;
-
+  /// ID Token de Firebase emitido por Google Sign-In en el frontend.
+  /// El backend lo verifica server-side con `firebase-admin`; nunca confía
+  /// en correo/nombre/proveedor_id que vengan en el body.
   @IsString()
-  @MaxLength(100)
-  nombre: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  apellido?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  foto?: string;
-
-  @IsString()
-  @MaxLength(255)
-  proveedorId: string;
-
-  @IsOptional()
-  @IsBoolean()
-  emailVerificado?: boolean;
+  @MaxLength(4096)
+  idToken: string;
 }

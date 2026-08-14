@@ -7,13 +7,19 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../core/guards/roles.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { ReportesService } from './reportes.service';
 import { CrearReporteDto } from './dto/crear-reporte.dto';
 import { ActualizarReporteDto } from './dto/actualizar-reporte.dto';
 import { Reporte } from './reporte.entity';
 
 @Controller('reportes')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin_sistema')
 export class ReportesController {
   constructor(private readonly reportesService: ReportesService) {}
 
