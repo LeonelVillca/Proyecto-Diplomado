@@ -15,8 +15,10 @@ class FavoritesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final favorites = FavoritesScope.of(context);
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
+    return SafeArea(
+      bottom: false,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -80,6 +82,7 @@ class FavoritesScreen extends StatelessWidget {
           ),
         const SliverToBoxAdapter(child: SizedBox(height: 140)),
       ],
-    );
+    ),
+  );
   }
 }

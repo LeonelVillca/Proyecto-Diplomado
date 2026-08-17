@@ -16,8 +16,10 @@ class ReservationsScreen extends StatelessWidget {
     final upcoming = mockReservations.where((r) => r.upcoming).toList();
     final past = mockReservations.where((r) => !r.upcoming).toList();
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
+    return SafeArea(
+      bottom: false,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
       slivers: [
         const SliverToBoxAdapter(child: _Header()),
         SliverToBoxAdapter(child: _Stats(upcoming: upcoming.length, past: past.length)),
@@ -91,7 +93,8 @@ class ReservationsScreen extends StatelessWidget {
         ],
         const SliverToBoxAdapter(child: SizedBox(height: 140)),
       ],
-    );
+    ),
+  );
   }
 
   void _notify(BuildContext context, String message) {

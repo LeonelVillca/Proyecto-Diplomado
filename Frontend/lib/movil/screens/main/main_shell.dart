@@ -35,14 +35,11 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBody: true,
-      body : SafeArea(
-        top: true,
-        bottom:false,
-        child:  IndexedStack(
-          index: _tab.index,
-          children: _screens,
-       ),
+      body: IndexedStack(
+        index: _tab.index,
+        children: _screens,
       ),
+
       bottomNavigationBar: AppBottomNav(
          current: _tab,
          onSelected: (tab) => setState(() => _tab = tab),

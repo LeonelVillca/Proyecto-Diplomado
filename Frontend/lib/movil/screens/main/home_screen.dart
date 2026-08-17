@@ -39,8 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      key: const PageStorageKey('home-scroll'),
+    return SafeArea(
+      bottom: false,
+      child: CustomScrollView(
+        key: const PageStorageKey('home-scroll'),
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
@@ -145,7 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
         // Espacio para que la barra flotante no tape el contenido.
         const SliverToBoxAdapter(child: SizedBox(height: 140)),
       ],
-    );
+    ),
+  );
   }
 
   void _showFilterHint(BuildContext context) {

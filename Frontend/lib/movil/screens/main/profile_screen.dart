@@ -15,8 +15,10 @@ class ProfileScreen extends StatelessWidget {
     final auth = AuthScope.of(context);
     final favorites = FavoritesScope.of(context);
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
+    return SafeArea(
+      bottom: false,
+      child: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -95,7 +97,8 @@ class ProfileScreen extends StatelessWidget {
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 140)),
       ],
-    );
+    ),
+  );
   }
 }
 
