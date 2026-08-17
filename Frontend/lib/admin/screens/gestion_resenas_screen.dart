@@ -139,7 +139,7 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
       final token = auth.token;
       // Asumiendo que el ID del usuario actual está en el token, se necesita enviarlo
       // El backend requiere idUsuarioRestaurante en el DTO
-      final miId = auth.usuario?.id ?? 0;
+      final miId = auth.idUsuario ?? 0;
 
       if (respuestaId == null) {
         // Crear

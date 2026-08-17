@@ -5,6 +5,8 @@ import 'gestion_mesas_screen.dart';
 import 'gestion_reservas_screen.dart';
 import 'gestion_resenas_screen.dart';
 import 'perfil_restaurante_screen.dart';
+import 'admin_restaurante/soporte_restaurante_screen.dart';
+import 'admin_restaurante/reportes_restaurante_screen.dart';
 
 class AdminRestauranteDashboard extends StatefulWidget {
   const AdminRestauranteDashboard({super.key});
@@ -23,7 +25,8 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
     const Center(child: Text('Promociones (F4)', style: TextStyle(fontSize: 24, fontFamily: 'Karla'))),
     const GestionReservasScreen(),
     const GestionResenasScreen(),
-    const Center(child: Text('Soporte (F7)', style: TextStyle(fontSize: 24, fontFamily: 'Karla'))),
+    const SoporteRestauranteScreen(),
+    const ReportesRestauranteScreen(),
   ];
 
   @override
@@ -85,6 +88,7 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
                 _buildSidebarItem(Icons.calendar_month_outlined, 'Reservas', 4),
                 _buildSidebarItem(Icons.star_outline, 'Reseñas', 5),
                 _buildSidebarItem(Icons.support_agent_outlined, 'Soporte', 6),
+                _buildSidebarItem(Icons.bar_chart_outlined, 'Reportes', 7),
                 const Spacer(),
                 const Divider(height: 1, color: Color(0xFFEEEEEE)),
                 _buildSidebarItem(Icons.logout, 'Cerrar Sesión', -1, isDanger: true),

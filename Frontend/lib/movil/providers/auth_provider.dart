@@ -74,6 +74,7 @@ class AuthProvider extends ChangeNotifier {
   String? _backendNombre;
   String? _backendApellido;
   String? _backendEmail;
+  int? _backendId;
   List<String> _roles = [];
 
   AuthStatus get status => _status;
@@ -82,6 +83,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _status == AuthStatus.loading;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   List<String> get roles => _roles;
+  int? get idUsuario => _backendId;
 
   bool hasRole(String role) => _roles.contains(role);
 
@@ -169,6 +171,7 @@ class AuthProvider extends ChangeNotifier {
         _backendNombre = (data['nombre'] as String?)?.trim();
         _backendApellido = data['apellido'] as String?;
         _backendEmail = data['correo'] as String?;
+        _backendId = data['id'] as int? ?? data['idUsuario'] as int? ?? data['id_usuario'] as int?;
         _roles = (data['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
         _status = AuthStatus.authenticated;
         notifyListeners();
@@ -288,6 +291,7 @@ class AuthProvider extends ChangeNotifier {
         _backendNombre = (usuario['nombre'] as String?)?.trim();
         _backendApellido = usuario['apellido'] as String?;
         _backendEmail = usuario['correo'] as String?;
+        _backendId = usuario['id'] as int? ?? usuario['idUsuario'] as int? ?? usuario['id_usuario'] as int?;
         if (_token != null) {
           await _session.guardarToken(_token!);
         }
@@ -344,6 +348,7 @@ class AuthProvider extends ChangeNotifier {
     _backendNombre = null;
     _backendApellido = null;
     _backendEmail = null;
+    _backendId = null;
     _roles = [];
   }
 

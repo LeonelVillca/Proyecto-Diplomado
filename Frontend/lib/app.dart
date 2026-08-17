@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'movil/core/theme.dart';
@@ -10,13 +9,21 @@ import 'admin/screens/landing_screen.dart';
 
 /// Configuración principal de la aplicación (MaterialApp).
 class App extends StatelessWidget {
-  const App({super.key, this.authProvider, this.favoritesStore});
+  const App({
+    super.key,
+    this.authProvider,
+    this.favoritesStore,
+    this.initialScreen,
+  });
 
   /// Proveedor de autenticación (se inyecta desde `main`).
   final AuthProvider? authProvider;
 
   /// Guarda de favoritos (opcional para tests).
   final FavoritesStore? favoritesStore;
+
+  /// Pantalla inicial explícita (opcional para main_admin.dart o main_movil.dart).
+  final Widget? initialScreen;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +35,7 @@ class App extends StatelessWidget {
           title: 'Mesa Chapaca',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
-          home: kIsWeb ? const AdminLandingScreen() : const RootScreen(),
+          home: initialScreen ?? (kIsWeb ? const AdminLandingScreen() : const RootScreen()),
         ),
       ),
     );

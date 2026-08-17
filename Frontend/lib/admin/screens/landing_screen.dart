@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../widgets/landing_navbar.dart';
 import '../widgets/landing_hero.dart';
 import '../widgets/landing_benefits.dart';
 
@@ -9,19 +8,14 @@ class AdminLandingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F4EE), // Crema
-      body: CustomScrollView(
-        slivers: [
-          const SliverToBoxAdapter(
-            child: LandingNavbar(),
-          ),
-          const SliverToBoxAdapter(
-            child: LandingHero(),
-          ),
-          const SliverToBoxAdapter(
-            child: LandingBenefits(),
-          ),
-        ],
+      backgroundColor: const Color(0xFF0D0401),
+      body: SingleChildScrollView(
+        child: Column(
+          children: const [
+            LandingHero(),   // Hero contiene el Navbar encima
+            LandingBenefits(), // Cómo funciona + beneficios + testimonios + stats + footer
+          ],
+        ),
       ),
     );
   }
