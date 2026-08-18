@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme.dart';
 import '../../models/restaurant.dart';
+import '../../screens/restaurantes/restaurant_detail_screen.dart';
 import '../ui/rating_label.dart';
 import 'favorite_heart.dart';
 
@@ -14,11 +15,11 @@ class RestaurantCard extends StatelessWidget {
   final Restaurant restaurant;
   final VoidCallback? onTap;
 
-  void _reserve(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Tu mesa en ${restaurant.name} — próximamente.'),
-        behavior: SnackBarBehavior.floating,
+  void _openDetail(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RestaurantDetailScreen(restaurant: restaurant),
       ),
     );
   }
@@ -35,7 +36,7 @@ class RestaurantCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap ?? () => _reserve(context),
+          onTap: onTap ?? () => _openDetail(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -116,7 +117,7 @@ class RestaurantCard extends StatelessWidget {
                           child: SizedBox(
                             height: 42,
                             child: FilledButton.icon(
-                              onPressed: () => _reserve(context),
+                              onPressed: () => _openDetail(context),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.wine,
                                 shape: RoundedRectangleBorder(

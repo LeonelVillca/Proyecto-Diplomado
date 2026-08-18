@@ -58,7 +58,7 @@ class AppSearchBar extends StatelessWidget {
             height: 38,
             margin: const EdgeInsets.only(right: 8),
             child: Material(
-              color: AppColors.background,
+              color: AppColors.wine,
               shape: const CircleBorder(),
               child: InkWell(
                 onTap: onFilterTap,
@@ -66,7 +66,7 @@ class AppSearchBar extends StatelessWidget {
                 child: const Icon(
                   Icons.tune_rounded,
                   size: 18,
-                  color: AppColors.wine,
+                  color: Colors.white,
                 ),
               ),
             ),

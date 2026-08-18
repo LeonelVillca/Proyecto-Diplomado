@@ -43,125 +43,125 @@ class _HomeScreenState extends State<HomeScreen> {
       bottom: false,
       child: CustomScrollView(
         key: const PageStorageKey('home-scroll'),
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
-      slivers: [
-        SliverToBoxAdapter(child: _Header()),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
-            child: AppSearchBar(
-              onFilterTap: () => _showFilterHint(context),
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        slivers: [
+          SliverToBoxAdapter(child: _Header()),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+              child: AppSearchBar(
+                onFilterTap: () => _showFilterHint(context),
+              ),
             ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 48,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-              scrollDirection: Axis.horizontal,
-              itemCount: _available.length + 1,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return AppFilterChip(
-                    label: 'Todos',
-                    selected: _selected == null,
-                    icon: Icons.grid_view_rounded,
-                    onTap: () => setState(() => _selected = null),
-                  );
-                }
-                final cuisine = _available[index - 1];
-                return AppFilterChip(
-                  label: cuisine.label,
-                  icon: cuisine.icon,
-                  selected: _selected == cuisine,
-                  onTap: () => setState(() => _selected = cuisine),
-                );
-              },
-            ),
-          ),
-        ),
-        // Carrusel promocional.
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 6),
+          SliverToBoxAdapter(
             child: SizedBox(
-              height: 148,
-              child: PageView.builder(
-                controller: PageController(viewportFraction: 0.92),
-                itemCount: mockPromos.length,
+              height: 48,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                scrollDirection: Axis.horizontal,
+                itemCount: _available.length + 1,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return AppFilterChip(
+                      label: 'Todos',
+                      selected: _selected == null,
+                      icon: Icons.grid_view_rounded,
+                      onTap: () => setState(() => _selected = null),
+                    );
+                  }
+                  final cuisine = _available[index - 1];
+                  return AppFilterChip(
+                    label: cuisine.label,
+                    icon: cuisine.icon,
+                    selected: _selected == cuisine,
+                    onTap: () => setState(() => _selected = cuisine),
+                  );
+                },
+              ),
+            ),
+          ),
+          // Carrusel promocional.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: SizedBox(
+                height: 148,
+                child: PageView.builder(
+                  controller: PageController(viewportFraction: 0.92),
+                  itemCount: mockPromos.length,
+                  itemBuilder: (context, index) =>
+                      PromoCard(slide: mockPromos[index]),
+                ),
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 22)),
+          // Tendencia.
+          SliverToBoxAdapter(
+            child: AppSectionHeader(
+              title: 'Tendencias locales',
+              trailingLabel: 'Ver todo',
+              onTrailingTap: () => _showFilterHint(context),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 180,
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                scrollDirection: Axis.horizontal,
+                itemCount: _trending.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
                 itemBuilder: (context, index) =>
-                    PromoCard(slide: mockPromos[index]),
+                    RestaurantCardCompact(restaurant: _trending[index]),
               ),
             ),
           ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 22)),
-        // Tendencia.
-        SliverToBoxAdapter(
-          child: AppSectionHeader(
-            title: 'Tendencia en Tarija 🔥',
-            trailingLabel: 'Ver todo',
-            onTrailingTap: () => _showFilterHint(context),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(
-            height: 180,
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-              scrollDirection: Axis.horizontal,
-              itemCount: _trending.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (context, index) =>
-                  RestaurantCardCompact(restaurant: _trending[index]),
+          const SliverToBoxAdapter(child: SizedBox(height: 22)),
+          // Recomendados.
+          SliverToBoxAdapter(
+            child: AppSectionHeader(
+              title: 'Recomendaciones',
+              trailingLabel: _selected == null ? null : 'Limpiar filtro',
+              onTrailingTap: _selected == null
+                  ? null
+                  : () => setState(() => _selected = null),
             ),
           ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 22)),
-        // Recomendados.
-        SliverToBoxAdapter(
-          child: AppSectionHeader(
-            title: 'Recomendados para ti',
-            trailingLabel: _selected == null ? null : 'Limpiar filtro',
-            onTrailingTap: _selected == null
-                ? null
-                : () => setState(() => _selected = null),
-          ),
-        ),
-        if (_filtered.isEmpty)
-          const SliverToBoxAdapter(child: _NoResults())
-        else
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                child: RestaurantCard(restaurant: _filtered[index]),
+          if (_filtered.isEmpty)
+            const SliverToBoxAdapter(child: _NoResults())
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: RestaurantCard(restaurant: _filtered[index]),
+                ),
+                childCount: _filtered.length,
               ),
-              childCount: _filtered.length,
             ),
-          ),
-        // Espacio para que la barra flotante no tape el contenido.
-        const SliverToBoxAdapter(child: SizedBox(height: 140)),
-      ],
-    ),
-  );
+          // Espacio para que la barra flotante no tape el contenido.
+          const SliverToBoxAdapter(child: SizedBox(height: 140)),
+        ],
+      ),
+    );
   }
 
   void _showFilterHint(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Filtros y búsqueda avanzada — próximamente.'),
+        content: Text('Filtros y busqueda avanzada — proximamente.'),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
 }
 
-/// Encabezado con saludo, subtítulo y avatar del usuario.
+/// Encabezado con saludo, subtitulo y avatar del usuario.
 class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -180,22 +180,24 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '¡Hola, $firstName! 👋',
+                  'Hola, $firstName',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                    color: AppColors.secondaryText,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '¿Dónde comeremos hoy?',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.montserrat(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
                     color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '¿Qué te apetece hoy?',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: AppColors.secondaryText,
                   ),
                 ),
               ],
@@ -213,7 +215,7 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Estado cuando ningún restaurante coincide con el filtro.
+/// Estado cuando ningun restaurante coincide con el filtro.
 class _NoResults extends StatelessWidget {
   const _NoResults();
 

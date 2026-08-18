@@ -63,7 +63,7 @@ no le agregues nada de lo que se construya en las fases de Admin.
 autenticación con Google — ahora toca aplicar control de roles a los
 demás endpoints.)*
 
-### Tarea A1 — Infraestructura de guards
+### [x] Tarea A1 — Infraestructura de guards
 Crea (si no existe ya) en `src/core/`:
 - `guards/roles.guard.ts` — verifica que el usuario autenticado tenga
   alguno de los roles requeridos por el endpoint.
@@ -76,19 +76,19 @@ Crea (si no existe ya) en `src/core/`:
 
 No apliques todavía estos guards a ningún endpoint — eso es la Tarea A2.
 
-### Tarea A2 — Aplicar guards a los módulos de Admin_Sistema
+### [x] Tarea A2 — Aplicar guards a los módulos de Admin_Sistema
 Aplica `@Roles('admin_sistema')` + `RolesGuard` a los endpoints de:
 `usuarios` (suspender/activar/eliminar), `rol`, `permiso`,
 `categoria_soporte`, `solicitud` (aprobar/rechazar), moderación de
 `resenas` (eliminar), `reportes` generales.
 
-### Tarea A3 — Aplicar guards a los módulos de Admin_Restaurante
+### [x] Tarea A3 — Aplicar guards a los módulos de Admin_Restaurante
 Aplica `@Roles('admin_restaurante')` + `RolesGuard` + `OwnershipGuard` a:
 `restaurante` (editar/suspender su propio perfil), `menu`, `plato`,
 `imagen`, `mesa`, `horario_atencion`, `promocion`, respuesta a `resenas`,
 confirmar/rechazar `reservas` de su restaurante.
 
-### Tarea A4 — Aplicar control de propiedad a endpoints de Cliente
+### [x] Tarea A4 — Aplicar control de propiedad a endpoints de Cliente
 Verifica que un Cliente solo pueda editar/cancelar sus propias `reservas`,
 editar/eliminar sus propias `resenas` (antes de que sean respondidas), y ver
 únicamente sus propios `soporte` y `notificacion`.
@@ -97,26 +97,26 @@ editar/eliminar sus propias `resenas` (antes de que sean respondidas), y ver
 
 # FASE B — Completar los módulos de backend que faltan
 
-### Tarea B1 — Módulo 17: Reservas + WebSocket Gateway
+### [x] Tarea B1 — Módulo 17: Reservas + WebSocket Gateway
 `reserva.entity.ts`, DTOs, service, controller. Además, el Gateway de
 WebSocket que notifica en tiempo real cambios de estado de una reserva a
 los clientes conectados (tanto a la futura app móvil como al futuro panel
 web del restaurante).
 
-### Tarea B2 — Módulo 18: Reseñas
+### [x] Tarea B2 — Módulo 18: Reseñas
 CRUD completo, con la regla de que un Cliente solo puede editar/eliminar su
 propia reseña, y solo antes de que exista una `respuesta_resena` asociada.
 
-### Tarea B3 — Módulo 19: Respuesta a reseñas
+### [x] Tarea B3 — Módulo 19: Respuesta a reseñas
 Debe registrar `id_usuario_restaurante` (quién respondió, para auditoría) y
 respetar que solo puede existir una respuesta por reseña.
 
-### Tarea B4 — Módulo Promoción
+### [x] Tarea B4 — Módulo Promoción
 CRUD completo siguiendo el esquema ya definido (`descuento_porcentaje`,
 `fecha_inicio`, `fecha_fin`, `estado`), con `OwnershipGuard` ya aplicado
 desde el inicio (no dejar sin proteger y arreglar después).
 
-### Tarea B5 — Endpoint de Ranking
+### [x] Tarea B5 — Endpoint de Ranking
 Un endpoint de solo lectura que consuma `vista_ranking_restaurantes`
 (la vista SQL ya creada), con parámetro de ordenamiento
 (`?orden=calificacion` o `?orden=visitas`) y límite configurable
@@ -126,22 +126,22 @@ Un endpoint de solo lectura que consuma `vista_ranking_restaurantes`
 
 # FASE C — Conectar la app móvil (Cliente) a la API real
 
-### Tarea C1 — Restaurantes, menú, platos y ubicación reales
+### [en progreso] Tarea C1 — Restaurantes, menú, platos y ubicación reales
 Reemplaza `restaurantes_mock.dart` y cualquier dato demo asociado por
 llamadas HTTP reales a `/restaurante`, `/menu`, `/plato`, `/ubicacion`,
 `/imagen`. Mantén el mismo diseño visual ya aprobado — este cambio es solo
 de origen de datos, no de interfaz.
 
-### Tarea C2 — Reservas en tiempo real
+### [en progreso] Tarea C2 — Reservas en tiempo real
 Conecta la pantalla de Reservas al módulo 17: creación vía REST, y
 suscripción al WebSocket para reflejar cambios de estado
 (confirmada/rechazada) sin que el usuario tenga que refrescar.
 
-### Tarea C3 — Perfil del cliente: reseñas y soporte
+### [ ] Tarea C3 — Perfil del cliente: reseñas y soporte
 Conecta la sección de perfil con sus propias reseñas (módulo 18) y sus
 tickets de soporte (módulo `soporte`).
 
-### Tarea C4 — Promociones y ranking en la interfaz
+### [ ] Tarea C4 — Promociones y ranking en la interfaz
 Muestra las promociones activas de cada restaurante en su pantalla de
 detalle, y agrega una sección de "Top restaurantes" en la pantalla
 principal, consumiendo el endpoint de ranking de la Tarea B5.
@@ -152,7 +152,7 @@ principal, consumiendo el endpoint de ranking de la Tarea B5.
 *(A partir de aquí, todo vive en `lib/admin/`. Diseño de nivel web
 profesional — revisa la aclaración crítica de arriba antes de empezar.)*
 
-### Tarea D1 — Landing pública
+### [x] Tarea D1 — Landing pública
 Página de inicio pública (sin necesidad de sesión), con:
 - Barra de navegación superior con el logo y enlaces/beneficios de unirse a
   la plataforma (ej: "Más reservas", "Gestión simple", "Visibilidad en
@@ -163,7 +163,7 @@ Página de inicio pública (sin necesidad de sesión), con:
   restaurante a la plataforma (usa buen diseño visual, no placeholder
   genérico — imágenes/ilustraciones, no solo texto).
 
-### Tarea D2 — Flujo "Comienza" (formulario de solicitud)
+### [x] Tarea D2 — Flujo "Comienza" (formulario de solicitud)
 Al presionar "Comienza": pantalla de bienvenida breve, seguida del
 formulario de solicitud con estos campos exactos: **nombre, apellido,
 correo electrónico, nombre del restaurante, número de teléfono, y un
@@ -172,7 +172,7 @@ confirmación ("Solicitud enviada con éxito"), y después de unos segundos (o
 con un botón "Volver al inicio") regresa a la landing pública. Conecta este
 formulario al endpoint real de `solicitud` (`POST /solicitud`).
 
-### Tarea D3 — Flujo "Acceso" (login)
+### [x] Tarea D3 — Flujo "Acceso" (login)
 Al presionar "Acceso": pantalla de login con una imagen de fondo de un
 restaurante (usa buen criterio visual, imagen de calidad, no un placeholder
 gris), con **únicamente dos campos: correo electrónico y contraseña** — sin
@@ -181,7 +181,7 @@ correo/contraseña, no Google, eso es exclusivo de la app móvil del
 Cliente). Conecta contra el endpoint de autenticación local ya existente
 en el backend.
 
-### Tarea D4 — Enrutamiento post-login por rol
+### [x] Tarea D4 — Enrutamiento post-login por rol
 Después de un login exitoso, redirige según el rol del usuario autenticado:
 `admin_sistema` → dashboard de sistema (Fase E), `admin_restaurante` →
 dashboard de restaurante (Fase F). Si el usuario no tiene ninguno de esos
@@ -192,17 +192,17 @@ administrativo (no lo dejes en una pantalla en blanco o un error crudo).
 
 # FASE E — Panel Web: Dashboard de Admin_Sistema
 
-### Tarea E1 — Aprobar/rechazar solicitudes
+### [x] Tarea E1 — Aprobar/rechazar solicitudes
 Listado de `solicitud` con filtro por estado, vista de detalle con los
 datos enviados en el formulario (Tarea D2) y sus `documento_adjunto`, y
 acciones de aprobar/rechazar (con campo de motivo si se rechaza).
 
-### Tarea E2 — Gestión de usuarios, roles y permisos
+### [x] Tarea E2 — Gestión de usuarios, roles y permisos
 Listado/búsqueda de `usuarios` (activar/suspender), gestión de `rol` y
 `permiso` (según lo que ya definimos: crear roles y asignarles permisos
 desde `rol_permiso`).
 
-### Tarea E3 — Moderación de reseñas y reportes generales
+### [x] Tarea E3 — Moderación de reseñas y reportes generales
 Listado de `resenas` con opción de eliminar contenido inapropiado, y
 sección de generación de `reportes` con filtros de fecha y tipo.
 
@@ -216,15 +216,15 @@ sidebar con Reservas / Reportes / Soporte / Configuraciones / Perfil de
 Restaurante / Gestión de Menús, y tabla de contenido con buscador, filtros y
 acciones por fila.)*
 
-### Tarea F1 — Perfil del restaurante
+### [x] Tarea F1 — Perfil del restaurante
 Formulario de perfil (nombre, tipo de comida, descripción, teléfono,
 correo, foto de portada, ubicación con mapa/coordenadas), editable por el
 dueño ya aprobado.
 
-### Tarea F2 — Gestión de mesas
+### [x] Tarea F2 — Gestión de mesas
 CRUD de `mesa` (número, capacidad, estado) y de `horario_atencion`.
 
-### Tarea F3 — Gestión de menús y platillos
+### [x] Tarea F3 — Gestión de menús y platillos
 Sigue este patrón exacto de la documentación original: pantalla "Gestión de
 Menús" con listado (nombre, tipo, cantidad de platillos, estado
 activo/inactivo, acciones editar/eliminar/habilitar). Pantalla "Crear
@@ -233,18 +233,18 @@ dropdown), y una sección para agregar platillos uno por uno — cada platillo
 con foto, nombre, descripción y precio (en Bs), con un botón "+" para
 agregar otro platillo al mismo menú antes de guardar.
 
-### Tarea F4 — Gestión de promociones
+### [x] Tarea F4 — Gestión de promociones
 CRUD de `promocion` del propio restaurante.
 
-### Tarea F5 — Reservas en tiempo real
+### [x] Tarea F5 — Reservas en tiempo real
 Listado de reservas entrantes (conectado al WebSocket del módulo 17), con
 acciones de confirmar/rechazar, actualizándose sin recargar la página.
 
-### Tarea F6 — Responder reseñas
+### [x] Tarea F6 — Responder reseñas
 Listado de reseñas recibidas con opción de responder (una sola vez por
 reseña).
 
-### Tarea F7 — Soporte y reportes del restaurante
+### [x] Tarea F7 — Soporte y reportes del restaurante
 Crear/ver tickets de soporte propios, y reportes acotados a su propio
 restaurante (reservas, calificación, visitas).
 

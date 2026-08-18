@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../data/restaurantes_mock.dart';
+import '../../widgets/restaurant/favorite_heart.dart';
+import '../restaurantes/restaurant_detail_screen.dart';
 import 'map_data.dart';
 import 'map_widgets.dart';
 
@@ -43,6 +46,25 @@ class _LocationScreenState extends State<LocationScreen> {
 
   void _onMarkerTap(MapRestaurant r) {
     _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(r.coords, 16));
+    _showRestaurantModal(r);
+  }
+
+  void _showRestaurantModal(MapRestaurant r) {
+    // Buscar en los mocks o usar el primero como fallback
+    final realRestaurant = mockRestaurants.firstWhere(
+      (mock) => mock.id == r.id, 
+      orElse: () => mockRestaurants.first,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _MapMarkerModal(
+        mapRestaurant: r,
+        fullRestaurant: realRestaurant,
+      ),
+    );
   }
 
   static const String _cleanMapStyle = '''
@@ -188,6 +210,122 @@ class _BottomSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Modal de Restaurante al tocar Marcador ──────────────────────────────────
+class _MapMarkerModal extends StatelessWidget {
+  const _MapMarkerModal({required this.mapRestaurant, required this.fullRestaurant});
+  
+  final MapRestaurant mapRestaurant;
+  final dynamic fullRestaurant; // Es del tipo Restaurant
+
+  void _goToDetails(BuildContext context) {
+    Navigator.pop(context); // Cierra el modal primero
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RestaurantDetailScreen(restaurant: fullRestaurant),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Usar SafeArea por si el dispositivo tiene gestos inferiores grandes
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10)),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _goToDetails(context),
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Ajusta la altura al contenido
+              children: [
+                // Foto de portada con boton favorito flotante
+                Stack(
+                  children: [
+                    Image.asset(
+                      'assets/restaurant_hero.png', // Placeholder (luego vendra de bd)
+                      height: 160,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: FavoriteHeart(restaurantId: fullRestaurant.id),
+                    ),
+                  ],
+                ),
+                // Detalles de la tarjeta
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              mapRestaurant.nombre,
+                              style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF1A0C12)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              const Icon(Icons.star_rounded, color: Color(0xFFD4AF37), size: 18),
+                              const SizedBox(width: 4),
+                              Text(
+                                mapRestaurant.rating.toString(),
+                                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFFD4AF37)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${mapRestaurant.tipo} · ${mapRestaurant.precio}',
+                        style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: FilledButton(
+                          onPressed: () => _goToDetails(context),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF6B1A35), // Color Vino
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          child: Text(
+                            'Ver Restaurante',
+                            style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

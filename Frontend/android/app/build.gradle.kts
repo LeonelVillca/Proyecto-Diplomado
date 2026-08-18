@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.proyecto.frontend"
-    compileSdk = 37
+    compileSdk = flutter.compileSdkVersion
 
     ndkVersion = flutter.ndkVersion
 
