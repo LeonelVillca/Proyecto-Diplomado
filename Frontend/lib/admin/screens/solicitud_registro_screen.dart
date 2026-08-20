@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
 import '../../core/network/api_endpoints.dart';
 import '../widgets/landing_navbar.dart';
 import '../widgets/solicitud_hero.dart';
@@ -23,32 +24,61 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
   final _restauranteCtrl = TextEditingController();
   final _telefonoCtrl = TextEditingController();
   final _descripcionCtrl = TextEditingController();
+  final _nitCtrl = TextEditingController();
+
+  int _currentStep = 1;
+  PlatformFile? _nitFile;
+  PlatformFile? _ciFile;
 
   bool _isLoading = false;
   bool _isSuccess = false;
 
   Future<void> _enviarSolicitud() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_nitFile == null || _ciFile == null) {
+      _mostrarError('Debes adjuntar ambos documentos (NIT y CI).');
+      return;
+    }
+    
     setState(() {
       _isLoading = true;
     });
 
     try {
       final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud');
-      final body = {
-        'nombreUsuario': _nombreCtrl.text.trim(),
-        'apellidoUsuario': _apellidoCtrl.text.trim(),
-        'correoUsuario': _correoCtrl.text.trim(),
-        'nombreRestaurante': _restauranteCtrl.text.trim(),
-        'celularContacto': _telefonoCtrl.text.trim(),
-        'descripcion': _descripcionCtrl.text.trim(),
-      };
+      var request = http.MultipartRequest('POST', url);
 
-      final res = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      );
+      request.fields['nombreUsuario'] = _nombreCtrl.text.trim();
+      request.fields['apellidoUsuario'] = _apellidoCtrl.text.trim();
+      request.fields['correoUsuario'] = _correoCtrl.text.trim();
+      request.fields['nombreRestaurante'] = _restauranteCtrl.text.trim();
+      request.fields['celularContacto'] = _telefonoCtrl.text.trim();
+      request.fields['descripcion'] = _descripcionCtrl.text.trim();
+      request.fields['nitNegocio'] = _nitCtrl.text.trim();
+
+      if (_nitFile != null) {
+        final nitBytes = await _nitFile!.readAsBytes();
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'documentoNit',
+            nitBytes,
+            filename: _nitFile!.name,
+          ),
+        );
+      }
+      if (_ciFile != null) {
+        final ciBytes = await _ciFile!.readAsBytes();
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'documentoCi',
+            ciBytes,
+            filename: _ciFile!.name,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final res = await http.Response.fromStream(streamedResponse);
 
       if (res.statusCode == 201) {
         setState(() {
@@ -62,6 +92,23 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
     } finally {
       setState(() {
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _seleccionarArchivo(bool esNit) async {
+    List<PlatformFile> result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+    ) ?? [];
+
+    if (result.isNotEmpty) {
+      setState(() {
+        if (esNit) {
+          _nitFile = result.first;
+        } else {
+          _ciFile = result.first;
+        }
       });
     }
   }
@@ -82,6 +129,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
     _restauranteCtrl.dispose();
     _telefonoCtrl.dispose();
     _descripcionCtrl.dispose();
+    _nitCtrl.dispose();
     super.dispose();
   }
 
@@ -217,7 +265,6 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
               ),
               const SizedBox(height: 40),
               
-              // Simular la barra de progreso de OpenTable
               Row(
                 children: [
                   Expanded(
@@ -225,8 +272,8 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                     child: Container(height: 4, color: const Color(0xFFE53935)), // Rojo/Vino vibrante
                   ),
                   Expanded(
-                    flex: 2,
-                    child: Container(height: 4, color: Colors.grey.shade200),
+                    flex: 1,
+                    child: Container(height: 4, color: _currentStep == 2 ? const Color(0xFFE53935) : Colors.grey.shade200),
                   ),
                 ],
               ),
@@ -243,7 +290,9 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Cuéntanos un poco sobre ti para que podamos personalizar tu experiencia.',
+                _currentStep == 1 
+                    ? 'Cuéntanos un poco sobre ti para que podamos personalizar tu experiencia.'
+                    : 'Necesitamos algunos documentos para validar tu restaurante.',
                 style: TextStyle(
                   fontFamily: 'Karla',
                   fontSize: 15,
@@ -252,81 +301,138 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
               ),
               const SizedBox(height: 32),
               
-              SolicitudInput(
-                label: 'Nombre de pila *',
-                controller: _nombreCtrl,
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 24),
-              SolicitudInput(
-                label: 'Apellido *',
-                controller: _apellidoCtrl,
-                validator: (v) => v!.isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 24),
-              SolicitudInput(
-                label: 'Dirección de correo electrónico *',
-                controller: _correoCtrl,
-                keyboardType: TextInputType.emailAddress,
-                validator: (v) => v!.isEmpty || !v.contains('@') ? 'Correo inválido' : null,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: SolicitudInput(
-                      label: 'Nombre del Restaurante *',
-                      controller: _restauranteCtrl,
-                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  Expanded(
-                    child: SolicitudInput(
-                      label: 'Número de Teléfono *',
-                      controller: _telefonoCtrl,
-                      keyboardType: TextInputType.phone,
-                      validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SolicitudInput(
-                label: 'Mensaje o Descripción (Opcional)',
-                controller: _descripcionCtrl,
-                maxLines: 3,
-              ),
-              const SizedBox(height: 40),
-              
-              Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  width: 200,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _enviarSolicitud,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black, // Como OpenTable
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4), // Bordes menos redondeados
+              if (_currentStep == 1) ...[
+                SolicitudInput(
+                  label: 'Nombre de pila *',
+                  controller: _nombreCtrl,
+                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 24),
+                SolicitudInput(
+                  label: 'Apellido *',
+                  controller: _apellidoCtrl,
+                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 24),
+                SolicitudInput(
+                  label: 'Dirección de correo electrónico *',
+                  controller: _correoCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (v) => v!.isEmpty || !v.contains('@') ? 'Correo inválido' : null,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SolicitudInput(
+                        label: 'Nombre del Restaurante *',
+                        controller: _restauranteCtrl,
+                        validator: (v) => v!.isEmpty ? 'Requerido' : null,
                       ),
                     ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text(
-                            'Próximo',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: SolicitudInput(
+                        label: 'Número de Teléfono *',
+                        controller: _telefonoCtrl,
+                        keyboardType: TextInputType.phone,
+                        validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SolicitudInput(
+                  label: 'Mensaje o Descripción (Opcional)',
+                  controller: _descripcionCtrl,
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 40),
+                
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: 200,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          setState(() => _currentStep = 2);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black, // Como OpenTable
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4), // Bordes menos redondeados
+                        ),
+                      ),
+                      child: const Text(
+                        'Próximo',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ] else ...[
+                SolicitudInput(
+                  label: 'NIT del Negocio *',
+                  controller: _nitCtrl,
+                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                ),
+                const SizedBox(height: 24),
+                const Text('Documento NIT (PDF o Imagen) *', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _seleccionarArchivo(true),
+                  icon: const Icon(Icons.upload_file),
+                  label: Text(_nitFile != null ? _nitFile!.name : 'Seleccionar archivo NIT'),
+                ),
+                const SizedBox(height: 24),
+                const Text('Cédula de Identidad (PDF o Imagen) *', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _seleccionarArchivo(false),
+                  icon: const Icon(Icons.upload_file),
+                  label: Text(_ciFile != null ? _ciFile!.name : 'Seleccionar archivo CI'),
+                ),
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: _isLoading ? null : () => setState(() => _currentStep = 1),
+                      child: const Text('Atrás', style: TextStyle(fontSize: 16, color: Colors.black)),
+                    ),
+                    SizedBox(
+                      width: 200,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _enviarSolicitud,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text(
+                                'Enviar Solicitud',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               
               const SizedBox(height: 40),
               Text(

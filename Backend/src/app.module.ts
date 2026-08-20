@@ -30,6 +30,8 @@ import { RespuestaResenaModule } from './modules/respuesta-resena/respuesta-rese
 import { CuentasAuthModule } from './modules/cuentas-auth/cuentas-auth.module';
 import { OauthCuentasModule } from './modules/oauth-cuenta/oauth-cuentas.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { InvitacionTokenModule } from './modules/invitacion-token/invitacion-token.module';
+import { MailModule } from './modules/mail/mail.module';
 
 @Module({
   imports: [
@@ -67,6 +69,8 @@ import { AuthModule } from './modules/auth/auth.module';
       useFactory: (configService: ConfigService) =>
         configService.getOrThrow('database'),
     }),
+    InvitacionTokenModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

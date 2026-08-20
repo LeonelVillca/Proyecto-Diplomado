@@ -3,9 +3,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Usuario } from '../usuarios/usuario.entity';
+import { DocumentoAdjunto } from '../documento-adjunto/documento-adjunto.entity';
 
 export const ESTADO_SOLICITUD = ['pendiente', 'aprobada', 'rechazada'] as const;
 
@@ -17,6 +19,9 @@ export class Solicitud {
   @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
+
+  @OneToMany(() => DocumentoAdjunto, (doc) => doc.solicitud)
+  documentosAdjuntos: DocumentoAdjunto[];
 
   @Column({ name: 'fecha', type: 'date', default: () => 'CURRENT_DATE' })
   fecha: string;

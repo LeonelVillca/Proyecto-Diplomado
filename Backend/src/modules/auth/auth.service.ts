@@ -11,6 +11,9 @@ import { GoogleLoginDto } from './dto/google-login.dto';
 import { ActualizarUsuarioDto } from '../usuarios/dto/actualizar-usuario.dto';
 import { FirebaseAdminService } from './firebase-admin.service';
 import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
+import { InvitacionToken } from '../invitacion-token/invitacion-token.entity';
+import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
+import { BadRequestException } from '@nestjs/common';
 
 function nombreDesdeCorreo(correo: string): string {
   const local = correo.split('@')[0];
@@ -177,5 +180,31 @@ export class AuthService {
       correo: usuario.correo,
       roles,
     };
+  }
+
+  async crearContrasena(dto: CrearContrasenaDto): Promise<{ mensaje: string }> {
+    const invitacion = await this.dataSource.manager.findOne(InvitacionToken, {
+      where: { token: dto.token },
+      relations: { usuario: true },
+    });
+
+    if (!invitacion) {
+      throw new BadRequestException('El token es inválido o no existe.');
+    }
+
+    if (invitacion.usado) {
+      throw new BadRequestException('El token ya ha sido utilizado.');
+    }
+
+    if (invitacion.fechaExpiracion < new Date()) {
+      throw new BadRequestException('El token ha expirado. Por favor, solicita uno nuevo.');
+    }
+
+    await this.cuentasAuthService.asegurarCuenta(invitacion.usuario.id, dto.password);
+    
+    invitacion.usado = true;
+    await this.dataSource.manager.save(invitacion);
+
+    return { mensaje: 'Contraseña creada exitosamente' };
   }
 }

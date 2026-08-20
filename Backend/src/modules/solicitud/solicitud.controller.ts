@@ -9,7 +9,10 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
@@ -20,11 +23,20 @@ import { Solicitud } from './solicitud.entity';
 
 @Controller('solicitud')
 export class SolicitudController {
-  constructor(private readonly solicitudService: SolicitudService) {}
+  constructor(private readonly solicitudService: SolicitudService) { }
 
   @Post()
-  crear(@Body() dto: CrearSolicitudDto): Promise<Solicitud> {
-    return this.solicitudService.crear(dto);
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'documentoNit', maxCount: 1 },
+      { name: 'documentoCi', maxCount: 1 },
+    ]),
+  )
+  crear(
+    @Body() dto: CrearSolicitudDto,
+    @UploadedFiles() files: { documentoNit?: Express.Multer.File[]; documentoCi?: Express.Multer.File[] },
+  ): Promise<Solicitud> {
+    return this.solicitudService.crear(dto, files);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

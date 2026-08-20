@@ -66,9 +66,13 @@ class _LandingNavbarState extends State<LandingNavbar> {
           ),
 
           // Nav Links
-          Row(
-            children: [
-              _NavLink('Beneficios', 'beneficios'),
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
+                children: [
+                  _NavLink('Beneficios', 'beneficios'),
               const SizedBox(width: 36),
               _NavLink('Cómo Funciona', 'como'),
               const SizedBox(width: 36),
@@ -141,6 +145,8 @@ class _LandingNavbarState extends State<LandingNavbar> {
                 ),
               ),
             ],
+          ),
+            ),
           ),
         ],
       ),

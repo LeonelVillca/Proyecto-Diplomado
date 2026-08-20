@@ -4,6 +4,10 @@ import 'package:http/http.dart' as http;
 import '../../core/network/api_endpoints.dart';
 import '../../movil/providers/auth_provider.dart';
 import '../models/solicitud_admin_model.dart';
+import 'dart:html' as html;
+import 'dart:ui_web' as ui_web;
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class SolicitudesScreen extends StatefulWidget {
   const SolicitudesScreen({super.key});
@@ -80,9 +84,20 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
             SnackBar(content: Text('Solicitud marcada como $nuevoEstado')),
           );
         }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error del servidor: ${res.statusCode}. Verifica los logs.'), backgroundColor: Colors.red),
+          );
+        }
       }
     } catch (e) {
       debugPrint('Error actualizando estado: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de red: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -104,10 +119,16 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
                 _buildInfoRow('Correo:', '${solicitud.usuario?['correo']}'),
                 _buildInfoRow('Estado:', solicitud.estado.toUpperCase()),
                 _buildInfoRow('Fecha:', solicitud.fechaSolicitud.split('T')[0]),
+                _buildInfoRow('NIT:', solicitud.nitNegocio ?? 'No provisto'),
                 const SizedBox(height: 16),
                 const Text('Descripción:', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Karla')),
                 const SizedBox(height: 4),
                 Text(solicitud.descripcion ?? 'Sin descripción', style: const TextStyle(fontFamily: 'Karla')),
+                const SizedBox(height: 16),
+                if (solicitud.documentosAdjuntos != null && solicitud.documentosAdjuntos!.isNotEmpty)
+                  const Text('Documentos:', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Karla')),
+                if (solicitud.documentosAdjuntos != null)
+                  ...solicitud.documentosAdjuntos!.map((doc) => _buildDocumentoBoton(doc, solicitud.id)),
               ],
             ),
           ),
@@ -138,6 +159,85 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildDocumentoBoton(dynamic doc, int idSolicitud) {
+    final tipo = doc['tipo'];
+    final urlPath = doc['url']; // Ej: /privado/solicitudes/1/nit-uuid.pdf
+    if (urlPath == null) return const SizedBox();
+
+    final isPdf = urlPath.toString().toLowerCase().endsWith('.pdf');
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: OutlinedButton.icon(
+        icon: Icon(isPdf ? Icons.picture_as_pdf : Icons.image, color: const Color(0xFF6B1A35)),
+        label: Text('Ver Documento: $tipo', style: const TextStyle(color: Colors.black87)),
+        onPressed: () => _abrirVisorDocumento(urlPath, tipo, isPdf),
+      ),
+    );
+  }
+
+  void _abrirVisorDocumento(String pathUrl, String tipo, bool isPdf) {
+    if (isPdf && kIsWeb) {
+      _abrirPdfNuevaPestana(pathUrl);
+    } else {
+      final currentToken = AuthScope.of(context).token ?? '';
+      showDialog(
+        context: context,
+        builder: (ctx) => _VisorDocumentoDialog(
+          pathUrl: pathUrl,
+          tipo: tipo,
+          isPdf: isPdf,
+          token: currentToken,
+        ),
+      );
+    }
+  }
+
+  Future<void> _abrirPdfNuevaPestana(String pathUrl) async {
+    // Abrir la pestaña inmediatamente para evitar el bloqueo de popups
+    final newWindow = html.window.open('', '_blank');
+
+    try {
+      final token = AuthScope.of(context).token ?? '';
+      final parts = pathUrl.split('/');
+      final filename = parts.last;
+      final idSolicitud = parts[parts.length - 2];
+      
+      final fullUrl = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/documento-adjunto/privado/$idSolicitud/$filename');
+
+      final res = await http.get(fullUrl, headers: {
+        'Authorization': 'Bearer $token',
+      });
+
+      if (res.statusCode == 200) {
+        final blob = html.Blob([res.bodyBytes], 'application/pdf');
+        final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+        
+        if (newWindow != null) {
+          // Redirigir la pestaña abierta al visor de PDF nativo del navegador
+          newWindow.location.href = blobUrl;
+        } else {
+          // Fallback por si acaso
+          html.window.open(blobUrl, '_blank');
+        }
+      } else {
+        if (newWindow != null) {
+          newWindow.close();
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar el documento (${res.statusCode})'), backgroundColor: Colors.red));
+        }
+      }
+    } catch (e) {
+      if (newWindow != null) {
+        newWindow.close();
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión de red al cargar el documento'), backgroundColor: Colors.red));
+      }
+    }
   }
 
   Widget _buildInfoRow(String label, String value) {
@@ -269,6 +369,121 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _VisorDocumentoDialog extends StatefulWidget {
+  final String pathUrl;
+  final String tipo;
+  final bool isPdf;
+  final String token;
+
+  const _VisorDocumentoDialog({
+    required this.pathUrl,
+    required this.tipo,
+    required this.isPdf,
+    required this.token,
+  });
+
+  @override
+  State<_VisorDocumentoDialog> createState() => _VisorDocumentoDialogState();
+}
+
+class _VisorDocumentoDialogState extends State<_VisorDocumentoDialog> {
+  bool _isLoading = true;
+  Uint8List? _bytes;
+  String? _blobUrl;
+  String? _viewId;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarArchivo();
+  }
+
+  Future<void> _cargarArchivo() async {
+    try {
+      final token = widget.token;
+      // pathUrl viene como /privado/solicitudes/1/nit-uuid.pdf
+      // Necesitamos armar la URL del backend correctamente.
+      // En el backend la ruta es: GET /api/v1/documento-adjunto/privado/:idSolicitud/:filename
+      // Pero el url guardado en base de datos es: /privado/solicitudes/{id}/{filename}
+      // Entonces extraemos los parámetros del path guardado.
+      final parts = widget.pathUrl.split('/');
+      final filename = parts.last;
+      final idSolicitud = parts[parts.length - 2];
+      
+      final fullUrl = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/documento-adjunto/privado/$idSolicitud/$filename');
+
+      final res = await http.get(fullUrl, headers: {
+        'Authorization': 'Bearer $token',
+      });
+
+      if (res.statusCode == 200) {
+        if (mounted) {
+          setState(() {
+            _bytes = res.bodyBytes;
+            _isLoading = false;
+            
+            if (widget.isPdf && kIsWeb) {
+              final blob = html.Blob([_bytes], 'application/pdf');
+              _blobUrl = html.Url.createObjectUrlFromBlob(blob);
+              _viewId = 'pdf-view-${DateTime.now().millisecondsSinceEpoch}';
+              
+              // ignore: undefined_prefixed_name
+              ui_web.platformViewRegistry.registerViewFactory(_viewId!, (int viewId) {
+                final iframe = html.IFrameElement()
+                  ..src = _blobUrl
+                  ..style.border = 'none'
+                  ..style.width = '100%'
+                  ..style.height = '100%';
+                return iframe;
+              });
+            }
+          });
+        }
+      } else {
+        if (mounted) setState(() { _error = 'Error al cargar documento (${res.statusCode})'; _isLoading = false; });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _error = 'Error: $e'; _isLoading = false; });
+      debugPrint('Error de conexion o parseo: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_blobUrl != null && kIsWeb) {
+      html.Url.revokeObjectUrl(_blobUrl!);
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Documento: ${widget.tipo}', style: const TextStyle(fontFamily: 'BodoniModa', fontWeight: FontWeight.bold)),
+      content: SizedBox(
+        width: 600,
+        height: 600,
+        child: _isLoading 
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null 
+                ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+                : widget.isPdf 
+                    ? (kIsWeb && _viewId != null) 
+                        ? HtmlElementView(viewType: _viewId!)
+                        : const Center(child: Text('La visualización de PDF solo está soportada en Web.'))
+                    : Image.memory(_bytes!, fit: BoxFit.contain),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cerrar'),
+        ),
+      ],
     );
   }
 }

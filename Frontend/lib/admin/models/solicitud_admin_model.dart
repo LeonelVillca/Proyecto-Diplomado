@@ -7,6 +7,8 @@ class SolicitudAdminModel {
   final String fechaSolicitud;
   final String? fechaRevision;
   final String? motivoRechazo;
+  final String? nitNegocio;
+  final List<dynamic>? documentosAdjuntos;
   final Map<String, dynamic>? usuario;
 
   SolicitudAdminModel({
@@ -18,6 +20,8 @@ class SolicitudAdminModel {
     required this.fechaSolicitud,
     this.fechaRevision,
     this.motivoRechazo,
+    this.nitNegocio,
+    this.documentosAdjuntos,
     this.usuario,
   });
 
@@ -31,6 +35,8 @@ class SolicitudAdminModel {
       fechaSolicitud: json['fecha'] ?? '',
       fechaRevision: json['fechaRevision'],
       motivoRechazo: json['motivoRechazo'],
+      nitNegocio: json['nitNegocio'],
+      documentosAdjuntos: json['documentosAdjuntos'],
       usuario: json['usuario'],
     );
   }

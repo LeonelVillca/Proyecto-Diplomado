@@ -6,6 +6,7 @@ import 'movil/providers/auth_provider.dart';
 import 'movil/providers/favorites_provider.dart';
 import 'movil/screens/root_screen.dart';
 import 'admin/screens/landing_screen.dart';
+import 'admin/screens/crear_contrasena_screen.dart';
 
 /// Configuración principal de la aplicación (MaterialApp).
 class App extends StatelessWidget {
@@ -36,6 +37,16 @@ class App extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           home: initialScreen ?? (kIsWeb ? const AdminLandingScreen() : const RootScreen()),
+          onGenerateRoute: (settings) {
+            if (settings.name != null && settings.name!.startsWith('/crear-contrasena')) {
+              final uri = Uri.parse(settings.name!);
+              final token = uri.queryParameters['token'];
+              return MaterialPageRoute(
+                builder: (context) => CrearContrasenaScreen(token: token),
+              );
+            }
+            return null;
+          },
         ),
       ),
     );

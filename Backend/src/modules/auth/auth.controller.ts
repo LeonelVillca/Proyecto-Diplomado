@@ -12,6 +12,7 @@ import { AuthService, UsuarioPublico } from './auth.service';
 import { RegistroDto } from './dto/registro.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
+import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 interface RequestConUsuario {
@@ -38,6 +39,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('crear-contrasena')
+  @HttpCode(HttpStatus.OK)
+  crearContrasena(@Body() dto: CrearContrasenaDto) {
+    return this.authService.crearContrasena(dto);
   }
 
   @UseGuards(JwtAuthGuard)

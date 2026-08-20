@@ -50,6 +50,15 @@ roles a la vez (relación muchos-a-muchos entre usuarios y roles):
 - **El JWT propio se guarda en storage seguro** (`flutter_secure_storage`),
   no en `shared_preferences` ni en variables de memoria; al abrir la app se
   valida contra `GET /auth/perfil` y ante 401 se limpia la sesión.
+- **19/08/2026 — Arquitectura de Almacenamiento (público vs privado)**. La
+  gestión de archivos en disco se organiza estrictamente por ID de entidad.
+  Existe separación absoluta: `storage/publico/` (servido estáticamente, para
+  fotos/menús) y `storage/privado/` (NUNCA estático, acceso por Controller+Guard,
+  para CI/NIT). Los nombres de archivos se renuevan siempre por UUID.
+- **19/08/2026 — Autoservicio de acceso Admin**. El login del panel Admin ya
+  no depende de que el Admin_Sistema cree contraseñas manualmente. Ahora es
+  autoservicio vía invitación (creación de contraseña con token en tabla
+  `invitacion_token`).
 
 ## 4. Estado actual del backend
 
