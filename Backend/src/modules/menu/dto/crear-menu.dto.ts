@@ -7,7 +7,32 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateNested,
+  IsArray,
 } from 'class-validator';
+
+export class PlatoDetalleDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150)
+  nombre: string;
+
+  @Type(() => Number)
+  @Min(0)
+  precio: number;
+
+  @IsOptional()
+  @IsString()
+  descripcion?: string;
+
+  @IsOptional()
+  @IsString()
+  fotoUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  disponible?: boolean;
+}
 
 export class CrearMenuDto {
   @Type(() => Number)
@@ -33,4 +58,10 @@ export class CrearMenuDto {
   @IsOptional()
   @IsBoolean()
   disponibilidad?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PlatoDetalleDto)
+  platos?: PlatoDetalleDto[];
 }

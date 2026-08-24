@@ -262,47 +262,52 @@ class _UsuariosRolesScreenState extends State<UsuariosRolesScreen> {
         // 2. Barra de Filtros
         Row(
           children: [
-            Expanded(
-              flex: 2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search, color: Color(0xFFA39C98)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 1; }),
-                        style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF1E1B1A)),
-                        decoration: InputDecoration(
-                          hintText: 'Buscar por nombre, correo...',
-                          hintStyle: GoogleFonts.manrope(color: const Color(0xFFA39C98)),
-                          border: InputBorder.none,
-                          isDense: true,
-                        ),
+            Container(
+              width: 400,
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.search, color: Color(0xFFA39C98), size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 1; }),
+                      style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF1E1B1A)),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar por nombre, correo...',
+                        hintStyle: GoogleFonts.manrope(color: const Color(0xFFA39C98)),
+                        border: InputBorder.none,
+                        isDense: true,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              height: 48,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 4, offset: Offset(0, 2))],
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _filtroEstado,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFA39C98)),
+                  icon: const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: Icon(Icons.keyboard_arrow_down, color: Color(0xFFA39C98), size: 20),
+                  ),
                   style: GoogleFonts.manrope(color: const Color(0xFF1E1B1A), fontSize: 14, fontWeight: FontWeight.w600),
                   items: ['Todos', 'Activos', 'Inactivos'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                   onChanged: (v) => setState(() { _filtroEstado = v!; _currentPage = 1; }),

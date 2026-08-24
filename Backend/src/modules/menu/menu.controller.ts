@@ -59,6 +59,16 @@ export class MenuController {
 
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('menu')
+  @Patch(':id/disponibilidad')
+  async cambiarDisponibilidad(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('disponibilidad') disponibilidad: boolean,
+  ): Promise<Menu> {
+    return this.menuService.actualizar(id, { disponibilidad });
+  }
+
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('menu')
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.menuService.eliminar(id);

@@ -34,6 +34,9 @@ export class Restaurante {
   @Column({ name: 'foto_portada', type: 'varchar', length: 255, nullable: true })
   fotoPortada: string | null;
 
+  @Column({ name: 'logo', type: 'varchar', length: 255, nullable: true })
+  logo: string | null;
+
   @Column({ name: 'estado', type: 'boolean', default: true })
   estado: boolean;
 }

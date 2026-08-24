@@ -383,8 +383,10 @@ class AuthScope extends InheritedNotifier<AuthProvider> {
     required super.child,
   }) : super(notifier: authProvider);
 
-  static AuthProvider of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<AuthScope>();
+  static AuthProvider of(BuildContext context, {bool listen = true}) {
+    final scope = listen
+        ? context.dependOnInheritedWidgetOfExactType<AuthScope>()
+        : context.getInheritedWidgetOfExactType<AuthScope>();
     assert(scope != null, 'Se requiere un AuthScope por encima del widget.');
     return scope!.notifier!;
   }

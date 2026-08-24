@@ -14,6 +14,7 @@ import { Rol } from '../rol/rol.entity';
 import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 import { InvitacionToken } from '../invitacion-token/invitacion-token.entity';
 import { MailService } from '../mail/mail.service';
+import { Restaurante } from '../restaurante/restaurante.entity';
 
 @Injectable()
 export class SolicitudService {
@@ -173,6 +174,19 @@ export class SolicitudService {
 
       // Enviamos el correo real
       await this.mailService.enviarInvitacion(solicitud.usuario.correo, tokenStr);
+
+      // Crear Restaurante asociado automáticamente
+      const nuevoRestaurante = this.dataSource.manager.create(Restaurante, {
+        solicitud: { id: solicitud.id },
+        nombre: solicitud.nombreRestaurante,
+        tipoComida: solicitud.tipoComida,
+        descripcion: solicitud.descripcion,
+        telefono: solicitud.celularContacto,
+        correo: solicitud.usuario.correo,
+      });
+      await this.dataSource.manager.save(nuevoRestaurante).catch((e) => {
+        console.error('Error creando restaurante automático:', e);
+      });
     } else if (estadoAnterior === 'pendiente' && dto.estado === 'rechazada') {
       const uploadDir = path.join(process.cwd(), 'storage', 'privado', 'solicitudes', solicitud.id.toString());
       try {

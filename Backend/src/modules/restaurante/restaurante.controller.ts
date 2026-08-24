@@ -9,7 +9,11 @@ import {
   Post,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
 } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
@@ -61,5 +65,38 @@ export class RestauranteController {
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.restauranteService.eliminar(id);
+  }
+
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('restaurante')
+  @Post(':id/portada')
+  @UseInterceptors(FileInterceptor('file'))
+  subirPortada(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Restaurante> {
+    return this.restauranteService.subirPortada(id, file);
+  }
+
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('restaurante')
+  @Post(':id/logo')
+  @UseInterceptors(FileInterceptor('file'))
+  subirLogo(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<Restaurante> {
+    return this.restauranteService.subirLogo(id, file);
+  }
+
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('restaurante')
+  @Post(':id/galeria')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  subirGaleria(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<Restaurante> {
+    return this.restauranteService.subirGaleria(id, files);
   }
 }

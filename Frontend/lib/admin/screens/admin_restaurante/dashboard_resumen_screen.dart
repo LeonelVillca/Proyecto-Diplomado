@@ -399,7 +399,7 @@ class _ReservaRowState extends State<_ReservaRow> {
         child: Row(
           children: [
             Expanded(
-              flex: 2,
+              flex: 3,
               child: Row(
                 children: [
                   Container(
@@ -488,7 +488,7 @@ class _ReservaRowState extends State<_ReservaRow> {
               ),
             ),
             Expanded(
-              flex: 1,
+              flex: 2,
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(

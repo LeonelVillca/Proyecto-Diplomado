@@ -3,9 +3,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Restaurante } from '../restaurante/restaurante.entity';
+import { Plato } from '../plato/plato.entity';
 
 @Entity('menu')
 export class Menu {
@@ -27,4 +29,7 @@ export class Menu {
 
   @Column({ name: 'disponibilidad', type: 'boolean', default: true })
   disponibilidad: boolean;
+
+  @OneToMany(() => Plato, plato => plato.menu)
+  platos: Plato[];
 }

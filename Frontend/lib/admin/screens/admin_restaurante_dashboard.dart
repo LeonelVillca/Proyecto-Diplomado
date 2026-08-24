@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import '../../core/network/api_endpoints.dart';
 import '../../movil/providers/auth_provider.dart';
+import '../models/perfil_restaurante_model.dart';
+import 'onboarding_restaurante_screen.dart';
 import '../widgets/admin_shell.dart';
 import 'admin_login_screen.dart';
 import 'admin_restaurante/dashboard_resumen_screen.dart';
-import 'gestion_menus_screen.dart';
+import 'menus/gestion_menus_screen.dart';
 import 'gestion_mesas_screen.dart';
 import 'gestion_reservas_screen.dart';
 import 'gestion_resenas_screen.dart';
@@ -19,9 +24,43 @@ class AdminRestauranteDashboard extends StatefulWidget {
       _AdminRestauranteDashboardState();
 }
 
-class _AdminRestauranteDashboardState
-    extends State<AdminRestauranteDashboard> {
+class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
   int _selectedIndex = 0;
+  bool _isLoadingStatus = true;
+  bool _needsOnboarding = false;
+  PerfilRestauranteModel? _restaurante;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkOnboardingStatus();
+    });
+  }
+
+  Future<void> _checkOnboardingStatus() async {
+    try {
+      final token = AuthScope.of(context, listen: false).token;
+      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/mis-restaurantes');
+      final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
+        if (data.isNotEmpty) {
+          _restaurante = PerfilRestauranteModel.fromJson(data.first);
+          if (_restaurante!.fotoPortada == null || 
+              _restaurante!.fotoPortada!.isEmpty || 
+              _restaurante!.fotoPortada == 'null') {
+            _needsOnboarding = true;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoadingStatus = false);
+    }
+  }
 
   // ── índice 0 = nueva pantalla resumen ─────────────────────
   // ── índice 1 = Perfil (desplazado desde 0) ────────────────
@@ -103,6 +142,20 @@ class _AdminRestauranteDashboardState
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingStatus) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF0F2F5),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39))),
+      );
+    }
+
+    if (_needsOnboarding && _restaurante != null) {
+      return OnboardingRestauranteScreen(
+        restaurante: _restaurante!,
+        onCompleted: () => setState(() => _needsOnboarding = false),
+      );
+    }
+
     final auth = AuthScope.of(context);
     final nombre = auth.displayName ?? 'Restaurantero';
     final correo = auth.email ?? 'restaurante@mesachapaca.com';

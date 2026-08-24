@@ -35,4 +35,7 @@ export class Plato {
 
   @Column({ name: 'disponible', type: 'boolean', default: true })
   disponible: boolean;
+
+  @Column({ name: 'foto_url', type: 'varchar', nullable: true })
+  fotoUrl: string | null;
 }
