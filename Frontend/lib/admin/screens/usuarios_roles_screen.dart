@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../../core/network/api_endpoints.dart';
 import '../../movil/providers/auth_provider.dart';
@@ -17,6 +19,11 @@ class _UsuariosRolesScreenState extends State<UsuariosRolesScreen> {
   List<UsuarioAdminModel> _usuarios = [];
   List<RolModel> _rolesDisponibles = [];
   bool _isInit = true;
+
+  String _searchQuery = '';
+  String _filtroEstado = 'Todos';
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
 
   @override
   void didChangeDependencies() {
@@ -185,66 +192,380 @@ class _UsuariosRolesScreenState extends State<UsuariosRolesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Filtrado
+    List<UsuarioAdminModel> filtrados = _usuarios.where((u) {
+      final matchText = _searchQuery.isEmpty || 
+          u.nombre.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+          (u.apellido ?? '').toLowerCase().contains(_searchQuery.toLowerCase()) || 
+          u.correo.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchText;
+    }).toList();
+
+    // Paginación
+    final totalItems = filtrados.length;
+    final totalPages = math.max(1, (totalItems / _itemsPerPage).ceil());
+    final startIndex = (_currentPage - 1) * _itemsPerPage;
+    final endIndex = math.min(startIndex + _itemsPerPage, totalItems);
+    final paginatedUsuarios = startIndex < totalItems ? filtrados.sublist(startIndex, endIndex) : <UsuarioAdminModel>[];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Usuarios y Roles',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Colors.black87),
+        // 1. Cabecera y Botón
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Gestión de Usuarios',
+                  style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Administra los roles y accesos del sistema.',
+                  style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14),
+                ),
+              ],
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF6E1E39), Color(0xFF8B2648)]),
+                borderRadius: BorderRadius.circular(50),
+                boxShadow: [BoxShadow(color: const Color(0xFF6E1E39).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(50),
+                  onTap: () {
+                    // TODO: Acción de registrar nuevo usuario
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.add, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Text('Registrar nuevo usuario', style: GoogleFonts.manrope(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Gestiona los accesos y permisos administrativos de la plataforma.',
-          style: TextStyle(color: Colors.grey.shade600, fontFamily: 'Karla', fontSize: 14),
-        ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _usuarios.isEmpty
-                  ? Center(child: Text('No se encontraron usuarios', style: TextStyle(fontFamily: 'Karla', color: Colors.grey.shade500)))
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey.shade200),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: ListView.separated(
-                        itemCount: _usuarios.length,
-                        separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey.shade100),
-                        itemBuilder: (context, index) {
-                          final user = _usuarios[index];
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.grey.shade100,
-                              foregroundColor: const Color(0xFF6B1A35),
-                              child: Text(user.nombre[0].toUpperCase()),
-                            ),
-                            title: Text(
-                              '${user.nombre} ${user.apellido ?? ''}'.trim(),
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Karla', fontSize: 15, color: Colors.black87),
-                            ),
-                            subtitle: Text(
-                              user.correo,
-                              style: TextStyle(color: Colors.grey.shade500, fontFamily: 'Karla', fontSize: 13),
-                            ),
-                            trailing: OutlinedButton(
-                              onPressed: () => _administrarRoles(user),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF6B1A35),
-                                side: BorderSide(color: Colors.grey.shade300),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                              ),
-                              child: const Text('Editar Roles', style: TextStyle(fontFamily: 'Karla', fontSize: 13, fontWeight: FontWeight.bold)),
-                            ),
-                          );
-                        },
+        // 2. Barra de Filtros
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Color(0xFFA39C98)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 1; }),
+                        style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF1E1B1A)),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar por nombre, correo...',
+                          hintStyle: GoogleFonts.manrope(color: const Color(0xFFA39C98)),
+                          border: InputBorder.none,
+                          isDense: true,
+                        ),
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _filtroEstado,
+                  icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFA39C98)),
+                  style: GoogleFonts.manrope(color: const Color(0xFF1E1B1A), fontSize: 14, fontWeight: FontWeight.w600),
+                  items: ['Todos', 'Activos', 'Inactivos'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                  onChanged: (v) => setState(() { _filtroEstado = v!; _currentPage = 1; }),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // 3. Tabla Corporativa
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 4))],
+            ),
+            child: Column(
+              children: [
+                // Cabeceras (th)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFAF8F5),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(flex: 2, child: Text('USUARIO', style: _headerStyle())),
+                      Expanded(flex: 2, child: Text('CORREO', style: _headerStyle())),
+                      Expanded(flex: 1, child: Text('ROLES', style: _headerStyle())),
+                      SizedBox(width: 120, child: Text('ACCIONES', style: _headerStyle(), textAlign: TextAlign.center)),
+                    ],
+                  ),
+                ),
+                // Filas
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39)))
+                      : paginatedUsuarios.isEmpty
+                          ? Center(child: Text('No se encontraron usuarios', style: GoogleFonts.manrope(color: const Color(0xFFA39C98))))
+                          : ListView.builder(
+                              itemCount: paginatedUsuarios.length,
+                              itemBuilder: (context, index) {
+                                final user = paginatedUsuarios[index];
+                                return _buildTableRow(user, index < paginatedUsuarios.length - 1);
+                              },
+                            ),
+                ),
+                // 4. Paginador Estándar
+                if (totalItems > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    decoration: const BoxDecoration(
+                      border: Border(top: BorderSide(color: Color(0xFFF0F2F5))),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Mostrando ${startIndex + 1}–$endIndex de $totalItems',
+                          style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 13),
+                        ),
+                        Row(
+                          children: [
+                            _buildPageBtn('Anterior', _currentPage > 1 ? () => setState(() => _currentPage--) : null),
+                            const SizedBox(width: 8),
+                            Builder(
+                              builder: (context) {
+                                int startPage = math.max(1, _currentPage - 2);
+                                int endPage = math.min(totalPages, startPage + 4);
+                                if (endPage - startPage < 4) {
+                                  startPage = math.max(1, endPage - 4);
+                                }
+                                return Row(
+                                  children: List.generate(endPage - startPage + 1, (i) {
+                                    final page = startPage + i;
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                                      child: _buildPageNum(page, _currentPage == page),
+                                    );
+                                  }),
+                                );
+                              }
+                            ),
+                            const SizedBox(width: 8),
+                            _buildPageBtn('Siguiente', _currentPage < totalPages ? () => setState(() => _currentPage++) : null),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  TextStyle _headerStyle() => GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: const Color(0xFFA39C98), letterSpacing: 1);
+
+  Widget _buildTableRow(UsuarioAdminModel user, bool showDivider) {
+    return _TableRowHover(
+      showDivider: showDivider,
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: const Color(0xFFFCF4F7),
+                  foregroundColor: const Color(0xFF6E1E39),
+                  child: Text(user.nombre[0].toUpperCase(), style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${user.nombre} ${user.apellido ?? ''}'.trim(),
+                    style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: const Color(0xFF1E1B1A), fontSize: 14),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              user.correo,
+              style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14, fontWeight: FontWeight.w500),
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFF0F2F5), borderRadius: BorderRadius.circular(50)),
+                child: Text('Ver roles', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF6B635E))),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 120,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _ActionIcon(icon: Icons.remove_red_eye_outlined, onTap: () => _administrarRoles(user)),
+                const SizedBox(width: 8),
+                _ActionIcon(icon: Icons.edit_outlined, onTap: () => _administrarRoles(user)),
+                const SizedBox(width: 8),
+                _ActionIcon(icon: Icons.delete_outline, isDanger: true, onTap: () {}),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageBtn(String text, VoidCallback? onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Text(text, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: onTap == null ? const Color(0xFFD1D5DB) : const Color(0xFF1E1B1A))),
+      ),
+    );
+  }
+
+  Widget _buildPageNum(int page, bool isActive) {
+    return InkWell(
+      onTap: () => setState(() => _currentPage = page),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        width: 32, height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF6E1E39) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          page.toString(),
+          style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, color: isActive ? Colors.white : const Color(0xFF6B635E)),
+        ),
+      ),
+    );
+  }
+}
+
+class _TableRowHover extends StatefulWidget {
+  final Widget child;
+  final bool showDivider;
+  const _TableRowHover({required this.child, required this.showDivider});
+
+  @override
+  State<_TableRowHover> createState() => _TableRowHoverState();
+}
+
+class _TableRowHoverState extends State<_TableRowHover> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        decoration: BoxDecoration(
+          color: _hover ? const Color(0xFFF8FAFC) : Colors.white,
+          border: widget.showDivider ? const Border(bottom: BorderSide(color: Color(0xFFF0F2F5))) : null,
+        ),
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class _ActionIcon extends StatefulWidget {
+  final IconData icon;
+  final bool isDanger;
+  final VoidCallback onTap;
+  const _ActionIcon({required this.icon, required this.onTap, this.isDanger = false});
+
+  @override
+  State<_ActionIcon> createState() => _ActionIconState();
+}
+
+class _ActionIconState extends State<_ActionIcon> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = widget.isDanger 
+        ? (_hover ? Colors.white : const Color(0xFFEF4444)) 
+        : (_hover ? const Color(0xFF6E1E39) : const Color(0xFF6B635E));
+    final bg = widget.isDanger
+        ? (_hover ? const Color(0xFFEF4444) : const Color(0xFFFEF2F2))
+        : (_hover ? const Color(0xFFFCF4F7) : const Color(0xFFF0F2F5));
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 32, height: 32,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(widget.icon, size: 16, color: fg),
+        ),
+      ),
     );
   }
 }

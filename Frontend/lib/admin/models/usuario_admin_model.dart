@@ -18,9 +18,9 @@ class UsuarioAdminModel {
   factory UsuarioAdminModel.fromJson(Map<String, dynamic> json) {
     return UsuarioAdminModel(
       id: json['id'],
-      nombre: json['nombre'],
+      nombre: json['nombre'] ?? 'Sin nombre',
       apellido: json['apellido'],
-      correo: json['correo'],
+      correo: json['correo'] ?? 'Sin correo',
       estado: json['estado'] ?? 'inactivo',
       fechaRegistro: json['fechaRegistro'] ?? '',
     );
@@ -41,7 +41,7 @@ class RolModel {
   factory RolModel.fromJson(Map<String, dynamic> json) {
     return RolModel(
       id: json['id'],
-      nombre: json['nombre'],
+      nombre: json['nombre'] ?? 'Sin nombre',
       descripcion: json['descripcion'],
     );
   }

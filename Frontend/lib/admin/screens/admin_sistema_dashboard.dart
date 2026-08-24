@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../movil/providers/auth_provider.dart';
 import '../widgets/admin_shell.dart';
+import 'admin_login_screen.dart';
 import 'moderacion_screen.dart';
 import 'solicitudes_screen.dart';
 import 'usuarios_roles_screen.dart';
@@ -46,25 +47,21 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
     return AdminShell(
       selectedIndex: _selectedIndex,
       onItemSelected: (i) => setState(() => _selectedIndex = i),
-      onLogout: () => auth.signOut(),
+      onLogout: () async {
+        await auth.signOut();
+        if (context.mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+            (route) => false,
+          );
+        }
+      },
       sections: _sections,
       nombreUsuario: nombre,
       correoUsuario: correo,
       rolLabel: 'Admin Sistema',
-      body: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.all(Radius.circular(20)),
-          boxShadow: [
-            BoxShadow(color: Color(0x0C000000), blurRadius: 12, offset: Offset(0, 2)),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: _screens[_selectedIndex],
-        ),
-      ),
+      body: _screens[_selectedIndex],
     );
   }
 }

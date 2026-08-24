@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-// ─────────────────────────────────────────────────────────────
-//  MODELOS DE DATOS
-// ─────────────────────────────────────────────────────────────
 class SidebarItem {
   final IconData icon;
   final String label;
@@ -22,39 +20,34 @@ class SidebarSection {
   const SidebarSection({required this.title, required this.items});
 }
 
-// ─────────────────────────────────────────────────────────────
-//  TOKENS DE DISEÑO — Mesa Chapaca Bento UI
-// ─────────────────────────────────────────────────────────────
 abstract class _C {
-  // Paleta marca
-  static const brand    = Color(0xFF6B1A35);
-  static const brandBg  = Color(0xFFF6EEF1);
+  static const bgBody   = Color(0xFFF0F2F5);
+  static const surface  = Color(0xFFFFFFFF);
 
-  // Grises
-  static const bg       = Color(0xFFF5F6F8);
-  static const surface  = Colors.white;
-  static const border   = Color(0xFFEAEBEF);
+  static const brandMain = Color(0xFF6E1E39);
+  static const brandDark = Color(0xFF2D0A14);
+  static const goldMain  = Color(0xFFC9974F);
 
-  // Texto
-  static const txDark   = Color(0xFF111827); // slate-900
-  static const txMid    = Color(0xFF6B7280); // slate-500
-  static const txMuted  = Color(0xFF9CA3AF); // slate-400
+  static const textDark  = Color(0xFF1E1B1A);
+  static const textMuted = Color(0xFF6B635E);
+  static const textLight = Color(0xFFA39C98);
 
-  // Sombras
-  static const shadowSm = [
-    BoxShadow(color: Color(0x0C000000), blurRadius: 12, offset: Offset(0, 2)),
+  static const errorRed  = Color(0xFFE74C3C);
+
+  static const shadowFloat = [
+    BoxShadow(
+      color:       Color(0x0F1E293B),
+      blurRadius:  24,
+      offset:      Offset(0, 12),
+      spreadRadius: -8,
+    ),
   ];
-  static const shadowMd = [
-    BoxShadow(color: Color(0x14000000), blurRadius: 24, offset: Offset(0, 4)),
-  ];
 
-  // Font
-  static const font = 'Karla';
+  static const double radiusCard    = 20.0;
+  static const double radiusBtn     = 12.0;
+  static const double radiusPill    = 50.0;
 }
 
-// ─────────────────────────────────────────────────────────────
-//  ADMIN SHELL — Layout Maestro Bento
-// ─────────────────────────────────────────────────────────────
 class AdminShell extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
@@ -80,22 +73,19 @@ class AdminShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _C.bg,
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Sidebar flotante ─────────────────────────
-            _BentoSidebar(
-              selectedIndex: selectedIndex,
-              sections: sections,
-              onItemSelected: onItemSelected,
-              onLogout: onLogout,
-            ),
-            const SizedBox(width: 12),
-            // ── Área de contenido ─────────────────────────
-            Expanded(
+      backgroundColor: _C.bgBody,
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _BentoSidebar(
+            selectedIndex: selectedIndex,
+            sections: sections,
+            onItemSelected: onItemSelected,
+            onLogout: onLogout,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16, left: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -110,16 +100,13 @@ class AdminShell extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  SIDEBAR — Tarjeta flotante con Bento style
-// ─────────────────────────────────────────────────────────────
 class _BentoSidebar extends StatelessWidget {
   final int selectedIndex;
   final List<SidebarSection> sections;
@@ -137,71 +124,91 @@ class _BentoSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 238,
+      margin: const EdgeInsets.only(left: 16, top: 16, bottom: 16),
       decoration: BoxDecoration(
         color: _C.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: _C.shadowSm,
+        borderRadius: BorderRadius.circular(_C.radiusCard),
+        boxShadow: _C.shadowFloat,
       ),
-      padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
+      padding: const EdgeInsets.only(top: 22, bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Logo ─────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+            padding: const EdgeInsets.fromLTRB(18, 0, 16, 20),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 46,
+                  height: 46,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _C.brand, width: 2.2),
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8A2547), Color(0xFF6E1E39)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color:      Color(0x406E1E39),
+                        blurRadius: 16,
+                        offset:     Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: const Center(
                     child: Icon(
-                      Icons.restaurant_menu_outlined,
-                      color: _C.brand,
-                      size: 18,
+                      Icons.restaurant_menu_rounded,
+                      color: Colors.white,
+                      size: 22,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Mesa Chapaca',
-                  style: TextStyle(
-                    fontFamily: _C.font,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15.5,
-                    color: _C.txDark,
-                    letterSpacing: -0.1,
-                  ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Mesa Chapaca',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF2D0A14),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Text(
+                      'OPERACIONES',
+                      style: GoogleFonts.manrope(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.0,
+                        color: const Color(0xFF6E1E39),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-
-          // ── Secciones ─────────────────────────────────
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               children: [
                 for (final section in sections) ...[
-                  // Label de sección
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 14, 8, 6),
+                    padding: const EdgeInsets.fromLTRB(10, 14, 10, 4),
                     child: Text(
                       section.title,
-                      style: const TextStyle(
-                        fontFamily: _C.font,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                        color: _C.txMuted,
+                      style: GoogleFonts.manrope(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                        color: const Color(0xFFA39C98),
                       ),
                     ),
                   ),
-                  // Ítems
                   ...section.items.map(
                     (item) => _BentoNavItem(
                       item: item,
@@ -213,19 +220,20 @@ class _BentoSidebar extends StatelessWidget {
               ],
             ),
           ),
-
-          // ── Tarjeta inferior ──────────────────────────
-          const SizedBox(height: 12),
-          _SidebarPromoCard(onLogout: onLogout),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Divider(height: 1, color: Color(0xFFEEECEB)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: _LogoutNavItem(onLogout: onLogout),
+          ),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  ÍTEM DEL SIDEBAR — Solo barra lateral + color, sin rectángulo
-// ─────────────────────────────────────────────────────────────
 class _BentoNavItem extends StatefulWidget {
   final SidebarItem item;
   final bool isSelected;
@@ -246,89 +254,88 @@ class _BentoNavItemState extends State<_BentoNavItem> {
 
   @override
   Widget build(BuildContext context) {
-    final active = widget.isSelected;
+    final active  = widget.isSelected;
     final hovered = _hovered && !active;
 
-    final Color iconColor = active
-        ? _C.brand
-        : hovered
-            ? _C.txDark
-            : _C.txMid;
-
-    final Color textColor = active
-        ? _C.brand
-        : hovered
-            ? _C.txDark
-            : _C.txMid;
-
-    final FontWeight fontWeight =
-        active ? FontWeight.w700 : FontWeight.w500;
+    final Color iconColor = active ? Colors.white : (hovered ? _C.brandMain : _C.textMuted);
+    final Color textColor = active ? Colors.white : (hovered ? _C.brandMain : _C.textDark);
+    final FontWeight fw   = active ? FontWeight.w700 : (hovered ? FontWeight.w700 : FontWeight.w600);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1.5),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: MouseRegion(
         onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
+        onExit:  (_) => setState(() => _hovered = false),
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: widget.onTap,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeInOut,
-            decoration: BoxDecoration(
-              color: hovered
-                  ? const Color(0xFFF9FAFB)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.translationValues(hovered ? 4.0 : 0.0, 0.0, 0.0),
             child: Stack(
-              alignment: Alignment.centerLeft,
               children: [
-                // Contenido del ítem
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: hovered ? const Color(0xFFFCF4F7) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(_C.radiusBtn),
+                  ),
                   child: Row(
                     children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 180),
-                        child: Icon(
-                          widget.item.icon,
-                          key: ValueKey(active),
-                          size: 17,
-                          color: iconColor,
-                        ),
-                      ),
-                      const SizedBox(width: 11),
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 180),
-                        style: TextStyle(
-                          fontFamily: _C.font,
-                          fontSize: 13.5,
-                          fontWeight: fontWeight,
-                          color: textColor,
-                        ),
-                        child: Text(widget.item.label),
-                      ),
+                      Icon(widget.item.icon, size: 18, color: Colors.transparent),
+                      const SizedBox(width: 10),
+                      Text(widget.item.label, style: const TextStyle(fontSize: 14.0, color: Colors.transparent)),
                     ],
                   ),
                 ),
-                // Barra indicadora izquierda (solo activo)
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 200),
-                  opacity: active ? 1.0 : 0.0,
-                  child: Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: Container(
-                        width: 3.5,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          color: _C.brand,
-                          borderRadius: BorderRadius.circular(99),
+                Positioned.fill(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 250),
+                    opacity: active ? 1.0 : 0.0,
+                    curve: Curves.easeOut,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(_C.radiusBtn),
+                        gradient: const LinearGradient(
+                          colors: [_C.brandMain, _C.brandDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x336E1E39),
+                            blurRadius: 16,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
                       ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Row(
+                      children: [
+                        AnimatedTheme(
+                          duration: const Duration(milliseconds: 200),
+                          data: ThemeData(iconTheme: IconThemeData(color: iconColor)),
+                          child: Icon(widget.item.icon, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          style: GoogleFonts.manrope(
+                            fontSize: 14.0,
+                            fontWeight: fw,
+                            color: textColor,
+                          ),
+                          child: Text(widget.item.label),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -341,104 +348,64 @@ class _BentoNavItemState extends State<_BentoNavItem> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  TARJETA PROMO / LOGOUT en el footer del sidebar
-// ─────────────────────────────────────────────────────────────
-class _SidebarPromoCard extends StatefulWidget {
+class _LogoutNavItem extends StatefulWidget {
   final VoidCallback onLogout;
-  const _SidebarPromoCard({required this.onLogout});
+  const _LogoutNavItem({required this.onLogout});
 
   @override
-  State<_SidebarPromoCard> createState() => _SidebarPromoCardState();
+  State<_LogoutNavItem> createState() => _LogoutNavItemState();
 }
 
-class _SidebarPromoCardState extends State<_SidebarPromoCard> {
-  bool _hoverBtn = false;
+class _LogoutNavItemState extends State<_LogoutNavItem> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5C1529), Color(0xFF8C2040)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    final Color fgColor = _hovered ? _C.errorRed : _C.textMuted;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit:  (_) => setState(() => _hovered = false),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: widget.onLogout,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            // Aquí usamos _hovered en lugar de hovered
+            transform: Matrix4.translationValues(_hovered ? 2.0 : 0.0, 0.0, 0.0),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: _hovered ? _C.errorRed.withValues(alpha: 0.08) : Colors.transparent,
+              borderRadius: BorderRadius.circular(_C.radiusBtn),
+            ),
+            child: Row(
+              children: [
+                AnimatedTheme(
+                  duration: const Duration(milliseconds: 200),
+                  data: ThemeData(iconTheme: IconThemeData(color: fgColor)),
+                  child: const Icon(Icons.logout_rounded, size: 18),
+                ),
+                const SizedBox(width: 10),
+                AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: GoogleFonts.manrope(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: fgColor,
+                  ),
+                  child: const Text('Cerrar sesión'),
+                ),
+              ],
+            ),
+          ),
         ),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.shield_outlined,
-              color: Colors.white60, size: 22),
-          const SizedBox(height: 10),
-          const Text(
-            'Panel de Gestión',
-            style: TextStyle(
-              fontFamily: _C.font,
-              fontWeight: FontWeight.w800,
-              fontSize: 13.5,
-              color: Colors.white,
-              letterSpacing: -0.1,
-            ),
-          ),
-          const SizedBox(height: 3),
-          const Text(
-            'Mesa Chapaca Admin',
-            style: TextStyle(
-              fontFamily: _C.font,
-              fontSize: 11,
-              color: Colors.white54,
-            ),
-          ),
-          const SizedBox(height: 14),
-          MouseRegion(
-            onEnter: (_) => setState(() => _hoverBtn = true),
-            onExit: (_) => setState(() => _hoverBtn = false),
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: widget.onLogout,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
-                  color: _hoverBtn
-                      ? Colors.white.withValues(alpha: 0.28)
-                      : Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.logout_rounded,
-                        size: 13, color: Colors.white),
-                    SizedBox(width: 6),
-                    Text(
-                      'Cerrar sesión',
-                      style: TextStyle(
-                        fontFamily: _C.font,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────
-//  NAVBAR SUPERIOR — Elementos flotantes sobre fondo gris
-// ─────────────────────────────────────────────────────────────
 class _BentoNavbar extends StatelessWidget {
   final String nombreUsuario;
   final String correoUsuario;
@@ -454,211 +421,23 @@ class _BentoNavbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials =
-        nombreUsuario.isNotEmpty ? nombreUsuario[0].toUpperCase() : 'A';
-
     return SizedBox(
       height: 56,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Búsqueda tipo píldora ─────────────────────
-          Flexible(
-            flex: 2,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 220),
-              child: Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _C.surface,
-                  borderRadius: BorderRadius.circular(99),
-                  boxShadow: _C.shadowSm,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  children: [
-                    const Icon(Icons.search_rounded,
-                        size: 16, color: _C.txMuted),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        style: const TextStyle(
-                          fontFamily: _C.font,
-                          fontSize: 13,
-                          color: _C.txDark,
-                        ),
-                        decoration: const InputDecoration(
-                          hintText: 'Buscar...',
-                          hintStyle: TextStyle(
-                            fontFamily: _C.font,
-                            fontSize: 13,
-                            color: _C.txMuted,
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEAEBEF),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        '⌘ F',
-                        style: TextStyle(
-                          fontFamily: _C.font,
-                          fontSize: 10,
-                          color: _C.txMuted,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          const Spacer(),
-
-          // ── Botón circular: Mail ──────────────────────
-          _NavCircleBtn(
-            icon: Icons.mail_outline_rounded,
-            onTap: () {},
-          ),
-          const SizedBox(width: 8),
-
-          // ── Botón circular: Campana ───────────────────
           _NavCircleBtn(
             icon: Icons.notifications_none_rounded,
             onTap: () {},
             badge: true,
           ),
           const SizedBox(width: 12),
-
-          // ── Badge/Cápsula del usuario ─────────────────
-          PopupMenuButton<String>(
-            offset: const Offset(0, 50),
-            tooltip: '',
-            color: _C.surface,
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-            onSelected: (v) {
-              if (v == 'logout') onLogout();
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      nombreUsuario,
-                      style: const TextStyle(
-                        fontFamily: _C.font,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: _C.txDark,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      correoUsuario,
-                      style: const TextStyle(
-                        fontFamily: _C.font,
-                        fontSize: 12,
-                        color: _C.txMid,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Divider(height: 1, color: Color(0xFFEAEBEF)),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'logout',
-                child: const Row(
-                  children: [
-                    Icon(Icons.logout_rounded,
-                        size: 16, color: Colors.redAccent),
-                    SizedBox(width: 10),
-                    Text(
-                      'Cerrar sesión',
-                      style: TextStyle(
-                        fontFamily: _C.font,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
-              decoration: BoxDecoration(
-                color: _C.surface,
-                borderRadius: BorderRadius.circular(99),
-                boxShadow: _C.shadowSm,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Avatar
-                  CircleAvatar(
-                    radius: 15,
-                    backgroundColor: _C.brand,
-                    child: Text(
-                      initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12.5,
-                        fontFamily: _C.font,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 130),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nombreUsuario,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: _C.font,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12.5,
-                            color: _C.txDark,
-                          ),
-                        ),
-                        Text(
-                          correoUsuario,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: _C.font,
-                            fontSize: 10.5,
-                            color: _C.txMid,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.keyboard_arrow_down_rounded,
-                      size: 16, color: _C.txMuted),
-                ],
-              ),
-            ),
+          _ProfileCapsule(
+            nombreUsuario: nombreUsuario,
+            correoUsuario: correoUsuario,
+            rolLabel: rolLabel,
+            onLogout: onLogout,
           ),
         ],
       ),
@@ -666,9 +445,138 @@ class _BentoNavbar extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-//  BOTÓN CIRCULAR DE NAVBAR
-// ─────────────────────────────────────────────────────────────
+class _ProfileCapsule extends StatelessWidget {
+  final String nombreUsuario;
+  final String correoUsuario;
+  final String rolLabel;
+  final VoidCallback onLogout;
+
+  const _ProfileCapsule({
+    required this.nombreUsuario,
+    required this.correoUsuario,
+    required this.rolLabel,
+    required this.onLogout,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = nombreUsuario.isNotEmpty ? nombreUsuario[0].toUpperCase() : 'A';
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 54),
+      tooltip: '',
+      color: _C.surface,
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      onSelected: (v) {
+        if (v == 'logout') onLogout();
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                nombreUsuario,
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: _C.textDark,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                correoUsuario,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  color: _C.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Divider(height: 1, color: Color(0xFFEEECEB)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: [
+              const Icon(Icons.logout_rounded, size: 16, color: _C.errorRed),
+              const SizedBox(width: 10),
+              Text(
+                'Cerrar sesión',
+                style: GoogleFonts.manrope(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: _C.errorRed,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
+        decoration: BoxDecoration(
+          color: _C.surface,
+          borderRadius: BorderRadius.circular(_C.radiusPill),
+          boxShadow: _C.shadowFloat,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 15,
+              backgroundColor: _C.goldMain,
+              child: Text(
+                initials,
+                style: GoogleFonts.manrope(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 130),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nombreUsuario,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                      color: _C.textDark,
+                    ),
+                  ),
+                  Text(
+                    rolLabel,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      color: _C.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: _C.textLight),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _NavCircleBtn extends StatefulWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -689,18 +597,9 @@ class _NavCircleBtnState extends State<_NavCircleBtn> {
 
   @override
   Widget build(BuildContext context) {
-    Widget iconW = Icon(widget.icon, size: 18, color: _C.txMid);
-    if (widget.badge) {
-      iconW = Badge(
-        backgroundColor: _C.brand,
-        smallSize: 6.5,
-        child: iconW,
-      );
-    }
-
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onExit:  (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: widget.onTap,
@@ -709,13 +608,30 @@ class _NavCircleBtnState extends State<_NavCircleBtn> {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: _hovered
-                ? const Color(0xFFF0F1F3)
-                : _C.surface,
+            color: _hovered ? const Color(0xFFEFEDEC) : _C.surface,
             shape: BoxShape.circle,
-            boxShadow: _C.shadowSm,
+            boxShadow: _C.shadowFloat,
           ),
-          child: Center(child: iconW),
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Icon(widget.icon, size: 18, color: _C.textMuted),
+              if (widget.badge)
+                Positioned(
+                  top: 7,
+                  right: 7,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: _C.errorRed,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
