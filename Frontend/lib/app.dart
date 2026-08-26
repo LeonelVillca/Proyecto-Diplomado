@@ -1,42 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-import 'movil/core/theme.dart';
-import 'movil/providers/auth_provider.dart';
-import 'movil/providers/favorites_provider.dart';
-import 'movil/screens/root_screen.dart';
-import 'admin/screens/landing_screen.dart';
-import 'admin/screens/crear_contrasena_screen.dart';
+import 'package:frontend/core/movil/theme.dart';
+import 'package:frontend/controllers/movil/auth_controller.dart';
+import 'package:frontend/controllers/movil/favorites_controller.dart';
+import 'package:frontend/screens/movil/shell/root_screen.dart';
+import 'package:frontend/screens/admin/public/landing_screen.dart';
+import 'package:frontend/screens/admin/auth/crear_contrasena_screen.dart';
+
+/// Punto de entrada inteligente que decide qué interfaz mostrar.
+class ResponsiveEntryPoint extends StatelessWidget {
+  const ResponsiveEntryPoint({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    // Si estamos en Web pura o si la pantalla es de tamaño Tablet/PC
+    if (kIsWeb || width > 800) {
+      return const AdminLandingScreen();
+    }
+    // Si es un celular nativo
+    return const RootScreen();
+  }
+}
 
 /// Configuración principal de la aplicación (MaterialApp).
 class App extends StatelessWidget {
   const App({
     super.key,
-    this.authProvider,
-    this.favoritesStore,
+    this.authController,
+    this.favoritesController,
     this.initialScreen,
   });
 
   /// Proveedor de autenticación (se inyecta desde `main`).
-  final AuthProvider? authProvider;
+  final AuthController? authController;
 
   /// Guarda de favoritos (opcional para tests).
-  final FavoritesStore? favoritesStore;
+  final FavoritesController? favoritesController;
 
-  /// Pantalla inicial explícita (opcional para main_admin.dart o main_movil.dart).
+  /// Pantalla inicial explícita (opcional, aunque ya no la usaremos).
   final Widget? initialScreen;
 
   @override
   Widget build(BuildContext context) {
     return AuthScope(
-      authProvider: authProvider ?? AuthProvider(),
+      authController: authController ?? AuthController(),
       child: FavoritesScope(
-        favoritesStore: favoritesStore ?? FavoritesStore(),
+        favoritesController: favoritesController ?? FavoritesController(),
         child: MaterialApp(
           title: 'Mesa Chapaca',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
-          home: initialScreen ?? (kIsWeb ? const AdminLandingScreen() : const RootScreen()),
+          home: initialScreen ?? const ResponsiveEntryPoint(),
           onGenerateRoute: (settings) {
             if (settings.name != null && settings.name!.startsWith('/crear-contrasena')) {
               final uri = Uri.parse(settings.name!);

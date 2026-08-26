@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import * as express from 'express';
 
 import { AppModule } from './app.module';
 
@@ -26,6 +27,8 @@ async function bootstrap() {
   app.useStaticAssets(join(process.cwd(), 'storage', 'publico'), {
     prefix: '/publico/',
   });
+  
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
   const port = configService.get<number>('PORT', 3000);
   await app.listen(port, '0.0.0.0');

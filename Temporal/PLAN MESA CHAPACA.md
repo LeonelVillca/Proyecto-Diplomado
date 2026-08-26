@@ -257,142 +257,177 @@ cuántas sub-tareas más pequeñas propones dentro de la **Tarea A1** (la
 primera de la lista), y espera mi autorización para arrancar.
 
 
-# ACTUALIZACIÓN — Flujo real de Solicitud → Aprobación → Acceso
+Aquí tienes el prompt completo respetando cada una de tus instrucciones originales, incorporando al detalle la arquitectura y reglas de almacenamiento (publico/ vs privado/, IDs de entidad, UUIDs y seguridad) que definimos:
+
+ACTUALIZACIÓN — Flujo real de Solicitud → Aprobación → Acceso
 Este bloque CORRIGE y AMPLÍA las tareas D2, D3, D4 y E1 que ya están
 marcadas como completadas en el plan. No las tratamos como tareas nuevas
 desde cero — son enmiendas sobre código que ya existe y ya funciona
-parcialmente. **Antes de tocar nada, revisa cómo está construido D2, D3, D4
-y E1 actualmente y confírmame qué encontraste, antes de modificar.**
+parcialmente. Antes de tocar nada, revisa cómo está construido D2, D3, D4
+y E1 actualmente y confírmame qué encontraste, antes de modificar.
 
----
+REGLA DE ARQUITECTURA DE ALMACENAMIENTO (Aplica a todo el sistema)
+La gestión de archivos en disco se organiza estrictamente por ID de entidad, nunca por fechas (YYYY/MM/DD), y con separación absoluta entre recursos públicos y sensibles desde la raíz:
 
-## PASO 0 — Cambio de base de datos (bloqueante, hazlo primero)
+Plaintext
+storage/
+├── publico/                          ← Servido como estático (useStaticAssets)
+│   └── restaurantes/
+│       └── {id_restaurante}/
+│           ├── portada/
+│           │   └── {uuid}.webp
+│           ├── galeria/
+│           │   └── {uuid}.webp
+│           └── platos/
+│               └── {id_plato}/
+│                   └── {uuid}.webp
+│
+└── privado/                          ← NUNCA estático, acceso solo por Controller + Guard
+    └── solicitudes/
+        └── {id_solicitud}/
+            ├── nit-{uuid}.pdf
+            └── ci-{uuid}.pdf
+Nombres de archivo: Nunca usar el nombre original subido por el cliente. Renombrar siempre con UUID para evitar colisiones y path traversal.
 
+Base de Datos: Guardar únicamente la ruta relativa normalizada (ej: /privado/solicitudes/15/nit-uuid.pdf).
+
+Limpieza: En caso de rechazo o eliminación, borrar la carpeta completa del ID correspondiente (privado/solicitudes/{id_solicitud}/).
+
+PASO 0 — Cambio de base de datos (bloqueante, hazlo primero)
 Agrega esta tabla nueva a la base de datos (ejecútala en PostgreSQL,
 avísame para correrla yo mismo si prefieres que la ejecute manualmente en
 pgAdmin en vez de que la corras tú):
 
-```sql
+SQL
 CREATE TABLE invitacion_token (
   id_token          SERIAL PRIMARY KEY,
   id_usuario        INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
   token             VARCHAR(255) NOT NULL UNIQUE,
   tipo              VARCHAR(30) NOT NULL DEFAULT 'invitacion'
-                     CHECK (tipo IN ('invitacion', 'reset_password')),
+                    CHECK (tipo IN ('invitacion', 'reset_password')),
   usado             BOOLEAN NOT NULL DEFAULT false,
   fecha_creacion    TIMESTAMP NOT NULL DEFAULT now(),
   fecha_expiracion  TIMESTAMP NOT NULL
 );
 
 CREATE INDEX idx_invitacion_token_token ON invitacion_token(token);
-```
-
 Nota: esta misma tabla la vamos a reutilizar más adelante para
-"recuperar contraseña" (tipo `reset_password`) — no es exclusiva de la
+"recuperar contraseña" (tipo reset_password) — no es exclusiva de la
 invitación inicial, así que constrúyela pensando en ambos usos desde ya.
 
-Crea el módulo `invitacion-token` en el backend siguiendo la misma
+Crea el módulo invitacion-token en el backend siguiendo la misma
 estructura que los demás (entity, service — no necesita controller propio,
 lo usan otros services internamente).
 
----
-
-## Tarea D2-REV — Ampliar el formulario de "Comienza" con sub-paso de documentos
-
-Revisa el `POST /solicitud` actual. Debe pasar de guardar solo los campos
+Tarea D2-REV — Ampliar el formulario de "Comienza" con sub-paso de documentos
+Revisa el POST /solicitud actual. Debe pasar de guardar solo los campos
 livianos (nombre, apellido, correo, nombre_restaurante, teléfono, mensaje)
-a un flujo de 2 sub-pasos **dentro de la misma pantalla/flujo**, sin volver
+a un flujo de 2 sub-pasos dentro de la misma pantalla/flujo, sin volver
 a la landing entre uno y otro:
 
-**Sub-paso 1 (ya existe, no lo toques si ya funciona bien):** los campos
+Sub-paso 1 (ya existe, no lo toques si ya funciona bien): los campos
 livianos actuales.
 
-**Sub-paso 2 (nuevo, agrégalo a continuación del anterior):**
-- Campo de texto `nit_negocio`.
-- Subir documento tipo NIT (usa el mismo servicio de almacenamiento de
-  archivos que ya implementaste para las fotos de menú en la Tarea F3 —
-  **verifica primero si ese servicio acepta PDF además de imágenes**, un
-  documento de NIT/CI puede venir en cualquiera de los dos formatos; si
-  solo acepta imágenes, amplíalo para aceptar también PDF).
-- Subir documento tipo CI (mismo mecanismo).
+Sub-paso 2 (nuevo, agrégalo a continuación del anterior):
+
+Campo de texto nit_negocio.
+
+Subir documento tipo NIT (usa el mismo servicio de almacenamiento de
+archivos que ya implementaste para las fotos de menú en la Tarea F3 —
+verifica primero si ese servicio acepta PDF además de imágenes, un
+documento de NIT/CI puede venir en cualquiera de los dos formatos; si
+solo acepta imágenes, amplíalo para aceptar también PDF).
+
+Subir documento tipo CI (mismo mecanismo).
+
+Estructura y persistencia física de archivos en D2-REV:
+
+Al recibir los archivos de la solicitud, guárdalos en la ruta privada:
+storage/privado/solicitudes/{id_solicitud}/nit-{uuid}.[pdf|jpg|png]
+storage/privado/solicitudes/{id_solicitud}/ci-{uuid}.[pdf|jpg|png]
+
+No los guardes en carpetas públicas.
 
 Al enviar el sub-paso 2 completo, el backend hace, en una sola transacción:
-1. Crea `usuarios` (nombre, apellido, correo) — **sin** fila en
-   `cuentas_auth` todavía.
-2. Crea `solicitud` (`id_usuario`, `estado='pendiente'`, `nombre_restaurante`,
-   `nit_negocio`, `celular_contacto`, `descripcion`).
-3. Crea dos filas en `documento_adjunto` (`tipo='NIT'` y `tipo='CI'`)
-   asociadas a esa `solicitud`.
+
+Crea usuarios (nombre, apellido, correo) — sin fila en
+cuentas_auth todavía.
+
+Crea solicitud (id_usuario, estado='pendiente', nombre_restaurante,
+nit_negocio, celular_contacto, descripcion).
+
+Crea dos filas en documento_adjunto (tipo='NIT' y tipo='CI')
+asociadas a esa solicitud con la ruta relativa del archivo.
 
 Termina con la pantalla de confirmación que ya existe ("Solicitud enviada
 con éxito") y vuelve a la landing.
 
-**Si el correo ya existe en `usuarios`** (alguien que ya envió una
+Si el correo ya existe en usuarios (alguien que ya envió una
 solicitud antes, o que ya tiene cuenta por algún otro medio), no crees un
 usuario duplicado — usa el ya existente y valida el estado de su solicitud
 anterior antes de permitir una nueva.
 
----
-
-## Tarea D-NUEVA-1 — Servicio de invitación tras aprobación (backend)
-
+Tarea D-NUEVA-1 — Servicio de invitación tras aprobación (backend)
 Dentro del endpoint de aprobar solicitud (ya existente en E1, revisa el
-service de `solicitud`), agrega esta lógica cuando el estado cambia a
-`aprobada`:
+service de solicitud), agrega esta lógica cuando el estado cambia a
+aprobada:
 
-1. Asigna el rol `admin_restaurante` en `usuario_rol` para el
-   `id_usuario` de esa solicitud.
-2. Genera un token aleatorio seguro (usa `crypto.randomBytes` o similar,
-   no algo predecible), guárdalo en `invitacion_token`
-   (`tipo='invitacion'`, `fecha_expiracion` = 48 horas desde ahora).
-3. Envía un correo real (confirma primero que el servicio de correo esté
-   configurado de verdad, con envío real — si no lo está, avísame antes de
-   seguir, es bloqueante) con un enlace tipo:
-   `https://[dominio-admin]/crear-contrasena?token=xxxxx`
+Asigna el rol admin_restaurante en usuario_rol para el
+id_usuario de esa solicitud.
+
+Genera un token aleatorio seguro (usa crypto.randomBytes o similar,
+no algo predecible), guárdalo en invitacion_token
+(tipo='invitacion', fecha_expiracion = 48 horas desde ahora).
+
+Envía un correo real (confirma primero que el servicio de correo esté
+configurado de verdad, con envío real — si no lo está, avísame antes de
+seguir, es bloqueante) con un enlace tipo:
+https://[dominio-admin]/crear-contrasena?token=xxxxx
 
 Si la solicitud se rechaza, no generes ningún token — solo notifica el
-rechazo con el `motivo_rechazo`.
+rechazo con el motivo_rechazo y elimina la carpeta de documentos
+storage/privado/solicitudes/{id_solicitud}/ del servidor para no acumular basura.
 
----
-
-## Tarea D-NUEVA-2 — Pantalla "Crear tu contraseña" (frontend, `lib/admin/`)
-
-Pantalla pública (sin sesión) que recibe el `token` por parámetro de URL,
+Tarea D-NUEVA-2 — Pantalla "Crear tu contraseña" (frontend, lib/admin/)
+Pantalla pública (sin sesión) que recibe el token por parámetro de URL,
 con dos campos: contraseña y confirmar contraseña. Al enviar:
-- Backend valida que el token exista, no esté usado y no haya expirado.
-- Si es válido: crea la fila en `cuentas_auth` con el `password_hash`,
-  marca el token como `usado=true`, y redirige a la pantalla de login
-  (Tarea D3) con un mensaje de éxito.
-- Si es inválido/expirado: muestra un mensaje claro y un botón para
-  solicitar que le reenvíen la invitación (no lo dejes sin salida).
 
----
+Backend valida que el token exista, no esté usado y no haya expirado.
 
-## Tarea E1-REV — Visor de documentos en el panel de aprobación
+Si es válido: crea la fila en cuentas_auth con el password_hash,
+marca el token como usado=true, y redirige a la pantalla de login
+(Tarea D3) con un mensaje de éxito.
 
+Si es inválido/expirado: muestra un mensaje claro y un botón para
+solicitar que le reenvíen la invitación (no lo dejes sin salida).
+
+Tarea E1-REV — Visor de documentos en el panel de aprobación
 Amplía la pantalla de revisión de solicitudes (Tarea E1, ya construida)
-para mostrar los `documento_adjunto` asociados:
-- Debe soportar visualización inline tanto de imágenes como de PDF (no
-  asumas un solo formato).
-- **Importante — privacidad**: estos documentos contienen datos personales
-  sensibles (CI). No uses URLs públicas permanentes. Sirve los archivos a
-  través de un endpoint del backend protegido por `RolesGuard`
-  (`admin_sistema`), o con URLs firmadas de corta duración si tu servicio
-  de almacenamiento lo soporta — nunca un link directo y público al
-  archivo.
-- Muestra también el `nit_negocio` como texto junto a los documentos, no
-  solo el archivo.
+para mostrar los documento_adjunto asociados:
 
----
+Debe soportar visualización inline tanto de imágenes como de PDF (no
+asumas un solo formato).
 
-## RECORDATORIOS (aplican también a este bloque, ya los conoces)
+Importante — privacidad: estos documentos contienen datos personales
+sensibles (CI, NIT). No uses URLs públicas permanentes ni sirvas la carpeta
+privado/ con useStaticAssets. Sirve los archivos exclusivamente a
+través de un endpoint del backend protegido por RolesGuard
+(admin_sistema) usando res.sendFile() (o streams con validación de sesión) —
+nunca un link directo y público al archivo.
 
-- Una tarea a la vez, esperas mi autorización antes de la siguiente.
-- Actualiza `GUIA_SEGUIMIENTO.md` y `CONTEXTO_SISTEMA.md` al terminar cada
-  una — en `CONTEXTO_SISTEMA.md` deja explícito que se agregó la tabla
-  `invitacion_token` y que el login del panel Admin ya no depende de que
-  el Admin_Sistema cree contraseñas manualmente, ahora es autoservicio vía
-  invitación.
-- Antes de tocar D2, D3, D4 o E1, confírmame que revisaste el código actual
-  y que entendiste qué falta — no asumas que puedes reescribir sin mirar
-  primero lo que ya existe y funciona.
+Muestra también el nit_negocio como texto junto a los documentos, no
+solo el archivo.
+
+RECORDATORIOS (aplican también a este bloque, ya los conoces)
+Una tarea a la vez, esperas mi autorización antes de la siguiente.
+
+Actualiza GUIA_SEGUIMIENTO.md y CONTEXTO_SISTEMA.md al terminar cada
+una — en CONTEXTO_SISTEMA.md deja explícito que se agregó la tabla
+invitacion_token, la separación física publico/ vs privado/ para
+archivos, y que el login del panel Admin ya no depende de que el
+Admin_Sistema cree contraseñas manualmente, ahora es autoservicio vía
+invitación.
+
+Antes de tocar D2, D3, D4 o E1, confírmame que revisaste el código actual
+y que entendiste qué falta — no asumas que puedes reescribir sin mirar
+primero lo que ya existe y funciona.

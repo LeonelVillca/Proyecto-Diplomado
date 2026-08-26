@@ -12,6 +12,8 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
@@ -28,7 +30,7 @@ export class PlatoController {
   constructor(
     private readonly platoService: PlatoService,
     private readonly imagenService: ImagenService
-  ) {}
+  ) { }
 
   @Roles('admin_restaurante', 'admin_sistema')
   @Post('upload-foto')
@@ -38,8 +40,16 @@ export class PlatoController {
     @Body('idRestaurante') idRestaurante: string
   ): Promise<{ url: string }> {
     if (!idRestaurante) throw new Error('idRestaurante is required');
-    const filename = `restaurantes/${idRestaurante}/platos/${Date.now()}`;
-    const url = await this.imagenService.procesarYSubirWebp(file, filename);
+    if (!file) throw new Error('file is required');
+    
+    const ext = file.originalname.split('.').pop();
+    const fileName = `${Date.now()}.${ext}`;
+    const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', idRestaurante, 'platos');
+    
+    await fs.mkdir(uploadDir, { recursive: true });
+    await fs.writeFile(path.join(uploadDir, fileName), file.buffer);
+    
+    const url = `/publico/restaurantes/${idRestaurante}/platos/${fileName}`;
     return { url };
   }
 
