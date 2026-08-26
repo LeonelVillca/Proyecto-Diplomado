@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/solicitud_admin_model.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+import 'package:universal_html/html.dart' as html;
+import 'package:frontend/core/utils/web_helpers/platform_view_registry.dart' as ui_web;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 

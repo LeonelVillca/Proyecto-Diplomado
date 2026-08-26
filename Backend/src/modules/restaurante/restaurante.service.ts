@@ -48,8 +48,31 @@ export class RestauranteService {
     return this.restauranteRepository.save(restaurante);
   }
 
-  listarTodos(): Promise<Restaurante[]> {
-    return this.restauranteRepository.find({ relations: { solicitud: true } });
+  async listarTodos(): Promise<any[]> {
+    const restaurantes = await this.restauranteRepository.find({ relations: { solicitud: true } });
+    
+    // Adjuntar la ubicación e imágenes al resultado para el frontend móvil
+    const restaurantesCompletos = await Promise.all(
+      restaurantes.map(async (rest) => {
+        const ubicacion = await this.ubicacionRepository.findOne({
+          where: { restaurante: { id: rest.id } },
+        });
+        const horarios = await this.horarioRepository.find({ where: { restaurante: { id: rest.id } } });
+        const mesas = await this.mesaRepository.find({ where: { restaurante: { id: rest.id } } });
+        const imagenes = await this.imagenRepository.find({ where: { restaurante: { id: rest.id } } });
+        
+        return {
+          ...rest,
+          direccion: ubicacion?.direccion,
+          latitud: ubicacion?.latitud,
+          longitud: ubicacion?.longitud,
+          horarios,
+          mesas,
+          imagenes,
+        };
+      })
+    );
+    return restaurantesCompletos;
   }
 
   async listarPorUsuario(idUsuario: number): Promise<Restaurante[]> {

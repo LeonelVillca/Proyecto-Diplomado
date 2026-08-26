@@ -19,6 +19,34 @@ class RestaurantCardCompact extends StatelessWidget {
   final double width;
   final VoidCallback? onTap;
 
+  Widget _buildFallbackCover() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: restaurant.gradient,
+            ),
+          ),
+        ),
+        Center(
+          child: Text(
+            restaurant.emoji,
+            style: const TextStyle(
+              fontSize: 34,
+              shadows: [
+                Shadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, 3)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -48,30 +76,14 @@ class RestaurantCardCompact extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: restaurant.gradient,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Text(
-                        restaurant.emoji,
-                        style: const TextStyle(
-                          fontSize: 34,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black26,
-                              blurRadius: 12,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    if (restaurant.photoUrl != null)
+                      Image.network(
+                        restaurant.photoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildFallbackCover(),
+                      )
+                    else
+                      _buildFallbackCover(),
                     Positioned(
                       right: 8,
                       top: 8,

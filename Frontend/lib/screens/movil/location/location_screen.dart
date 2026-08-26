@@ -3,12 +3,13 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:frontend/repositories/movil/restaurantes_mock.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
-import 'package:frontend/screens/movil/location/map_data.dart';
 import 'package:frontend/screens/movil/location/map_widgets.dart';
+import 'package:frontend/models/movil/restaurant.dart';
+
+const LatLng kInitialPosition = LatLng(-21.5354, -64.7296);
 
 class LocationScreen extends StatefulWidget {
   const LocationScreen({super.key});
@@ -20,6 +21,7 @@ class LocationScreen extends StatefulWidget {
 class _LocationScreenState extends State<LocationScreen> {
   GoogleMapController? _mapCtrl;
   final Set<Marker> _markers = {};
+  bool _markersBuilt = false;
 
   // El mapa solo funciona en Web, Android e iOS.
   bool get _mapsSupported =>
@@ -28,43 +30,43 @@ class _LocationScreenState extends State<LocationScreen> {
       defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
-  void initState() {
-    super.initState();
-    _buildMarkers();
-  }
-
-  void _buildMarkers() {
-    for (final r in mockMapRestaurants) {
-      _markers.add(Marker(
-        markerId: MarkerId(r.id),
-        position: r.coords,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
-        infoWindow: InfoWindow(title: r.nombre, snippet: r.tipo),
-        onTap: () => _onMarkerTap(r),
-      ));
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_markersBuilt) {
+      _buildMarkers();
+      _markersBuilt = true;
     }
   }
 
-  void _onMarkerTap(MapRestaurant r) {
-    _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(r.coords, 16));
+  void _buildMarkers() {
+    final restaurants = RestauranteScope.of(context).restaurants;
+    for (final r in restaurants) {
+      if (r.lat != null && r.lng != null) {
+        _markers.add(Marker(
+          markerId: MarkerId(r.id),
+          position: LatLng(r.lat!, r.lng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+          infoWindow: InfoWindow(title: r.name, snippet: r.cuisine.label),
+          onTap: () => _onMarkerTap(r),
+        ));
+      }
+    }
+  }
+
+  void _onMarkerTap(Restaurant r) {
+    if (r.lat != null && r.lng != null) {
+      _mapCtrl?.animateCamera(CameraUpdate.newLatLngZoom(LatLng(r.lat!, r.lng!), 16));
+    }
     _showRestaurantModal(r);
   }
 
-  void _showRestaurantModal(MapRestaurant r) {
-    // Buscar en los restaurantes reales
-    final restaurants = RestauranteScope.of(context, listen: false).restaurants;
-    final realRestaurant = restaurants.firstWhere(
-      (mock) => mock.id == r.id, 
-      orElse: () => restaurants.first,
-    );
-
+  void _showRestaurantModal(Restaurant r) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => _MapMarkerModal(
-        mapRestaurant: r,
-        fullRestaurant: realRestaurant,
+        restaurant: r,
       ),
     );
   }
@@ -96,6 +98,7 @@ class _LocationScreenState extends State<LocationScreen> {
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom + 72; // nav bar
+    final restaurants = RestauranteScope.of(context).restaurants;
 
     return Stack(
       children: [
@@ -103,7 +106,7 @@ class _LocationScreenState extends State<LocationScreen> {
         Positioned.fill(
           child: _mapsSupported
               ? GoogleMap(
-                  initialCameraPosition: kInitialPosition,
+                  initialCameraPosition: const CameraPosition(target: kInitialPosition, zoom: 14),
                   markers: _markers,
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
@@ -135,7 +138,11 @@ class _LocationScreenState extends State<LocationScreen> {
           maxChildSize: 0.88,
           builder: (_, ctrl) => Padding(
             padding: EdgeInsets.only(bottom: bottomPad),
-            child: _BottomSheet(ctrl: ctrl, onCardTap: _onMarkerTap),
+            child: _BottomSheet(
+              ctrl: ctrl, 
+              restaurants: restaurants,
+              onCardTap: _onMarkerTap
+            ),
           ),
         ),
       ],
@@ -153,7 +160,7 @@ class _MapFallback extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.map_outlined, size: 64, color: Colors.black26),
+            const Icon(Icons.map_outlined, size: 64, color: Colors.black26),
             const SizedBox(height: 12),
             Text(
               'Tarija · Bolivia',
@@ -174,9 +181,10 @@ class _MapFallback extends StatelessWidget {
 // ── Panel inferior ───────────────────────────────────────────────────────────
 class _BottomSheet extends StatelessWidget {
   final ScrollController ctrl;
-  final void Function(MapRestaurant) onCardTap;
+  final List<Restaurant> restaurants;
+  final void Function(Restaurant) onCardTap;
 
-  const _BottomSheet({required this.ctrl, required this.onCardTap});
+  const _BottomSheet({required this.ctrl, required this.restaurants, required this.onCardTap});
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +203,7 @@ class _BottomSheet extends StatelessWidget {
                 Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(4))),
                 const SizedBox(height: 10),
                 Text(
-                  '${mockMapRestaurants.length} Restaurantes cerca',
+                  '${restaurants.length} Restaurantes cerca',
                   style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54),
                 ),
               ],
@@ -204,10 +212,10 @@ class _BottomSheet extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               controller: ctrl,
-              itemCount: mockMapRestaurants.length,
+              itemCount: restaurants.length,
               itemBuilder: (_, i) => RestaurantMapCard(
-                restaurant: mockMapRestaurants[i],
-                onTap: () => onCardTap(mockMapRestaurants[i]),
+                restaurant: restaurants[i],
+                onTap: () => onCardTap(restaurants[i]),
               ),
             ),
           ),
@@ -219,24 +227,22 @@ class _BottomSheet extends StatelessWidget {
 
 // ── Modal de Restaurante al tocar Marcador ──────────────────────────────────
 class _MapMarkerModal extends StatelessWidget {
-  const _MapMarkerModal({required this.mapRestaurant, required this.fullRestaurant});
+  const _MapMarkerModal({required this.restaurant});
   
-  final MapRestaurant mapRestaurant;
-  final dynamic fullRestaurant; // Es del tipo Restaurant
+  final Restaurant restaurant;
 
   void _goToDetails(BuildContext context) {
     Navigator.pop(context); // Cierra el modal primero
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => RestaurantDetailScreen(restaurant: fullRestaurant),
+        builder: (_) => RestaurantDetailScreen(restaurant: restaurant),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Usar SafeArea por si el dispositivo tiene gestos inferiores grandes
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.all(16),
@@ -258,16 +264,24 @@ class _MapMarkerModal extends StatelessWidget {
                 // Foto de portada con boton favorito flotante
                 Stack(
                   children: [
-                    Image.asset(
-                      'assets/restaurant_hero.png', // Placeholder (luego vendra de bd)
-                      height: 160,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    if (restaurant.photoUrl != null)
+                      Image.network(
+                        restaurant.photoUrl!,
+                        height: 160,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      )
+                    else
+                      Container(
+                        height: 160,
+                        width: double.infinity,
+                        color: Colors.black12,
+                        child: const Icon(Icons.restaurant, size: 48, color: Colors.black26),
+                      ),
                     Positioned(
                       top: 12,
                       right: 12,
-                      child: FavoriteHeart(restaurantId: fullRestaurant.id),
+                      child: FavoriteHeart(restaurantId: restaurant.id),
                     ),
                   ],
                 ),
@@ -282,7 +296,7 @@ class _MapMarkerModal extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              mapRestaurant.nombre,
+                              restaurant.name,
                               style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF1A0C12)),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -293,7 +307,7 @@ class _MapMarkerModal extends StatelessWidget {
                               const Icon(Icons.star_rounded, color: Color(0xFFD4AF37), size: 18),
                               const SizedBox(width: 4),
                               Text(
-                                mapRestaurant.rating.toString(),
+                                restaurant.rating.toString(),
                                 style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFFD4AF37)),
                               ),
                             ],
@@ -302,7 +316,7 @@ class _MapMarkerModal extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${mapRestaurant.tipo} · ${mapRestaurant.precio}',
+                        '${restaurant.cuisine.label} · ${restaurant.price}',
                         style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
                       ),
                       const SizedBox(height: 16),

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
 
-/// Tab de informacion: descripcion, contacto, horarios.
 class DetailInfoTab extends StatelessWidget {
   const DetailInfoTab({super.key, required this.restaurant, required this.schedule});
 
@@ -14,31 +12,36 @@ class DetailInfoTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _SectionTitle(title: 'Sobre el restaurante'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            restaurant.tagline + ' Un espacio donde la tradicion tarijena se fusiona con la buena mesa, el vino del valle y la hospitalidad chapaca.',
-            style: GoogleFonts.poppins(fontSize: 13.5, color: AppColors.secondaryText, height: 1.6),
+            restaurant.tagline.isNotEmpty ? restaurant.tagline : 'No hay una descripción disponible todavía. ¡Sé el primero en descubrir este lugar y contarnos tu experiencia!',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
 
-          const SizedBox(height: 20),
-          _SectionTitle(title: 'Ubicacion'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 32),
+          _SectionTitle(title: 'Ubicación'),
+          const SizedBox(height: 16),
           _LocationCard(restaurant: restaurant),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
           _SectionTitle(title: 'Contacto'),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           _ContactCard(restaurant: restaurant),
 
-          const SizedBox(height: 20),
-          _SectionTitle(title: 'Horarios de atencion'),
-          const SizedBox(height: 10),
-          ...schedule.map((s) => _ScheduleRow(day: s)),
+          const SizedBox(height: 32),
+          _SectionTitle(title: 'Horarios de atención'),
+          const SizedBox(height: 16),
+          if (schedule.isEmpty)
+            Text('Escríbele al restaurante antes de ir para confirmar que esté abierto.', style: Theme.of(context).textTheme.bodyMedium)
+          else
+            ...schedule.map((s) => _ScheduleRow(day: s)),
+            
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -51,8 +54,7 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title,
-        style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.ink));
+    return Text(title, style: Theme.of(context).textTheme.titleLarge);
   }
 }
 
@@ -63,42 +65,41 @@ class _ContactCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(18),
         boxShadow: AppShadows.cardSoft,
       ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: restaurant.gradient,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(12),
+              shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person_rounded, color: Colors.white, size: 22),
+            child: const Icon(Icons.person_rounded, color: Colors.white, size: 24),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Propietario del local',
-                    style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink)),
-                Text(restaurant.zone,
-                    style: GoogleFonts.poppins(fontSize: 11, color: AppColors.secondaryText)),
+                Text('Administración', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 15)),
+                const SizedBox(height: 2),
+                Text('Atención al cliente', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12)),
               ],
             ),
           ),
           _ContactButton(icon: Icons.phone_rounded),
           const SizedBox(width: 8),
-          _ContactButton(icon: Icons.chat_bubble_rounded),
+          _ContactButton(icon: Icons.chat_bubble_outline_rounded),
         ],
       ),
     );
@@ -112,13 +113,13 @@ class _ContactButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 38,
-      height: 38,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
-        color: AppColors.wine.withAlpha(12),
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.paperDeep,
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Icon(icon, color: AppColors.wine, size: 18),
+      child: Icon(icon, color: AppColors.wine, size: 20),
     );
   }
 }
@@ -130,14 +131,12 @@ class _ScheduleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(day.dayLabel,
-              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.ink, fontWeight: FontWeight.w500)),
-          Text('${day.openTime} - ${day.closeTime}',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.secondaryText)),
+          Text(day.dayLabel, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
+          Text('${day.openTime} - ${day.closeTime}', style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );
@@ -152,34 +151,29 @@ class _LocationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: AppShadows.cardSoft,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Mapa placeholder
+          // Mapa ilustrado
           Container(
-            height: 140,
+            height: 150,
             width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.wine.withAlpha(20),
-            ),
+            decoration: BoxDecoration(color: AppColors.paperDeep),
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Imagen estatica del mapa (placeholder)
+                // Ilustracion estilizada (usaremos el logo actual como placeholder de mapa, pero con blend mode)
                 Positioned.fill(
                   child: Opacity(
-                    opacity: 0.6,
-                    child: Image.asset(
-                      'assets/tarija_food.png', // Usando la imagen existente como placeholder
-                      fit: BoxFit.cover,
-                    ),
+                    opacity: 0.3,
+                    child: Image.asset('assets/tarija_food.png', fit: BoxFit.cover, color: AppColors.terracotta, colorBlendMode: BlendMode.color),
                   ),
                 ),
-                // Marcador del mapa
+                // Pin
                 Container(
                   width: 44,
                   height: 44,
@@ -187,7 +181,7 @@ class _LocationCard extends StatelessWidget {
                     color: AppColors.wine,
                     shape: BoxShape.circle,
                     boxShadow: AppShadows.cardStrong,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: Colors.white, width: 3),
                   ),
                   child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 24),
                 ),
@@ -195,29 +189,26 @@ class _LocationCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(restaurant.zone,
-                          style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink)),
-                      const SizedBox(height: 2),
-                      Text('Tarija, Bolivia',
-                          style: GoogleFonts.poppins(fontSize: 11.5, color: AppColors.secondaryText)),
+                      Text(restaurant.zone, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 15)),
+                      const SizedBox(height: 4),
+                      Text('Tarija, Bolivia', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12)),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.wine.withAlpha(15),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.paperDeep,
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Text('Como llegar',
-                      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.wine)),
+                  child: Text('Cómo llegar', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.wine, fontSize: 13)),
                 ),
               ],
             ),
@@ -227,4 +218,3 @@ class _LocationCard extends StatelessWidget {
     );
   }
 }
-

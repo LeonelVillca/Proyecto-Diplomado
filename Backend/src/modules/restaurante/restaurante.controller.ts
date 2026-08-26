@@ -36,7 +36,7 @@ export class RestauranteController {
   }
 
   @Get()
-  listarTodos(): Promise<Restaurante[]> {
+  listarTodos(): Promise<any[]> {
     return this.restauranteService.listarTodos();
   }
 

@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/screens/movil/home/home_tab.dart';
 
-/// Barra de navegación inferior flotante de Mesa Chapaca.
-///
-/// Píldora blanca elevada con los cinco accesos del sistema. El elemento
-/// activo se resalta con un fondo de vino translúcido y transiciones suaves.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({super.key, required this.current, required this.onSelected});
 
@@ -19,12 +13,12 @@ class AppBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
         child: Container(
           height: 66,
           padding: const EdgeInsets.symmetric(horizontal: 6),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(26),
             boxShadow: AppShadows.cardStrong,
           ),
@@ -59,20 +53,20 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.wine : AppColors.secondaryText;
+    final color = selected ? AppColors.wine : AppColors.inkSoft;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        splashColor: AppColors.wine.withAlpha(20),
+        splashColor: AppColors.wineSoft.withAlpha(20),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           decoration: BoxDecoration(
-            color: selected ? AppColors.wine.withAlpha(16) : Colors.transparent,
+            color: selected ? AppColors.wineSoft.withAlpha(16) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -88,18 +82,18 @@ class _NavItem extends StatelessWidget {
                   tab.icon,
                   key: ValueKey('${tab.name}-$selected'),
                   size: 22,
-                  color: selected ? AppColors.wine : color,
+                  color: color,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
               Text(
                 tab.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
-                  fontSize: 9.5,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontSize: 10.5,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? AppColors.wine : AppColors.secondaryText,
+                  color: color,
                 ),
               ),
             ],

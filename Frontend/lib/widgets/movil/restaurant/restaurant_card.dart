@@ -157,6 +157,34 @@ class _Cover extends StatelessWidget {
 
   final Restaurant restaurant;
 
+  Widget _buildFallbackCover() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: restaurant.gradient,
+            ),
+          ),
+        ),
+        Center(
+          child: Text(
+            restaurant.emoji,
+            style: const TextStyle(
+              fontSize: 46,
+              shadows: [
+                Shadow(color: Colors.black26, blurRadius: 14, offset: Offset(0, 4)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -164,27 +192,15 @@ class _Cover extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: restaurant.gradient,
-              ),
-            ),
-          ),
-          // Emoji grande con halo suave.
-          Center(
-            child: Text(
-              restaurant.emoji,
-              style: const TextStyle(
-                fontSize: 46,
-                shadows: [
-                  Shadow(color: Colors.black26, blurRadius: 14, offset: Offset(0, 4)),
-                ],
-              ),
-            ),
-          ),
+          if (restaurant.photoUrl != null)
+            Image.network(
+              restaurant.photoUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _buildFallbackCover(),
+            )
+          else
+            _buildFallbackCover(),
+
           // Estado de apertura.
           Positioned(
             left: 12,

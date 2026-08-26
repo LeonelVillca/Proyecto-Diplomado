@@ -1,330 +1,131 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
-import 'package:frontend/controllers/movil/favorites_controller.dart';
-import 'package:frontend/widgets/movil/ui/app_avatar.dart';
+import 'package:frontend/screens/movil/login/login_screen.dart';
 
-/// Sección "Usuarios": perfil de la cuenta, accesos rápidos y cierre de sesión.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final auth = AuthScope.of(context);
-    final favorites = FavoritesScope.of(context);
+    final displayName = auth.displayName ?? 'Chapaco';
+    final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C';
 
     return SafeArea(
-      bottom: false,
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Usuarios',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Tu cuenta y tus ajustes',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-            child: _ProfileCard(
-              name: auth.displayName,
-              email: auth.email,
-              photoUrl: auth.photoUrl,
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-            child: _StatsRow(favoritesCount: favorites.count),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 22)),
-        const SliverToBoxAdapter(child: _MenuSection()),
-        const SliverToBoxAdapter(child: SizedBox(height: 22)),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton.icon(
-                onPressed: () => auth.signOut(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.wine,
-                  side: const BorderSide(color: Color(0x665C1A2E)),
-                  backgroundColor: AppColors.wine.withAlpha(10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                icon: const Icon(Icons.logout_rounded, size: 19),
-                label: Text(
-                  'Cerrar sesión',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.wine,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 140)),
-      ],
-    ),
-  );
-  }
-}
-
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({
-    required this.name,
-    required this.email,
-    required this.photoUrl,
-  });
-
-  final String? name;
-  final String? email;
-  final String? photoUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF5C1A2E), Color(0xFF2A0B17)],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: AppShadows.cardStrong,
-      ),
-      child: Row(
-        children: [
-          AppAvatar(
-            name: name,
-            photoUrl: photoUrl,
-            radius: 28,
-            color: AppColors.sunset,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name ?? 'Chapaco',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  email ?? 'Invitado · sin sesión',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(Icons.edit_rounded,
-              color: Colors.white.withAlpha(200), size: 18),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({required this.favoritesCount});
-
-  final int favoritesCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: _MiniStat(value: '0', label: 'Reservas', icon: Icons.event_rounded)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _MiniStat(
-            value: '$favoritesCount',
-            label: 'Favoritos',
-            icon: Icons.favorite_rounded,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: _MiniStat(value: '0', label: 'Reseñas', icon: Icons.rate_review_rounded)),
-      ],
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({
-    required this.value,
-    required this.label,
-    required this.icon,
-  });
-
-  final String value;
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 13),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: AppShadows.cardSoft,
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 19, color: AppColors.gold),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: GoogleFonts.montserrat(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-            ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 10.5,
-              color: AppColors.secondaryText,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuSection extends StatelessWidget {
-  const _MenuSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      (Icons.settings_rounded, 'Configuración'),
-      (Icons.notifications_rounded, 'Notificaciones'),
-      (Icons.help_outline_rounded, 'Ayuda y soporte'),
-      (Icons.share_rounded, 'Compartir la app'),
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          for (final (icon, label) in items)
-            _MenuTile(
-              icon: icon,
-              label: label,
-              onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label — próximamente.'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuTile extends StatelessWidget {
-  const _MenuTile({required this.icon, required this.label, required this.onTap});
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: AppShadows.cardSoft,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.wine.withAlpha(12),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Icon(icon, size: 18, color: AppColors.wine),
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.ink,
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+              child: Column(
+                children: [
+                  // Tarjeta de perfil
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [AppColors.wine, AppColors.wineDark], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: AppShadows.cardStrong,
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                          child: Center(
+                            child: auth.photoUrl != null
+                                ? ClipOval(child: Image.network(auth.photoUrl!, fit: BoxFit.cover, width: 80, height: 80))
+                                : Text(initial, style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 32, color: Colors.white)),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(displayName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontSize: 22)),
+                        const SizedBox(height: 4),
+                        Text(auth.email ?? '', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70)),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStat(context, '0', 'Reservas'),
+                            Container(width: 1, height: 30, color: Colors.white30),
+                            _buildStat(context, '0', 'Favoritos'),
+                            Container(width: 1, height: 30, color: Colors.white30),
+                            _buildStat(context, '0', 'Reseñas'),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.secondaryText, size: 20),
-              ],
+
+                  const SizedBox(height: 32),
+
+                  // Lista de ajustes
+                  _buildSettingRow(context, Icons.person_outline_rounded, 'Editar perfil'),
+                  _buildSettingRow(context, Icons.notifications_none_rounded, 'Notificaciones'),
+                  _buildSettingRow(context, Icons.payment_rounded, 'Métodos de pago'),
+                  const SizedBox(height: 16),
+                  _buildSettingRow(context, Icons.support_agent_rounded, 'Centro de ayuda'),
+                  _buildSettingRow(context, Icons.article_outlined, 'Términos y condiciones'),
+
+                  const SizedBox(height: 32),
+
+                  // Botón cerrar sesión
+                  OutlinedButton(
+                    onPressed: () async {
+                      await auth.signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.wine, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      minimumSize: const Size(double.infinity, 50),
+                    ),
+                    child: Text('Cerrar sesión', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.wine, fontSize: 14)),
+                  ),
+                  
+                  const SizedBox(height: 120),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStat(BuildContext context, String value, String label) {
+    return Column(
+      children: [
+        Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 20)),
+        const SizedBox(height: 2),
+        Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70, fontSize: 11)),
+      ],
+    );
+  }
+
+  Widget _buildSettingRow(BuildContext context, IconData icon, String label) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(16), boxShadow: AppShadows.cardSoft),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: AppColors.paperDeep, borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: AppColors.inkSoft, size: 20),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: Text(label, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 15))),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.inkSoft, size: 20),
+        ],
       ),
     );
   }

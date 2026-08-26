@@ -130,48 +130,57 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
   }
 
   Future<void> _pickImage() async {
-    List<PlatformFile> result = await FilePicker.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-    ) ?? [];
-    if (result.isNotEmpty) {
-      final file = result.first;
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _selectedImage = file;
-        _selectedImageBytes = bytes;
-      });
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final file = result.files.first;
+      final bytes = file.bytes;
+      if (bytes != null) {
+        setState(() {
+          _selectedImage = file;
+          _selectedImageBytes = bytes;
+        });
+      }
     }
   }
 
   Future<void> _pickLogo() async {
-    List<PlatformFile> result = await FilePicker.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-    ) ?? [];
-    if (result.isNotEmpty) {
-      final file = result.first;
-      final bytes = await file.readAsBytes();
-      setState(() {
-        _selectedLogo = file;
-        _selectedLogoBytes = bytes;
-      });
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final file = result.files.first;
+      final bytes = file.bytes;
+      if (bytes != null) {
+        setState(() {
+          _selectedLogo = file;
+          _selectedLogoBytes = bytes;
+        });
+      }
     }
   }
 
   Future<void> _pickGallery() async {
-    List<PlatformFile> result = await FilePicker.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
       allowMultiple: true,
-    ) ?? [];
-    if (result.isNotEmpty) {
-      for(var file in result) {
-         final bytes = await file.readAsBytes();
-         setState(() {
-           _selectedGallery.add(file);
-           _selectedGalleryBytes.add(bytes);
-         });
+      withData: true,
+    );
+    if (result != null && result.files.isNotEmpty) {
+      for(var file in result.files) {
+         final bytes = file.bytes;
+         if (bytes != null) {
+           setState(() {
+             _selectedGallery.add(file);
+             _selectedGalleryBytes.add(bytes);
+           });
+         }
       }
     }
   }

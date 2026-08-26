@@ -1,91 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import 'package:frontend/core/movil/theme.dart';
-import 'package:frontend/repositories/movil/restaurantes_mock.dart';
-import 'package:frontend/controllers/movil/favorites_controller.dart';
-import 'package:frontend/controllers/movil/restaurante_controller.dart';
-import 'package:frontend/widgets/movil/restaurant/restaurant_card.dart';
-import 'package:frontend/widgets/movil/ui/app_empty_state.dart';
+import 'package:frontend/screens/movil/home/home_tab.dart';
+import 'package:frontend/widgets/movil/navigation/app_bottom_nav.dart';
 
-/// Restaurantes marcados como favoritos.
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final favorites = FavoritesScope.of(context);
-
     return SafeArea(
-      bottom: false,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Favoritos',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 23,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.4,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  favorites.count == 1
-                      ? '1 restaurante guardado'
-                      : '${favorites.count} restaurantes guardados',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(color: AppColors.paperDeep, shape: BoxShape.circle),
+              child: const Icon(Icons.favorite_border_rounded, size: 40, color: AppColors.wine),
             ),
-          ),
-        ),
-        if (favorites.count == 0)
-          SliverToBoxAdapter(
-            child: AppEmptyState(
-              icon: Icons.favorite_border_rounded,
-              title: 'Aún no tienes favoritos',
-              description:
-                  'Toca el corazón en cualquier restaurante para guardarlo aquí.',
-              actionLabel: 'Explorar restaurantes',
-              onAction: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Ve a la pestaña Inicio para descubrir lugares.'),
-                  behavior: SnackBarBehavior.floating,
-                ),
+            const SizedBox(height: 24),
+            Text('Aún no tienes favoritos', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 24)),
+            const SizedBox(height: 12),
+            Text('Guarda los restaurantes que más te gusten para tenerlos siempre a mano.', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 32),
+            FilledButton(
+              onPressed: () {},
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.wine,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
+              child: Text('Explorar restaurantes', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white)),
             ),
-          )
-        else
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final id = favorites.asList[index];
-                final restaurant = RestauranteScope.of(context).restaurants.firstWhere(
-                  (r) => r.id == id,
-                  orElse: () => RestauranteScope.of(context).restaurants.first,
-                );
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  child: RestaurantCard(restaurant: restaurant),
-                );
-              },
-              childCount: favorites.asList.length,
-            ),
-          ),
-        const SliverToBoxAdapter(child: SizedBox(height: 140)),
-      ],
-    ),
-  );
+          ],
+        ),
+      ),
+    );
   }
 }

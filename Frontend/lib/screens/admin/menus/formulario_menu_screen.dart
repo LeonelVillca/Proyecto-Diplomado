@@ -4,7 +4,7 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/menu_admin_model.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/services/admin/menu_admin_service.dart';
-import 'dart:html' as html;
+import 'package:universal_html/html.dart' as html;
 import 'dart:typed_data';
 
 const Color kBurgundy900 = Color(0xFF42101F);

@@ -5,47 +5,33 @@ import 'package:google_fonts/google_fonts.dart';
 class AppColors {
   AppColors._();
 
-  /// Fondo crema cálido (viñedo, papel añejo). No blanco puro.
-  static const Color background = Color(0xFFF7F1E6);
+  static const Color wine = Color(0xFF6B1233);
+  static const Color wineDark = Color(0xFF450B20);
+  static const Color wineSoft = Color(0xFF8C3350);
+  
+  static const Color terracotta = Color(0xFFC1622E);
+  static const Color gold = Color(0xFFC08A1E);
+  static const Color sage = Color(0xFF5C7A52);
 
-  /// Superficie elevada: papel más claro con calidez.
-  static const Color paper = Color(0xFFFDF8EE);
+  static const Color paper = Color(0xFFF5EEE0);
+  static const Color paperDeep = Color(0xFFEAE0C9);
+  static const Color card = Color(0xFFFFFCF6);
 
-  /// Vino tinto profundo — acento principal.
-  static const Color wine = Color(0xFF5C1A2E);
+  static const Color ink = Color(0xFF241512);
+  static const Color inkSoft = Color(0xFF7A6A5C);
 
-  /// Dorado mostaza — hoja de parra seca / uva madura.
-  static const Color gold = Color(0xFF8B6F3E);
-
-  /// Naranja atardecer — cima del degradado de la escena de bienvenida.
-  static const Color sunset = Color(0xFFC97B3D);
-
-  /// Texto principal: casi negro con calidez.
-  static const Color ink = Color(0xFF2B211C);
-
-  /// Texto secundario.
-  static const Color secondaryText = Color(0xFF7A6F63);
-
-  // ---------------------------------------------------------------
-  // UI inmersiona para la pantalla de login (foto + tarjeta blanca).
-  // ---------------------------------------------------------------
-
-  /// Tinta moderna sobre la tarjeta blanca (casi negro, frío y limpio).
+  static const Color line = Color(0x1A241512); // rgba(36,21,18,.10)
+  
+  // Compatibilidad hacia atrás (login screen y widgets viejos)
+  static const Color background = paper;
+  static const Color sunset = terracotta;
+  static const Color secondaryText = inkSoft;
+  
   static const Color onCard = Color(0xFF18181F);
-
-  /// Gris para texto secundario dentro de la tarjeta.
   static const Color onCardMuted = Color(0xFF6B6B74);
-
-  /// Título sobre la foto: blanco puro.
   static const Color onScrimTitle = Color(0xFFFFFFFF);
-
-  /// Subtítulo sobre la foto: gris claro translúcido.
   static const Color onScrimBody = Color(0xCCDFDAD3);
-
-  /// Gris oficial de texto del botón de Google.
   static const Color googleInk = Color(0xFF3C4043);
-
-  /// Separadores / bordes suaves.
   static const Color hairline = Color(0x1A000000);
 }
 
@@ -75,21 +61,14 @@ class AppGradients {
   class AppShadows {
     AppShadows._();
 
-    /// Sombra de la tarjeta inferior sobre la foto.
     static List<BoxShadow> get sheet => const [
           BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 32,
+            color: Color(0x1A450B20), // rgba(69,11,32,.10)
+            blurRadius: 30,
             offset: Offset(0, -10),
-          ),
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 8,
-            offset: Offset(0, -2),
           ),
         ];
 
-    /// Sombra suave del botón de Google sobre la tarjeta blanca.
     static List<BoxShadow> get googleButton => const [
           BoxShadow(
             color: Color(0x2E000000),
@@ -103,44 +82,28 @@ class AppGradients {
           ),
         ];
 
-    /// Sombra ligera para tarjetas compactas y chips.
     static List<BoxShadow> get cardSoft => const [
           BoxShadow(
-            color: Color(0x15000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
+            color: Color(0x1A450B20), // rgba(69,11,32,.10)
+            blurRadius: 30,
+            offset: Offset(0, 10),
           ),
         ];
 
-    /// Sombra más marcada para tarjetas grandes destacadas.
     static List<BoxShadow> get cardStrong => const [
           BoxShadow(
-            color: Color(0x24000000),
+            color: Color(0x596B1233), // rgba(107,18,51,.35)
             blurRadius: 22,
             offset: Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Color(0x0E000000),
-            blurRadius: 6,
-            offset: Offset(0, 3),
           ),
         ];
   }
 
-/// Pareja tipográfica moderna de Mesa Chapaca (vía Google Fonts).
 class AppFonts {
   AppFonts._();
 
-  /// Display geométrica moderna — títulos y botones.
-  static const String display = 'Montserrat';
-
-  /// Sans-serif humanista y aireada — cuerpo y subtítulos.
-  static const String body = 'Poppins';
+  static const String display = 'Piazzolla';
+  static const String body = 'Manrope';
 }
 
 /// Tema global de la aplicación.
@@ -157,62 +120,64 @@ class AppTheme {
         surface: AppColors.paper,
         onSurface: AppColors.ink,
       ),
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: AppColors.paper,
       splashFactory: InkSparkle.splashFactory,
     );
 
-    // Tipografía moderna vía Google Fonts (fallback offline: fuente del sistema).
-    final montserrat = GoogleFonts.montserratTextTheme(base.textTheme);
-    final poppins =
-        GoogleFonts.poppinsTextTheme(GoogleFonts.montserratTextTheme());
+    final displayFont = GoogleFonts.piazzollaTextTheme(base.textTheme);
+    final bodyFont = GoogleFonts.manropeTextTheme(displayFont);
 
     return base.copyWith(
-      textTheme: poppins.copyWith(
-        displayLarge: montserrat.displayLarge?.copyWith(
-          fontWeight: FontWeight.w700,
+      textTheme: bodyFont.copyWith(
+        displayLarge: displayFont.displayLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontStyle: FontStyle.italic,
           color: AppColors.wine,
         ),
-        displayMedium: montserrat.displayMedium?.copyWith(
-          fontWeight: FontWeight.w700,
+        displayMedium: displayFont.displayMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontStyle: FontStyle.italic,
           color: AppColors.wine,
         ),
-        headlineMedium: montserrat.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppColors.ink,
-        ),
-        headlineSmall: montserrat.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: AppColors.ink,
-        ),
-        titleLarge: montserrat.titleLarge?.copyWith(
+        headlineMedium: displayFont.headlineMedium?.copyWith(
           fontWeight: FontWeight.w600,
+          fontStyle: FontStyle.italic,
           color: AppColors.ink,
         ),
-        titleMedium: montserrat.titleMedium?.copyWith(
+        headlineSmall: displayFont.headlineSmall?.copyWith(
           fontWeight: FontWeight.w600,
+          fontStyle: FontStyle.italic,
           color: AppColors.ink,
         ),
-        titleSmall: poppins.titleSmall?.copyWith(
+        titleLarge: displayFont.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontStyle: FontStyle.italic,
+          color: AppColors.ink,
+        ),
+        titleMedium: displayFont.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontStyle: FontStyle.italic,
+          color: AppColors.ink,
+        ),
+        titleSmall: bodyFont.titleSmall?.copyWith(
           fontSize: 12,
-          letterSpacing: 1.6,
-          fontWeight: FontWeight.w600,
-          color: AppColors.secondaryText,
+          fontWeight: FontWeight.w700,
+          color: AppColors.inkSoft,
         ),
-        bodyLarge: poppins.bodyLarge?.copyWith(
+        bodyLarge: bodyFont.bodyLarge?.copyWith(
           color: AppColors.ink,
           height: 1.5,
         ),
-        bodyMedium: poppins.bodyMedium?.copyWith(
-          color: AppColors.secondaryText,
+        bodyMedium: bodyFont.bodyMedium?.copyWith(
+          color: AppColors.inkSoft,
           height: 1.5,
         ),
-        bodySmall: poppins.bodySmall?.copyWith(
-          color: AppColors.secondaryText,
+        bodySmall: bodyFont.bodySmall?.copyWith(
+          color: AppColors.inkSoft,
           height: 1.45,
         ),
-        labelLarge: montserrat.labelLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.2,
+        labelLarge: bodyFont.labelLarge?.copyWith(
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

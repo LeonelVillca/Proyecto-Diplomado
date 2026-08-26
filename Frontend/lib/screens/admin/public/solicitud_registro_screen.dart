@@ -57,21 +57,21 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
       request.fields['nitNegocio'] = _nitCtrl.text.trim();
 
       if (_nitFile != null) {
-        final nitBytes = await _nitFile!.readAsBytes();
+        final nitBytes = _nitFile!.bytes;
         request.files.add(
           http.MultipartFile.fromBytes(
             'documentoNit',
-            nitBytes,
+            nitBytes!,
             filename: _nitFile!.name,
           ),
         );
       }
       if (_ciFile != null) {
-        final ciBytes = await _ciFile!.readAsBytes();
+        final ciBytes = _ciFile!.bytes;
         request.files.add(
           http.MultipartFile.fromBytes(
             'documentoCi',
-            ciBytes,
+            ciBytes!,
             filename: _ciFile!.name,
           ),
         );
@@ -97,17 +97,18 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
   }
 
   Future<void> _seleccionarArchivo(bool esNit) async {
-    List<PlatformFile> result = await FilePicker.pickFiles(
+    FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
-    ) ?? [];
+      withData: true,
+    );
 
-    if (result.isNotEmpty) {
+    if (result != null && result.files.isNotEmpty) {
       setState(() {
         if (esNit) {
-          _nitFile = result.first;
+          _nitFile = result.files.first;
         } else {
-          _ciFile = result.first;
+          _ciFile = result.files.first;
         }
       });
     }

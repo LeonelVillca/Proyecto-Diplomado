@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
 
-/// Tab de resenas con resumen de puntuacion y lista de comentarios.
 class DetailReviewsTab extends StatelessWidget {
   const DetailReviewsTab({super.key, required this.reviews, required this.avgRating});
 
@@ -12,13 +10,37 @@ class DetailReviewsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (reviews.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 40),
+        child: Column(
+          children: [
+            const Icon(Icons.forum_outlined, size: 48, color: AppColors.inkSoft),
+            const SizedBox(height: 16),
+            Text('Nadie ha opinado todavía', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text('Comparte tu experiencia y ayuda a otros a descubrir este restaurante.', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 24),
+            OutlinedButton(
+              onPressed: () {},
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.wine, width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text('Escribir la primera reseña', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.wine)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _RatingSummary(avgRating: avgRating, total: reviews.length),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         ...reviews.map((r) => _ReviewCard(review: r)),
-        const SizedBox(height: 120),
       ],
     );
   }
@@ -32,38 +54,81 @@ class _RatingSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(22),
         boxShadow: AppShadows.cardSoft,
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Column(
-            children: [
-              Text(avgRating.toStringAsFixed(1),
-                  style: GoogleFonts.montserrat(fontSize: 42, fontWeight: FontWeight.w800, color: AppColors.wine)),
-              Text('de 5.0',
-                  style: GoogleFonts.poppins(fontSize: 11, color: AppColors.secondaryText)),
-            ],
-          ),
-          const SizedBox(width: 20),
+          // Lado izquierdo: Puntuacion
           Expanded(
+            flex: 4,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(avgRating.toStringAsFixed(1), style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 48, height: 1.0)),
+                const SizedBox(height: 4),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (i) => Icon(
                     i < avgRating.floor() ? Icons.star_rounded : Icons.star_border_rounded,
                     color: AppColors.gold,
-                    size: 20,
+                    size: 14,
                   )),
                 ),
-                const SizedBox(height: 4),
-                Text('$total resenas verificadas',
-                    style: GoogleFonts.poppins(fontSize: 12, color: AppColors.secondaryText)),
+                const SizedBox(height: 6),
+                Text('$total reseñas verificadas', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 10), textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+          
+          Container(width: 1, height: 80, color: AppColors.line, margin: const EdgeInsets.symmetric(horizontal: 16)),
+          
+          // Lado derecho: Barras
+          Expanded(
+            flex: 5,
+            child: Column(
+              children: [
+                _RatingBarRow(stars: 5, percent: 0.7),
+                _RatingBarRow(stars: 4, percent: 0.2),
+                _RatingBarRow(stars: 3, percent: 0.1),
+                _RatingBarRow(stars: 2, percent: 0.0),
+                _RatingBarRow(stars: 1, percent: 0.0),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RatingBarRow extends StatelessWidget {
+  final int stars;
+  final double percent;
+  const _RatingBarRow({required this.stars, required this.percent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Text(stars.toString(), style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          const Icon(Icons.star_rounded, size: 10, color: AppColors.inkSoft),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Stack(
+              children: [
+                Container(height: 6, decoration: BoxDecoration(color: AppColors.paperDeep, borderRadius: BorderRadius.circular(3))),
+                FractionallySizedBox(
+                  widthFactor: percent,
+                  child: Container(height: 6, decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(3))),
+                ),
               ],
             ),
           ),
@@ -80,68 +145,74 @@ class _ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.fromLTRB(22, 0, 22, 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: AppShadows.cardSoft,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabecera: autor + puntuacion + fecha
           Row(
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.wine.withAlpha(20),
-                child: Text(review.authorName[0],
-                    style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, color: AppColors.wine)),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(color: AppColors.paperDeep, shape: BoxShape.circle),
+                child: Center(
+                  child: Text(review.authorName[0], style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 16, color: AppColors.wine)),
+                ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(review.authorName,
-                        style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.ink)),
-                    Text(review.date,
-                        style: GoogleFonts.poppins(fontSize: 10.5, color: AppColors.secondaryText)),
+                    Text(review.authorName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text(review.date, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11)),
                   ],
                 ),
               ),
-              Row(
-                children: List.generate(5, (i) => Icon(
-                  i < review.rating ? Icons.star_rounded : Icons.star_border_rounded,
-                  color: AppColors.gold,
-                  size: 14,
-                )),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: AppColors.paperDeep, borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  children: [
+                    Text(review.rating.toString(), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12)),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.star_rounded, color: AppColors.gold, size: 12),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(review.comment,
-              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.ink, height: 1.5)),
+          const SizedBox(height: 16),
+          Text(review.comment, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 13, height: 1.5)),
 
-          // Respuesta del propietario si existe
           if (review.ownerReply != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.wine.withAlpha(8),
-                borderRadius: BorderRadius.circular(10),
-                border: Border(left: BorderSide(color: AppColors.wine, width: 2)),
+                color: AppColors.wineSoft.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.wineSoft.withOpacity(0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Respuesta del propietario',
-                      style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.wine)),
-                  const SizedBox(height: 3),
-                  Text(review.ownerReply!,
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppColors.secondaryText, height: 1.4)),
+                  Row(
+                    children: [
+                      const Icon(Icons.reply_rounded, size: 16, color: AppColors.wine),
+                      const SizedBox(width: 6),
+                      Text('Respuesta del restaurante', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12, color: AppColors.wine)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(review.ownerReply!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13)),
                 ],
               ),
             ),

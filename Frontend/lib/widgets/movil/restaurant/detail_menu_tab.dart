@@ -1,145 +1,207 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
 
-/// Tab de menu con filtros por categoria y lista de platos.
-class DetailMenuTab extends StatefulWidget {
+class DetailMenuTab extends StatelessWidget {
   const DetailMenuTab({super.key, required this.dishes});
   final List<DishItem> dishes;
 
   @override
-  State<DetailMenuTab> createState() => _DetailMenuTabState();
-}
-
-class _DetailMenuTabState extends State<DetailMenuTab> {
-  String _category = 'Todos';
-
-  List<String> get _categories {
-    final cats = widget.dishes.map((d) => d.category).toSet().toList();
-    return ['Todos', ...cats];
-  }
-
-  List<DishItem> get _filtered =>
-      _category == 'Todos' ? widget.dishes : widget.dishes.where((d) => d.category == _category).toList();
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Filtros de categoria
-        SizedBox(
-          height: 44,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            itemCount: _categories.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemBuilder: (_, i) {
-              final cat = _categories[i];
-              final sel = cat == _category;
-              return GestureDetector(
-                onTap: () => setState(() => _category = cat),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: sel ? AppColors.wine : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: AppShadows.cardSoft,
-                  ),
-                  child: Text(cat,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: sel ? Colors.white : AppColors.ink,
-                      )),
-                ),
-              );
-            },
+    if (dishes.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 40),
+        child: Center(
+          child: Column(
+            children: [
+              const Icon(Icons.restaurant_menu_rounded, size: 48, color: AppColors.inkSoft),
+              const SizedBox(height: 12),
+              Text('Menú no disponible', style: Theme.of(context).textTheme.headlineSmall),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
+      );
+    }
 
-        // Lista de platos
-        ...(_filtered.map((dish) => _DishCard(dish: dish))),
+    // Simulamos "Destacados" tomando los primeros 4 platos (o los mas caros)
+    final highlights = [...dishes]..sort((a, b) => b.price.compareTo(a.price));
+    final topHighlights = highlights.take(4).toList();
+
+    // Agrupamos por categorias
+    final Map<String, List<DishItem>> byCategory = {};
+    for (var d in dishes) {
+      byCategory.putIfAbsent(d.category, () => []).add(d);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (topHighlights.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: Text('Destacados', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 22)),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 156,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              scrollDirection: Axis.horizontal,
+              itemCount: topHighlights.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 14),
+              itemBuilder: (context, index) => _HighlightCard(dish: topHighlights[index]),
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+
+        // Grillas por categoria
+        ...byCategory.entries.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: Row(
+                    children: [
+                      Text(entry.key.toUpperCase(), style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12, color: AppColors.inkSoft, letterSpacing: 1.0)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Container(height: 1.5, color: AppColors.line)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: GridView.builder(
+                    padding: EdgeInsets.zero,
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.65,
+                      crossAxisSpacing: 14,
+                      mainAxisSpacing: 20,
+                    ),
+                    itemCount: entry.value.length,
+                    itemBuilder: (context, index) => _GridDishCard(dish: entry.value[index]),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
 }
 
-class _DishCard extends StatelessWidget {
-  const _DishCard({required this.dish});
+class _HighlightCard extends StatelessWidget {
   final DishItem dish;
+  const _HighlightCard({required this.dish});
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: dish.available ? 1.0 : 0.5,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: AppShadows.cardSoft,
-        ),
-        child: Row(
-          children: [
-            // Foto del plato o placeholder
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: AppColors.wine.withAlpha(12),
-                borderRadius: BorderRadius.circular(14),
-                image: dish.photoUrl != null
-                    ? DecorationImage(
-                        image: AssetImage(dish.photoUrl!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: dish.photoUrl == null
-                  ? Icon(Icons.restaurant_rounded, color: AppColors.wine.withAlpha(150), size: 28)
-                  : null,
+    return SizedBox(
+      width: 132,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 104,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.paperDeep,
+              borderRadius: BorderRadius.circular(16),
+              image: dish.photoUrl != null ? DecorationImage(image: NetworkImage(dish.photoUrl!), fit: BoxFit.cover) : null,
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(dish.name,
-                            style: GoogleFonts.montserrat(
-                                fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink)),
-                      ),
-                      Text('Bs ${dish.price.toStringAsFixed(0)}',
-                          style: GoogleFonts.poppins(
-                              fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.wine)),
-                    ],
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+                    child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 12),
                   ),
-                  const SizedBox(height: 3),
-                  Text(dish.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.poppins(fontSize: 11.5, color: AppColors.secondaryText)),
-                  if (!dish.available)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text('No disponible',
-                          style: GoogleFonts.poppins(
-                              fontSize: 10, fontWeight: FontWeight.w600, color: Colors.redAccent)),
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: const BoxDecoration(
+                      color: AppColors.wine,
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(12), bottomRight: Radius.circular(16)),
                     ),
-                ],
-              ),
+                    child: Text('Bs ${dish.price.toInt()}', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontSize: 11)),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+          Text(dish.name, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 13, color: AppColors.ink), maxLines: 2, overflow: TextOverflow.ellipsis),
+        ],
       ),
+    );
+  }
+}
+
+class _GridDishCard extends StatelessWidget {
+  final DishItem dish;
+  const _GridDishCard({required this.dish});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.paperDeep,
+              borderRadius: BorderRadius.circular(16),
+              image: dish.photoUrl != null ? DecorationImage(image: NetworkImage(dish.photoUrl!), fit: BoxFit.cover) : null,
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+                    child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 14),
+                  ),
+                ),
+                if (!dish.available)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Center(
+                        child: Text('Agotado', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.red)),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(dish.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 4),
+        Text(dish.description, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 6),
+        Text('Bs ${dish.price.toInt()}', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.wine, fontWeight: FontWeight.w800, fontSize: 14)),
+      ],
     );
   }
 }

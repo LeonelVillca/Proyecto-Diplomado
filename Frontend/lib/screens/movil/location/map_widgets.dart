@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:frontend/screens/movil/location/map_data.dart';
+const kGoldColor = Color(0xFFD4AF37);
+const kWineColor = Color(0xFF6B1A35);
 
 /// Píldora flotante de filtro rápido (personas + horario).
 class MapFilterPill extends StatelessWidget {
@@ -111,13 +112,14 @@ class _MapFilterChipsState extends State<MapFilterChips> {
 
 /// Tarjeta de restaurante dentro del bottom sheet.
 class RestaurantMapCard extends StatelessWidget {
-  final MapRestaurant restaurant;
+  final dynamic restaurant;
   final VoidCallback? onTap;
 
   const RestaurantMapCard({super.key, required this.restaurant, this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final String tags = restaurant.tags != null && restaurant.tags.isNotEmpty ? restaurant.tags.first : 'Restaurante';
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -130,23 +132,40 @@ class RestaurantMapCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                color: kWineColor.withAlpha(20),
+            if (restaurant.photoUrl != null)
+              ClipRRect(
                 borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  restaurant.photoUrl!,
+                  width: 68,
+                  height: 68,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(color: kWineColor.withAlpha(20), borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.restaurant, color: kWineColor, size: 32),
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: kWineColor.withAlpha(20),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.restaurant, color: kWineColor, size: 32),
               ),
-              child: const Icon(Icons.restaurant, color: kWineColor, size: 32),
-            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(restaurant.nombre, style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(restaurant.name, style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 3),
-                  Text(restaurant.tipo, style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54)),
+                  Text(tags, style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -154,7 +173,7 @@ class RestaurantMapCard extends StatelessWidget {
                       const SizedBox(width: 3),
                       Text('${restaurant.rating}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
                       const SizedBox(width: 10),
-                      Text(restaurant.precio, style: GoogleFonts.poppins(fontSize: 12, color: Colors.black45)),
+                      Text('\$\$', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black45)),
                     ],
                   ),
                 ],

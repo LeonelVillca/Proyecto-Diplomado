@@ -3,7 +3,6 @@ import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
 import 'package:frontend/services/movil/restaurante_cliente_service.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
-import 'package:frontend/repositories/movil/restaurantes_mock.dart' as mock;
 import 'package:frontend/models/movil/reservation.dart';
 
 class RestauranteController extends ChangeNotifier {
@@ -21,10 +20,10 @@ class RestauranteController extends ChangeNotifier {
   List<Restaurant> get restaurants => _restaurants;
   String? get errorMessage => _errorMessage;
 
-  // Mock data for UI parts that are not yet connected to backend
-  List<mock.PromoSlide> get promos => mock.mockPromos;
-  List<mock.Zone> get zones => mock.mockZones;
-  List<Reservation> get reservations => mock.mockReservations;
+  // Mock data quitada. Por ahora devolvemos listas vacías.
+  List<dynamic> get promos => [];
+  List<dynamic> get zones => [];
+  List<Reservation> get reservations => [];
 
   Future<void> _cargarRestaurantes() async {
     _isLoading = true;
@@ -32,7 +31,8 @@ class RestauranteController extends ChangeNotifier {
     notifyListeners();
 
     if (_service == null) {
-      _restaurants = mock.mockRestaurants;
+      _restaurants = [];
+      _errorMessage = 'No hay sesión activa para cargar restaurantes.';
       _isLoading = false;
       notifyListeners();
       return;
@@ -41,8 +41,9 @@ class RestauranteController extends ChangeNotifier {
     try {
       _restaurants = await _service!.obtenerRestaurantes();
     } catch (e) {
-      _errorMessage = 'Error al cargar restaurantes: $e';
-      _restaurants = mock.mockRestaurants; // Fallback to mock for testing
+      debugPrint('Error en backend: $e');
+      _errorMessage = 'Error al cargar restaurantes desde el servidor.';
+      _restaurants = [];
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -50,12 +51,12 @@ class RestauranteController extends ChangeNotifier {
   }
 
   Future<List<DishItem>> obtenerPlatos(String restauranteId) async {
-    if (_service == null) return mockDishes;
+    if (_service == null) return [];
     try {
       return await _service!.obtenerPlatosRestaurante(restauranteId);
     } catch (e) {
-      debugPrint('Error al cargar platos: $e');
-      return mockDishes; // Fallback to mock
+      debugPrint('Error al cargar platos del backend: $e');
+      return []; // Devolver vacío si falla
     }
   }
 }

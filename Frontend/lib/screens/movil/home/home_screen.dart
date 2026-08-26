@@ -5,15 +5,10 @@ import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
-import 'package:frontend/widgets/movil/restaurant/promo_card.dart';
-import 'package:frontend/widgets/movil/restaurant/restaurant_card.dart';
-import 'package:frontend/widgets/movil/restaurant/restaurant_card_compact.dart';
 import 'package:frontend/widgets/movil/ui/app_avatar.dart';
-import 'package:frontend/widgets/movil/ui/app_filter_chip.dart';
-import 'package:frontend/widgets/movil/ui/app_search_bar.dart';
-import 'package:frontend/widgets/movil/ui/app_section_header.dart';
+import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
 
-/// Pantalla principal: descubre restaurantes de Tarija.
+/// Pantalla principal rediseñada.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -31,9 +26,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final sorted = [...all]..sort((a, b) => b.rating.compareTo(a.rating));
     return sorted.take(6).toList();
   }
+  
+  List<Restaurant> _getForYou(List<Restaurant> all) {
+    final sorted = [...all]..shuffle(); // Random para demo
+    return sorted.take(5).toList();
+  }
 
-  List<Cuisine> _getAvailable(List<Restaurant> all) =>
-      Cuisine.values.where((c) => all.any((r) => r.cuisine == c)).toList();
+  void _navToDetail(BuildContext context, Restaurant r) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => RestaurantDetailScreen(restaurant: r)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,178 +48,194 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Center(child: CircularProgressIndicator(color: AppColors.wine));
     }
 
-    final filtered = _getFiltered(allRestaurants);
     final trending = _getTrending(allRestaurants);
-    final available = _getAvailable(allRestaurants);
+    final forYou = _getForYou(allRestaurants);
+    final heroRest = allRestaurants.isNotEmpty ? allRestaurants.first : null;
+
     return SafeArea(
       bottom: false,
       child: CustomScrollView(
         key: const PageStorageKey('home-scroll'),
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         slivers: [
+          // 1. Header de saludo
           SliverToBoxAdapter(child: _Header()),
+          
+          // 2. Buscador inteligente
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
-              child: AppSearchBar(
-                onFilterTap: () => _showFilterHint(context),
+              padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
+              child: _SearchBar(),
+            ),
+          ),
+          
+          // 3. Fila de "antojos"
+          SliverToBoxAdapter(
+            child: _CravingsRow(
+              selected: _selected,
+              onSelect: (c) => setState(() => _selected = _selected == c ? null : c),
+            ),
+          ),
+          
+          const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+          // Si hay filtro seleccionado, mostramos solo una lista filtrada.
+          // Si no, mostramos el diseño editorial (Hero, Bento, Para ti).
+          if (_selected != null) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                child: Text('Resultados para ${_selected!.label}', 
+                  style: Theme.of(context).textTheme.titleLarge),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 48,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                scrollDirection: Axis.horizontal,
-                itemCount: available.length + 1,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return AppFilterChip(
-                      label: 'Todos',
-                      selected: _selected == null,
-                      icon: Icons.grid_view_rounded,
-                      onTap: () => setState(() => _selected = null),
-                    );
-                  }
-                  final cuisine = available[index - 1];
-                  return AppFilterChip(
-                    label: cuisine.label,
-                    icon: cuisine.icon,
-                    selected: _selected == cuisine,
-                    onTap: () => setState(() => _selected = cuisine),
-                  );
-                },
-              ),
-            ),
-          ),
-          // Carrusel promocional.
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: SizedBox(
-                height: 148,
-                child: PageView.builder(
-                  controller: PageController(viewportFraction: 0.92),
-                  itemCount: restauranteCtrl.promos.length,
-                  itemBuilder: (context, index) =>
-                      PromoCard(slide: restauranteCtrl.promos[index]),
-                ),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 22)),
-          // Tendencia.
-          SliverToBoxAdapter(
-            child: AppSectionHeader(
-              title: 'Tendencias locales',
-              trailingLabel: 'Ver todo',
-              onTrailingTap: () => _showFilterHint(context),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 180,
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                scrollDirection: Axis.horizontal,
-                itemCount: trending.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 12),
-                itemBuilder: (context, index) =>
-                    RestaurantCardCompact(restaurant: trending[index]),
-              ),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 22)),
-          // Recomendados.
-          SliverToBoxAdapter(
-            child: AppSectionHeader(
-              title: 'Recomendaciones',
-              trailingLabel: _selected == null ? null : 'Limpiar filtro',
-              onTrailingTap: _selected == null
-                  ? null
-                  : () => setState(() => _selected = null),
-            ),
-          ),
-          if (filtered.isEmpty)
-            const SliverToBoxAdapter(child: _NoResults())
-          else
             SliverList(
               delegate: SliverChildBuilderDelegate(
-                (context, index) => Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  child: RestaurantCard(restaurant: filtered[index]),
-                ),
-                childCount: filtered.length,
+                (context, index) {
+                  final filtered = _getFiltered(allRestaurants);
+                  if (filtered.isEmpty) return const _NoResults();
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(22, 8, 22, 8),
+                    child: _VerticalCard(restaurant: filtered[index], onTap: () => _navToDetail(context, filtered[index])),
+                  );
+                },
+                childCount: _getFiltered(allRestaurants).isEmpty ? 1 : _getFiltered(allRestaurants).length,
               ),
             ),
-          // Espacio para que la barra flotante no tape el contenido.
-          const SliverToBoxAdapter(child: SizedBox(height: 140)),
-        ],
-      ),
-    );
-  }
+          ] else ...[
+            // 4. Plan de la noche (Hero)
+            if (heroRest != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: _HeroCard(restaurant: heroRest, onTap: () => _navToDetail(context, heroRest)),
+                ),
+              ),
 
-  void _showFilterHint(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Filtros y busqueda avanzada — proximamente.'),
-        behavior: SnackBarBehavior.floating,
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+
+            // 5. Tendencias en el valle (Bento)
+            if (trending.length >= 3)
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      child: Text('Tendencias en el valle', style: Theme.of(context).textTheme.headlineSmall),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      child: SizedBox(
+                        height: 260,
+                        child: Row(
+                          children: [
+                            // Izquierda: grande
+                            Expanded(
+                              flex: 5,
+                              child: _BentoCard(restaurant: trending[0], onTap: () => _navToDetail(context, trending[0])),
+                            ),
+                            const SizedBox(width: 14),
+                            // Derecha: dos pequeñas apiladas
+                            Expanded(
+                              flex: 4,
+                              child: Column(
+                                children: [
+                                  Expanded(child: _BentoCard(restaurant: trending[1], small: true, onTap: () => _navToDetail(context, trending[1]))),
+                                  const SizedBox(height: 14),
+                                  Expanded(child: _BentoCard(restaurant: trending[2], small: true, onTap: () => _navToDetail(context, trending[2]))),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 40)),
+
+            // 6. Para ti (Tarjetas verticales)
+            if (forYou.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      child: Text('Para ti', style: Theme.of(context).textTheme.headlineSmall),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 220,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: forYou.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 16),
+                        itemBuilder: (context, index) {
+                          return SizedBox(
+                            width: 150,
+                            child: _VerticalCard(restaurant: forYou[index], onTap: () => _navToDetail(context, forYou[index])),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          
+          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+        ],
       ),
     );
   }
 }
 
-/// Encabezado con saludo, subtitulo y avatar del usuario.
 class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = AuthScope.of(context);
     final displayName = auth.displayName ?? '';
-    final firstName = displayName.trim().isEmpty
-        ? 'Chapaco'
-        : displayName.trim().split(RegExp(r'\s+')).first;
+    final firstName = displayName.trim().isEmpty ? 'Chapaco' : displayName.trim().split(RegExp(r'\s+')).first;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text('Tarija · hoy hace 24°', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 4),
                 Text(
-                  'Hola, $firstName',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                    color: AppColors.secondaryText,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '¿Dónde comeremos hoy?',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                    color: AppColors.ink,
-                  ),
+                  '¿Qué antojo traes hoy, $firstName?',
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28, height: 1.15),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          AppAvatar(
-            name: displayName.isEmpty ? null : displayName,
-            photoUrl: auth.photoUrl,
-            radius: 24,
+          const SizedBox(width: 16),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.paperDeep,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.notifications_none_rounded, color: AppColors.ink, size: 22),
+              ),
+              const SizedBox(width: 12),
+              AppAvatar(name: displayName.isEmpty ? null : displayName, photoUrl: auth.photoUrl, radius: 22),
+            ],
           ),
         ],
       ),
@@ -223,27 +243,317 @@ class _Header extends StatelessWidget {
   }
 }
 
-/// Estado cuando ningun restaurante coincide con el filtro.
+class _SearchBar extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 54,
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppShadows.cardSoft,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          const Icon(Icons.search_rounded, color: AppColors.inkSoft, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text('Silpancho, vino, zona...', style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: AppColors.paperDeep, borderRadius: BorderRadius.circular(10)),
+            child: const Icon(Icons.mic_none_rounded, color: AppColors.ink, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CravingsRow extends StatelessWidget {
+  final Cuisine? selected;
+  final ValueChanged<Cuisine> onSelect;
+  const _CravingsRow({required this.selected, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final cravings = [
+      {'cuisine': Cuisine.tipico, 'icon': Icons.kebab_dining_rounded, 'color': const Color(0xFFFDE8E8), 'iconColor': AppColors.terracotta, 'label': 'Tarijeña'},
+      {'cuisine': Cuisine.parrilla, 'icon': Icons.local_fire_department_rounded, 'color': const Color(0xFFFFF2D9), 'iconColor': AppColors.gold, 'label': 'Parrilla'},
+      {'cuisine': Cuisine.vinoBar, 'icon': Icons.wine_bar_rounded, 'color': const Color(0xFFF1E6ED), 'iconColor': AppColors.wine, 'label': 'Vinos'},
+      {'cuisine': Cuisine.cafe, 'icon': Icons.local_cafe_rounded, 'color': const Color(0xFFE8F1E8), 'iconColor': AppColors.sage, 'label': 'Cafés'},
+      {'cuisine': Cuisine.postres, 'icon': Icons.icecream_rounded, 'color': const Color(0xFFE8EEF8), 'iconColor': const Color(0xFF5C7A99), 'label': 'Postres'},
+    ];
+
+    return SizedBox(
+      height: 85,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 22),
+        scrollDirection: Axis.horizontal,
+        itemCount: cravings.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        itemBuilder: (context, i) {
+          final c = cravings[i];
+          final isSel = selected == c['cuisine'];
+          return GestureDetector(
+            onTap: () => onSelect(c['cuisine'] as Cuisine),
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: isSel ? c['iconColor'] as Color : c['color'] as Color,
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: isSel ? [BoxShadow(color: (c['iconColor'] as Color).withOpacity(0.4), blurRadius: 12, offset: const Offset(0,4))] : [],
+                  ),
+                  child: Icon(c['icon'] as IconData, color: isSel ? Colors.white : c['iconColor'] as Color, size: 28),
+                ),
+                const SizedBox(height: 8),
+                Text(c['label'] as String, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 11)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  final Restaurant restaurant;
+  final VoidCallback onTap;
+  const _HeroCard({required this.restaurant, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 230,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: AppShadows.cardStrong,
+          image: restaurant.photoUrl != null ? DecorationImage(image: NetworkImage(restaurant.photoUrl!), fit: BoxFit.cover) : null,
+          color: AppColors.wineSoft,
+        ),
+        child: Stack(
+          children: [
+            // Degradado
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black12, Colors.black87],
+                  stops: [0.3, 1.0],
+                ),
+              ),
+            ),
+            // Ribbon de descuento
+            Positioned(
+              top: 16,
+              left: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: const BoxDecoration(
+                  color: AppColors.terracotta,
+                  borderRadius: BorderRadius.only(topRight: Radius.circular(8), bottomRight: Radius.circular(8)),
+                ),
+                child: Row(
+                  children: [
+                    Container(width: 6, height: 6, decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle)),
+                    const SizedBox(width: 6),
+                    Text('15% OFF', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ),
+            // Corazon
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+                child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 20),
+              ),
+            ),
+            // Contenido inferior
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('🍷 El plan de la noche', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white70)),
+                  const SizedBox(height: 4),
+                  Text(restaurant.name, style: Theme.of(context).textTheme.displayMedium?.copyWith(color: Colors.white, fontSize: 24)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text('${restaurant.cuisine.label} · ${restaurant.price}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          border: Border.all(color: Colors.white30, width: 1.5),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text('Ver restaurante →', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontSize: 11)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BentoCard extends StatelessWidget {
+  final Restaurant restaurant;
+  final bool small;
+  final VoidCallback onTap;
+  const _BentoCard({required this.restaurant, this.small = false, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: AppShadows.cardSoft,
+          image: restaurant.photoUrl != null ? DecorationImage(image: NetworkImage(restaurant.photoUrl!), fit: BoxFit.cover) : null,
+          color: AppColors.wineSoft,
+        ),
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black87],
+                  stops: [0.4, 1.0],
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 12,
+              left: small ? 12 : 16,
+              right: small ? 12 : 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(restaurant.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontSize: small ? 16 : 22, height: 1.1)),
+                  const SizedBox(height: 2),
+                  Text(restaurant.address ?? restaurant.zone, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VerticalCard extends StatelessWidget {
+  final Restaurant restaurant;
+  final VoidCallback onTap;
+  const _VerticalCard({required this.restaurant, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: AppShadows.cardSoft,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 120,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.wineSoft,
+                    image: restaurant.photoUrl != null ? DecorationImage(image: NetworkImage(restaurant.photoUrl!), fit: BoxFit.cover) : null,
+                  ),
+                ),
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(12)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star_rounded, color: Colors.white, size: 12),
+                        const SizedBox(width: 2),
+                        Text(restaurant.rating.toString(), style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+                    child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 14),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(restaurant.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Text('${restaurant.cuisine.label} · ${restaurant.price}', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _NoResults extends StatelessWidget {
   const _NoResults();
-
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
       child: Column(
         children: [
-          Icon(Icons.search_off_rounded,
-              size: 48, color: AppColors.secondaryText.withAlpha(160)),
+          Icon(Icons.search_off_rounded, size: 48, color: AppColors.inkSoft.withOpacity(0.4)),
           const SizedBox(height: 12),
-          Text(
-            'No encontramos resultados',
-            style: GoogleFonts.montserrat(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-            ),
-          ),
+          Text('No encontramos resultados', style: Theme.of(context).textTheme.headlineSmall),
         ],
       ),
     );

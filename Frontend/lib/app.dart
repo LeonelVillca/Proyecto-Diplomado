@@ -4,9 +4,46 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/controllers/movil/favorites_controller.dart';
+import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/screens/movil/shell/root_screen.dart';
-import 'package:frontend/screens/admin/public/landing_screen.dart';
-import 'package:frontend/screens/admin/auth/crear_contrasena_screen.dart';
+// Descomentar para modo mixto/web
+// import 'package:frontend/screens/admin/public/landing_screen.dart';
+// import 'package:frontend/screens/admin/auth/crear_contrasena_screen.dart';
+
+class AppScopeManager extends StatefulWidget {
+  final Widget child;
+  const AppScopeManager({super.key, required this.child});
+  @override
+  State<AppScopeManager> createState() => _AppScopeManagerState();
+}
+
+class _AppScopeManagerState extends State<AppScopeManager> {
+  RestauranteController? _restauranteController;
+  String? _lastToken;
+
+  @override
+  void dispose() {
+    _restauranteController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthScope.of(context);
+    
+    if (_restauranteController == null || _lastToken != auth.token) {
+      _lastToken = auth.token;
+      // No liberamos el anterior inmediatamente si aún se está dibujando,
+      // pero para simplificar lo reemplazamos.
+      _restauranteController = RestauranteController(auth.token);
+    }
+
+    return RestauranteScope(
+      controller: _restauranteController!,
+      child: widget.child,
+    );
+  }
+}
 
 /// Punto de entrada inteligente que decide qué interfaz mostrar.
 class ResponsiveEntryPoint extends StatelessWidget {
@@ -14,12 +51,8 @@ class ResponsiveEntryPoint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    // Si estamos en Web pura o si la pantalla es de tamaño Tablet/PC
-    if (kIsWeb || width > 800) {
-      return const AdminLandingScreen();
-    }
-    // Si es un celular nativo
+    // Para compilar la app móvil nativa, forzamos RootScreen y comentamos la parte web
+    // para evitar errores de compilación con librerías exclusivas de web (ej. dart:html)
     return const RootScreen();
   }
 }
@@ -48,21 +81,23 @@ class App extends StatelessWidget {
       authController: authController ?? AuthController(),
       child: FavoritesScope(
         favoritesController: favoritesController ?? FavoritesController(),
-        child: MaterialApp(
-          title: 'Mesa Chapaca',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          home: initialScreen ?? const ResponsiveEntryPoint(),
-          onGenerateRoute: (settings) {
-            if (settings.name != null && settings.name!.startsWith('/crear-contrasena')) {
-              final uri = Uri.parse(settings.name!);
-              final token = uri.queryParameters['token'];
-              return MaterialPageRoute(
-                builder: (context) => CrearContrasenaScreen(token: token),
-              );
-            }
-            return null;
-          },
+        child: AppScopeManager(
+          child: MaterialApp(
+            title: 'Mesa Chapaca',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            home: initialScreen ?? const ResponsiveEntryPoint(),
+            onGenerateRoute: (settings) {
+              // if (settings.name != null && settings.name!.startsWith('/crear-contrasena')) {
+              //   final uri = Uri.parse(settings.name!);
+              //   final token = uri.queryParameters['token'];
+              //   return MaterialPageRoute(
+              //     builder: (context) => CrearContrasenaScreen(token: token),
+              //   );
+              // }
+              return null;
+            },
+          ),
         ),
       ),
     );

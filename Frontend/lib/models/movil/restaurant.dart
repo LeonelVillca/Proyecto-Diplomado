@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/models/movil/restaurant_detail.dart';
 
 /// Tipos de cocina que se pueden encontrar en Tarija.
 enum Cuisine {
@@ -33,6 +34,13 @@ class Restaurant {
     required this.waitMinutes,
     required this.isOpen,
     required this.gradient,
+    this.photoUrl,
+    this.logoUrl,
+    this.gallery = const [],
+    this.lat,
+    this.lng,
+    this.address,
+    this.schedule = const [],
   });
 
   final String id;
@@ -52,6 +60,15 @@ class Restaurant {
 
   /// Degradado de portada (identidad visual de cada restaurante).
   final List<Color> gradient;
+
+  // Nuevos campos del backend
+  final String? photoUrl;
+  final String? logoUrl;
+  final List<String> gallery;
+  final double? lat;
+  final double? lng;
+  final String? address;
+  final List<ScheduleDay> schedule;
 
   /// Representación breve del precio: "$", "$$" o "$$$".
   String get price => List.filled(priceLevel, r'$').join();

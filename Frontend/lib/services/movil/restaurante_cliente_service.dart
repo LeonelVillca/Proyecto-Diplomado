@@ -60,9 +60,6 @@ class RestauranteClienteService {
   }
 
   Restaurant _mapToRestaurant(Map<String, dynamic> json) {
-    // Generate some deterministic placeholder data for UI fields not in backend
-    final random = Random(json['id']);
-    
     Cuisine cuisine = Cuisine.tipico;
     if (json['tipoComida'] != null) {
       final tc = json['tipoComida'].toString().toLowerCase();
@@ -75,30 +72,63 @@ class RestauranteClienteService {
       else if (tc.contains('sana') || tc.contains('healthy') || tc.contains('ensalada')) cuisine = Cuisine.healthy;
     }
 
-    final gradients = [
-      [const Color(0xFF6E1F35), const Color(0xFF3A0E1D)],
-      [const Color(0xFFC97B3D), const Color(0xFF8E2F43)],
-      [const Color(0xFF5C1A2E), const Color(0xFF8B6F3E)],
-      [const Color(0xFF8B6F3E), const Color(0xFF4A6B4A)],
-      [const Color(0xFF4A6B4A), const Color(0xFF2E4A33)],
-      [const Color(0xFF7A5A2E), const Color(0xFF3A2A14)],
-      [const Color(0xFF6E3B8E), const Color(0xFF2E3A5E)],
-    ];
+    String? photoUrl;
+    if (json['fotoPortada'] != null) {
+      photoUrl = json['fotoPortada'].toString().startsWith('http')
+          ? json['fotoPortada']
+          : '${ApiConfig.baseUrl}${json['fotoPortada']}';
+    }
+
+    String? logoUrl;
+    if (json['logo'] != null) {
+      logoUrl = json['logo'].toString().startsWith('http')
+          ? json['logo']
+          : '${ApiConfig.baseUrl}${json['logo']}';
+    }
+
+    List<String> gallery = [];
+    if (json['imagenes'] != null) {
+      for (var img in json['imagenes']) {
+        if (img['url'] != null) {
+           gallery.add(img['url'].toString().startsWith('http') 
+              ? img['url'] 
+              : '${ApiConfig.baseUrl}${img['url']}');
+        }
+      }
+    }
+
+    List<ScheduleDay> schedule = [];
+    if (json['horarios'] != null) {
+      for (var h in json['horarios']) {
+         schedule.add(ScheduleDay(
+           dayLabel: h['diaSemana'] ?? '',
+           openTime: h['horaInicio'] ?? '',
+           closeTime: h['horaFin'] ?? '',
+         ));
+      }
+    }
 
     return Restaurant(
       id: json['id'].toString(),
       name: json['nombre'],
       zone: json['direccion'] ?? 'Tarija',
       cuisine: cuisine,
-      rating: 4.0 + random.nextDouble(), // Mock rating 4.0-5.0
-      reviewCount: 50 + random.nextInt(400),
-      priceLevel: 1 + random.nextInt(3),
-      tagline: json['descripcion'] ?? 'Descubre los mejores sabores.',
+      rating: 0.0, // Ya no usamos Random, si no hay rating real ponemos 0
+      reviewCount: 0,
+      priceLevel: 1,
+      tagline: json['descripcion'] ?? '',
       emoji: cuisine.icon == Icons.local_fire_department_rounded ? '🔥' : '🍽️',
       tags: [cuisine.label],
-      waitMinutes: 10 + random.nextInt(20),
+      waitMinutes: 0,
       isOpen: json['estado'] ?? false,
-      gradient: gradients[json['id'] % gradients.length],
+      gradient: [const Color(0xFF6E1F35), const Color(0xFF3A0E1D)], // Color fijo vino tinto en lugar de aleatorio
+      photoUrl: photoUrl,
+      logoUrl: logoUrl,
+      gallery: gallery,
+      lat: json['latitud'] != null ? double.tryParse(json['latitud'].toString()) : null,
+      lng: json['longitud'] != null ? double.tryParse(json['longitud'].toString()) : null,
+      address: json['direccion'],
+      schedule: schedule,
     );
   }
 }

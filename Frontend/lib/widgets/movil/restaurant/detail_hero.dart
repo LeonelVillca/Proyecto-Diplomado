@@ -23,10 +23,13 @@ class _DetailHeroState extends State<DetailHero> {
       child: Stack(
         children: [
           // Imagen principal con transicion animada
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 400),
-            child: _HeroImage(key: ValueKey(_selected), path: widget.images[_selected]),
-          ),
+          if (widget.images.isNotEmpty)
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: _HeroImage(key: ValueKey(_selected), path: widget.images[_selected]),
+            )
+          else
+            Container(color: AppColors.wine),
 
           // Degradado inferior oscuro
           Positioned.fill(
@@ -85,10 +88,11 @@ class _HeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNetwork = path.startsWith('http') || path.startsWith('/');
     return SizedBox.expand(
-      child: Image.asset(path, fit: BoxFit.cover, errorBuilder: (_, __, ___) {
-        return Container(color: AppColors.wine);
-      }),
+      child: isNetwork
+        ? Image.network(path, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: AppColors.wine))
+        : Image.asset(path, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: AppColors.wine)),
     );
   }
 }
@@ -173,8 +177,9 @@ class _ThumbnailStrip extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(images[i], fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: AppColors.wine.withAlpha(80))),
+                child: images[i].startsWith('http') || images[i].startsWith('/')
+                  ? Image.network(images[i], fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: AppColors.wine.withAlpha(80)))
+                  : Image.asset(images[i], fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: AppColors.wine.withAlpha(80))),
               ),
             ),
           );
