@@ -9,6 +9,7 @@ import 'package:universal_html/html.dart' as html;
 import 'package:frontend/core/utils/web_helpers/platform_view_registry.dart' as ui_web;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:frontend/widgets/admin/admin_modal.dart';
 
 class SolicitudesScreen extends StatefulWidget {
   const SolicitudesScreen({super.key});
@@ -103,160 +104,112 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
   }
 
   void _verDetalles(SolicitudAdminModel solicitud) {
-    showDialog(
+    AdminModal.show(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: Colors.white,
-        clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          width: 620,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      title: 'Detalle de Solicitud #${solicitud.id}',
+      width: 700,
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF6B635E),
+            textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+          ),
+          child: const Text('Cerrar'),
+        ),
+        if (solicitud.estado == 'pendiente') ...[
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _cambiarEstadoSolicitud(solicitud, 'rechazada');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFEF2F2),
+              foregroundColor: const Color(0xFFEF4444),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            ),
+            child: Text('Rechazar', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+          ),
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _cambiarEstadoSolicitud(solicitud, 'aprobada');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6E1E39),
+              foregroundColor: Colors.white,
+              elevation: 4,
+              shadowColor: const Color(0x336E1E39),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            ),
+            child: Text('Aprobar Solicitud', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ],
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                color: const Color(0xFFFAF8F5),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Text(
+                'Estado Actual:',
+                style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              _buildBadge(solicitud.estado.toUpperCase()),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Detalle de Solicitud',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xFF1E1B1A),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'ID #${solicitud.id}',
-                          style: GoogleFonts.manrope(color: const Color(0xFFA39C98), fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    _buildBadge(solicitud.estado.toUpperCase()),
+                    _buildDetailItem('Restaurante', solicitud.nombreRestaurante),
+                    const SizedBox(height: 16),
+                    _buildDetailItem('Solicitante', '${solicitud.usuario?['nombre'] ?? ''} ${solicitud.usuario?['apellido'] ?? ''}'.trim()),
                   ],
                 ),
               ),
-              
-              // Body
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Grid
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildDetailItem('Restaurante', solicitud.nombreRestaurante),
-                                const SizedBox(height: 16),
-                                _buildDetailItem('Solicitante', '${solicitud.usuario?['nombre'] ?? ''} ${solicitud.usuario?['apellido'] ?? ''}'.trim()),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildDetailItem('NIT', solicitud.nitNegocio ?? 'No provisto'),
-                                const SizedBox(height: 16),
-                                _buildDetailItem('Teléfono', solicitud.celularContacto),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDetailItem('Correo Electrónico', '${solicitud.usuario?['correo'] ?? ''}'),
-                      const SizedBox(height: 24),
-                      
-                      // Descripcion
-                      Text('Descripción del Negocio', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
-                      const SizedBox(height: 8),
-                      Text(solicitud.descripcion ?? 'Sin descripción proporcionada.', style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF1E1B1A), height: 1.5)),
-                      
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Divider(color: Color(0xFFF0F2F5), height: 1),
-                      ),
-                      
-                      Text('Documentación Adjunta', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
-                      const SizedBox(height: 12),
-                      if (solicitud.documentosAdjuntos != null && solicitud.documentosAdjuntos!.isNotEmpty)
-                        ...solicitud.documentosAdjuntos!.map((doc) => _buildDocumentoBoton(doc, solicitud.id))
-                      else
-                        Text('No hay documentos adjuntos.', style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14)),
-                    ],
-                  ),
-                ),
-              ),
-              
-              // Footer
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-                color: const Color(0xFFFAF8F5),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+              const SizedBox(width: 24),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF6B635E),
-                        textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-                      ),
-                      child: const Text('Cerrar'),
-                    ),
-                    if (solicitud.estado == 'pendiente') ...[
-                      const SizedBox(width: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _cambiarEstadoSolicitud(solicitud, 'rechazada');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFEF2F2),
-                          foregroundColor: const Color(0xFFEF4444),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        ),
-                        child: Text('Rechazar', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          _cambiarEstadoSolicitud(solicitud, 'aprobada');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6E1E39),
-                          foregroundColor: Colors.white,
-                          elevation: 4,
-                          shadowColor: const Color(0x336E1E39),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        ),
-                        child: Text('Aprobar Solicitud', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
-                      ),
-                    ],
+                    _buildDetailItem('NIT', solicitud.nitNegocio ?? 'No provisto'),
+                    const SizedBox(height: 16),
+                    _buildDetailItem('Teléfono', solicitud.celularContacto),
                   ],
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          _buildDetailItem('Correo Electrónico', '${solicitud.usuario?['correo'] ?? ''}'),
+          const SizedBox(height: 24),
+          Text('Descripción del Negocio', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
+          const SizedBox(height: 8),
+          Text(solicitud.descripcion ?? 'Sin descripción proporcionada.', style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF1E1B1A), height: 1.5)),
+          
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Divider(color: Color(0xFFF0F2F5), height: 1),
+          ),
+          
+          Text('Documentación Adjunta', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
+          const SizedBox(height: 12),
+          if (solicitud.documentosAdjuntos != null && solicitud.documentosAdjuntos!.isNotEmpty)
+            ...solicitud.documentosAdjuntos!.map((doc) => _buildDocumentoBoton(doc, solicitud.id))
+          else
+            Text('No hay documentos adjuntos.', style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14)),
+        ],
       ),
     );
   }
@@ -715,10 +668,12 @@ class _VisorDocumentoDialogState extends State<_VisorDocumentoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Documento: ${widget.tipo}', style: const TextStyle(fontFamily: 'BodoniModa', fontWeight: FontWeight.bold)),
+    return AdminModal(
+      title: 'Documento: ${widget.tipo}',
+      width: 600,
+      cancelText: 'Cerrar',
+      confirmText: null, // Sin botón primario
       content: SizedBox(
-        width: 600,
         height: 600,
         child: _isLoading 
             ? const Center(child: CircularProgressIndicator())
@@ -730,12 +685,6 @@ class _VisorDocumentoDialogState extends State<_VisorDocumentoDialog> {
                         : const Center(child: Text('La visualización de PDF solo está soportada en Web.'))
                     : Image.memory(_bytes!, fit: BoxFit.contain),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cerrar'),
-        ),
-      ],
     );
   }
 }

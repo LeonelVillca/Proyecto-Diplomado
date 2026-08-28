@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class LandingBenefits extends StatelessWidget {
   const LandingBenefits({super.key});
@@ -22,23 +24,22 @@ class _SectionHowItWorks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF0D0401),
+      color: const Color(0xFFEAE0C9), // paper-deep
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 60),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(
             children: [
-              _SectionLabel('¿CÓMO FUNCIONA?'),
+              _SectionLabel('CÓMO FUNCIONA'),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Tres pasos para empezar',
-                style: TextStyle(
-                  fontFamily: 'BodoniModa',
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  height: 1.1,
+                style: GoogleFonts.piazzolla(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF241512), // ink
+                  height: 1.2,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -98,50 +99,48 @@ class _StepCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(36),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A0D05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF2A1A0A)),
+          color: Colors.transparent, // Uses background of section
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              number,
-              style: const TextStyle(
-                color: Color(0xFFD4AF37),
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'BodoniModa',
-              ),
-            ),
-            const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
+              width: 50,
+              height: 50,
+              decoration: const BoxDecoration(
+                color: Color(0xFF6B1233), // wine
+                shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFFD4AF37), size: 28),
+              child: Center(
+                child: Text(
+                  number,
+                  style: GoogleFonts.manrope(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Text(
               title,
-              style: const TextStyle(
-                fontFamily: 'BodoniModa',
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+              style: GoogleFonts.manrope(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF241512), // ink
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               description,
-              style: const TextStyle(
-                fontFamily: 'Karla',
-                fontSize: 16,
-                color: Color(0xAAFFFFFF),
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                color: const Color(0xFF7A6A5C), // ink-soft
                 height: 1.6,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -155,103 +154,127 @@ class _SectionBenefits extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF9F5EE),
+      color: const Color(0xFFF5EEE0), // paper
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 60),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Column(
-            children: [
-              _SectionLabelDark('BENEFICIOS'),
-              const SizedBox(height: 16),
-              const Text(
-                'Todo lo que necesitas\npara crecer',
-                style: TextStyle(
-                  fontFamily: 'BodoniModa',
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A0A00),
-                  height: 1.1,
-                ),
-                textAlign: TextAlign.center,
+          constraints: const BoxConstraints(maxWidth: 1180),
+          child: Container(
+            padding: const EdgeInsets.all(64),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6B1233), Color(0xFF3A0A1B)], // wine -> wine-dark
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Diseñado exclusivamente para la gastronomía tarijeña.\nHerramientas simples, resultados poderosos.',
-                style: TextStyle(
-                  fontFamily: 'Karla',
-                  fontSize: 18,
-                  color: Color(0xFF6B5A4A),
-                  height: 1.6,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 72),
-              // Imagen grande + lista de beneficios
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 5,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        'assets/tarija_food.png',
-                        height: 500,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 500,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(Icons.restaurant, size: 80, color: Color(0xFFD4AF37)),
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(107, 18, 51, 0.20),
+                  blurRadius: 40,
+                  offset: Offset(0, 20),
+                )
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Text Column
+                Expanded(
+                  flex: 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SectionLabelDark('PARA RESTAURANTES'),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Todo lo que necesitas\npara crecer',
+                        style: GoogleFonts.piazzolla(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          height: 1.15,
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Diseñado exclusivamente para la gastronomía tarijeña. Herramientas simples, resultados poderosos.',
+                        style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          height: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      const _BenefitRow(title: 'Reservas en tiempo real', description: 'Recibe y gestiona reservas al instante.'),
+                      const SizedBox(height: 20),
+                      const _BenefitRow(title: 'Menú digital interactivo', description: 'Presenta tus platillos con fotos y precios actualizados.'),
+                      const SizedBox(height: 20),
+                      const _BenefitRow(title: 'Mayor visibilidad', description: 'Atrae nuevos clientes locales y turistas.'),
+                      const SizedBox(height: 40),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF6B1233), // wine
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Registra tu restaurante',
+                          style: GoogleFonts.manrope(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 60),
-                  Expanded(
-                    flex: 5,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        _BenefitRow(
-                          icon: Icons.calendar_month_outlined,
-                          title: 'Reservas en tiempo real',
-                          description:
-                              'Recibe y gestiona reservas al instante. Confirma, rechaza o reasigna mesas sin depender del teléfono.',
+                ),
+                const SizedBox(width: 80),
+                // Visual Column
+                Expanded(
+                  flex: 5,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Base image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Opacity(
+                          opacity: 0.8,
+                          child: Image.asset(
+                            'assets/tarija_food.png',
+                            height: 400,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              height: 400,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
                         ),
-                        _BenefitRow(
-                          icon: Icons.menu_book_outlined,
-                          title: 'Menú digital interactivo',
-                          description:
-                              'Presenta tus platillos con fotos y precios actualizados. Tus clientes los verán antes de llegar.',
-                        ),
-                        _BenefitRow(
-                          icon: Icons.trending_up_outlined,
-                          title: 'Mayor visibilidad en Tarija',
-                          description:
-                              'Aparece en el ranking de los mejores restaurantes y atrae nuevos clientes locales y turistas.',
-                        ),
-                        _BenefitRow(
-                          icon: Icons.star_outline_rounded,
-                          title: 'Reseñas y reputación',
-                          description:
-                              'Responde a los comentarios de tus clientes y construye una reputación sólida en la plataforma.',
-                        ),
-                        _BenefitRow(
-                          icon: Icons.bar_chart_outlined,
-                          title: 'Reportes y estadísticas',
-                          description:
-                              'Accede a métricas de visitas, reservas y calificaciones para tomar mejores decisiones.',
-                        ),
-                      ],
-                    ),
+                      ),
+                      // Floating stat 1
+                      Positioned(
+                        top: 20,
+                        right: -10,
+                        child: _GlassStat(title: '+40%', subtitle: 'más reservas'),
+                      ),
+                      // Floating stat 2
+                      Positioned(
+                        bottom: 40,
+                        left: -20,
+                        child: _GlassStat(title: '120+', subtitle: 'restaurantes activos'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -260,59 +283,79 @@ class _SectionBenefits extends StatelessWidget {
 }
 
 class _BenefitRow extends StatelessWidget {
-  final IconData icon;
   final String title;
   final String description;
 
   const _BenefitRow({
-    required this.icon,
     required this.title,
     required this.description,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 36),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: const Color(0xFFD4AF37), size: 26),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'BodoniModa',
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A0A00),
-                  ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 2),
+          child: const Icon(Icons.check_circle, color: Color(0xFFC08A1E), size: 20), // gold
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontFamily: 'Karla',
-                    fontSize: 15,
-                    color: Color(0xFF6B5A4A),
-                    height: 1.5,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  height: 1.5,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _GlassStat extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  const _GlassStat({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: GoogleFonts.piazzolla(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
+              Text(subtitle, style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -323,23 +366,22 @@ class _SectionTestimonios extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF1A0A00),
+      color: const Color(0xFFF5EEE0), // paper
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 60),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
+          constraints: const BoxConstraints(maxWidth: 1180),
           child: Column(
             children: [
               _SectionLabel('TESTIMONIOS'),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Lo que dicen nuestros\nrestaurantes',
-                style: TextStyle(
-                  fontFamily: 'BodoniModa',
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  height: 1.1,
+                style: GoogleFonts.piazzolla(
+                  fontSize: 42,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF241512), // ink
+                  height: 1.15,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -399,9 +441,16 @@ class _TestimonioCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: const Color(0xFF2A1408),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF3A2010)),
+          color: const Color(0xFFFFFCF6), // card
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color.fromRGBO(36, 21, 18, 0.10)), // line
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(69, 11, 32, 0.10),
+              blurRadius: 50,
+              offset: Offset(0, 20),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -409,43 +458,59 @@ class _TestimonioCard extends StatelessWidget {
             Row(
               children: List.generate(
                 stars,
-                (_) => const Icon(Icons.star_rounded, color: Color(0xFFD4AF37), size: 18),
+                (_) => const Icon(Icons.star_rounded, color: Color(0xFFC08A1E), size: 20), // gold
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Text(
               texto,
-              style: const TextStyle(
-                fontFamily: 'Karla',
-                fontSize: 16,
-                color: Color(0xCCFFFFFF),
-                height: 1.7,
+              style: GoogleFonts.piazzolla(
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
                 fontStyle: FontStyle.italic,
+                color: const Color(0xFF241512), // ink
+                height: 1.5,
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                  radius: 22,
+                  backgroundColor: const Color(0xFFEAE0C9), // paper-deep
+                  radius: 24,
                   child: Text(
                     nombre[0],
-                    style: const TextStyle(
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'BodoniModa',
+                    style: GoogleFonts.manrope(
+                      color: const Color(0xFF6B1233), // wine
+                      fontWeight: FontWeight.w800,
                       fontSize: 18,
                     ),
                   ),
                 ),
                 const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(nombre, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontFamily: 'Karla', fontSize: 15)),
-                    Text(restaurante, style: const TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Karla', fontSize: 13)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nombre,
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFF241512), // ink
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        restaurante,
+                        style: GoogleFonts.manrope(
+                          color: const Color(0xFF7A6A5C), // ink-soft
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -461,11 +526,11 @@ class _SectionStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFD4AF37),
+      color: const Color(0xFF6B1233), // wine
       padding: const EdgeInsets.symmetric(vertical: 72, horizontal: 60),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
+          constraints: const BoxConstraints(maxWidth: 1180),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: const [
@@ -493,9 +558,9 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontFamily: 'BodoniModa', fontSize: 44, fontWeight: FontWeight.bold, color: Color(0xFF1A0A00))),
+        Text(value, style: GoogleFonts.piazzolla(fontSize: 44, fontWeight: FontWeight.w700, color: Colors.white)),
         const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontFamily: 'Karla', fontSize: 15, color: Color(0x99000000))),
+        Text(label, style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.8))),
       ],
     );
   }
@@ -505,7 +570,7 @@ class _StatDivider extends StatelessWidget {
   const _StatDivider();
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 60, color: const Color(0x331A0A00));
+    return Container(width: 1, height: 60, color: Colors.white.withValues(alpha: 0.2));
   }
 }
 
@@ -514,7 +579,7 @@ class _SectionFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF0D0401),
+      color: const Color(0xFF3A0A1B), // wine-dark
       child: Column(
         children: [
           // Footer Main
@@ -522,7 +587,7 @@ class _SectionFooter extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 60),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1100),
+                constraints: const BoxConstraints(maxWidth: 1180),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -538,30 +603,28 @@ class _SectionFooter extends StatelessWidget {
                                 width: 38,
                                 height: 38,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFD4AF37),
+                                  color: const Color(0xFFC08A1E), // gold
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 20),
                               ),
                               const SizedBox(width: 12),
-                              const Text(
+                              Text(
                                 'Mesa Chapaca',
-                                style: TextStyle(
-                                  fontFamily: 'BodoniModa',
+                                style: GoogleFonts.piazzolla(
                                   fontSize: 20,
                                   color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 20),
-                          const Text(
+                          Text(
                             'La plataforma de reservas líder\npara restaurantes en Tarija, Bolivia.',
-                            style: TextStyle(
-                              fontFamily: 'Karla',
+                            style: GoogleFonts.manrope(
                               fontSize: 15,
-                              color: Color(0x88FFFFFF),
+                              color: Colors.white.withValues(alpha: 0.7),
                               height: 1.7,
                             ),
                           ),
@@ -585,7 +648,7 @@ class _SectionFooter extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Plataforma', style: TextStyle(color: Color(0xFFD4AF37), fontFamily: 'BodoniModa', fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text('Plataforma', style: GoogleFonts.manrope(color: const Color(0xFFC08A1E), fontSize: 16, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 20),
                           ..._footerLinks(['Cómo funciona', 'Beneficios', 'Restaurantes', 'Solicitar acceso']),
                         ],
@@ -596,7 +659,7 @@ class _SectionFooter extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Soporte', style: TextStyle(color: Color(0xFFD4AF37), fontFamily: 'BodoniModa', fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text('Soporte', style: GoogleFonts.manrope(color: const Color(0xFFC08A1E), fontSize: 16, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 20),
                           ..._footerLinks(['Preguntas frecuentes', 'Contacto', 'Términos de uso', 'Privacidad']),
                         ],
@@ -608,7 +671,7 @@ class _SectionFooter extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Contacto', style: TextStyle(color: Color(0xFFD4AF37), fontFamily: 'BodoniModa', fontSize: 16, fontWeight: FontWeight.bold)),
+                          Text('Contacto', style: GoogleFonts.manrope(color: const Color(0xFFC08A1E), fontSize: 16, fontWeight: FontWeight.w800)),
                           const SizedBox(height: 20),
                           _ContactItem(Icons.location_on_outlined, 'Tarija, Bolivia'),
                           const SizedBox(height: 14),
@@ -627,18 +690,18 @@ class _SectionFooter extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 60),
             decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color(0xFF2A1408))),
+              border: Border(top: BorderSide(color: Color.fromRGBO(255, 255, 255, 0.1))),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   '© 2026 Mesa Chapaca. Todos los derechos reservados.',
-                  style: TextStyle(fontFamily: 'Karla', color: Color(0x55FFFFFF), fontSize: 13),
+                  style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
                 ),
-                const Text(
-                  'Hecho con ❤ en Tarija, Bolivia',
-                  style: TextStyle(fontFamily: 'Karla', color: Color(0x55FFFFFF), fontSize: 13),
+                Text(
+                  'Hecho en el valle de Tarija, Bolivia.',
+                  style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
                 ),
               ],
             ),
@@ -651,7 +714,7 @@ class _SectionFooter extends StatelessWidget {
   List<Widget> _footerLinks(List<String> links) {
     return links.map((l) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Text(l, style: const TextStyle(fontFamily: 'Karla', color: Color(0x88FFFFFF), fontSize: 15)),
+          child: Text(l, style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.7), fontSize: 15)),
         )).toList();
   }
 }
@@ -683,9 +746,9 @@ class _ContactItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFD4AF37), size: 18),
+        Icon(icon, color: const Color(0xFFC08A1E), size: 18),
         const SizedBox(width: 12),
-        Text(text, style: const TextStyle(fontFamily: 'Karla', color: Color(0x88FFFFFF), fontSize: 15)),
+        Text(text, style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.7), fontSize: 15)),
       ],
     );
   }
@@ -698,15 +761,21 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: Color(0xFFD4AF37),
-        fontFamily: 'Karla',
-        fontSize: 13,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 3,
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 16, height: 2, color: const Color(0xFFC1622E)),
+        const SizedBox(width: 8),
+        Text(
+          text.toUpperCase(),
+          style: GoogleFonts.manrope(
+            color: const Color(0xFF6B1233), // wine
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -717,15 +786,21 @@ class _SectionLabelDark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: Color(0xFFD4AF37),
-        fontFamily: 'Karla',
-        fontSize: 13,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 3,
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 16, height: 2, color: const Color(0xFFC1622E)),
+        const SizedBox(width: 8),
+        Text(
+          text.toUpperCase(),
+          style: GoogleFonts.manrope(
+            color: const Color(0xFFF5EEE0), // light paper
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
     );
   }
 }

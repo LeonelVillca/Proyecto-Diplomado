@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/resena_admin_model.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
 
 class ModeracionScreen extends StatefulWidget {
   const ModeracionScreen({super.key});
@@ -49,20 +50,13 @@ class _ModeracionScreenState extends State<ModeracionScreen> {
   }
 
   Future<void> _eliminarResena(int id) async {
-    final confirmar = await showDialog<bool>(
+    final confirmar = await AdminModal.show<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar Reseña', style: TextStyle(fontFamily: 'BodoniModa', fontWeight: FontWeight.bold)),
-        content: const Text('¿Estás seguro de que deseas eliminar esta reseña permanentemente?', style: TextStyle(fontFamily: 'Karla')),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
+      title: 'Eliminar Reseña',
+      confirmText: 'Eliminar',
+      confirmColor: Colors.redAccent,
+      onConfirm: () => Navigator.pop(context, true),
+      content: const Text('¿Estás seguro de que deseas eliminar esta reseña permanentemente?', style: TextStyle(fontFamily: 'Karla')),
     );
 
     if (confirmar != true) return;

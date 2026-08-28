@@ -70,9 +70,20 @@ class RestauranteController extends ChangeNotifier {
     }
   }
 
+  Future<void> _cargarRestaurantesSilencioso() async {
+    if (_service == null) return;
+    try {
+      _restaurants = await _service!.obtenerRestaurantes();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error recargando restaurantes silenciosamente: $e');
+    }
+  }
+
   Future<void> crearResena(String restauranteId, int idUsuario, int calificacion, String comentario) async {
     if (_service == null) throw Exception('No session');
     await _service!.crearResena(restauranteId, idUsuario, calificacion, comentario);
+    await _cargarRestaurantesSilencioso();
   }
 
   Future<void> toggleFavorito(String restauranteId, int idUsuario, bool isFavorite) async {

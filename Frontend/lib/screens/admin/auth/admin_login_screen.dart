@@ -1,10 +1,14 @@
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/admin/dashboard/admin_sistema_dashboard.dart';
 import 'package:frontend/screens/admin/dashboard/admin_restaurante_dashboard.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/screens/admin/public/solicitud_registro_screen.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -19,6 +23,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   final _passwordCtrl = TextEditingController();
   bool _isLoading = false;
   bool _obscureText = true;
+  bool _rememberMe = false;
   late AnimationController _animCtrl;
   late Animation<double> _fadeIn;
   late Animation<Offset> _slideIn;
@@ -87,22 +92,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
 
   void _mostrarErrorPermisos() {
     if (!mounted) return;
-    showDialog(
+    AdminModal.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A0A00),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Acceso Denegado', style: TextStyle(fontFamily: 'BodoniModa', color: Colors.white, fontSize: 22)),
-        content: const Text(
-          'Tu cuenta no tiene permisos para acceder al Panel Administrativo.\n\nContacta a soporte si crees que es un error.',
-          style: TextStyle(fontFamily: 'Karla', color: Color(0xAAFFFFFF), fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Entendido', style: TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Karla', fontWeight: FontWeight.bold)),
-          ),
-        ],
+      title: 'Acceso Denegado',
+      confirmText: 'Entendido',
+      cancelText: null,
+      confirmColor: const Color(0xFFD4AF37),
+      onConfirm: () => Navigator.pop(context),
+      content: const Text(
+        'Tu cuenta no tiene permisos para acceder al Panel Administrativo.\n\nContacta a soporte si crees que es un error.',
+        style: TextStyle(fontFamily: 'Karla', color: Color(0xFF1E1B1A), fontSize: 15),
       ),
     );
   }
@@ -110,83 +109,88 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0401),
+      backgroundColor: const Color(0xFFF5EEE0), // paper
       body: Row(
         children: [
-          // ── LADO IZQUIERDO: imagen con overlay ──────────────────────────────
+          // ── LADO IZQUIERDO: Ilustración en fondo blanco ─────────────────
           Expanded(
-            flex: 5,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/restaurant_hero.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.asset('assets/fondo_tarija.jpg', fit: BoxFit.cover),
-                  ),
-                ),
-                Positioned.fill(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xBB0D0401), Color(0x440D0401)],
-                        begin: Alignment.centerRight,
-                        end: Alignment.centerLeft,
+            flex: 11,
+            child: Container(
+              color: Colors.black, // Cambiado a negro por si la imagen tarda en cargar
+              child: Stack(
+                children: [
+                  // Imagen principal ocupando TODO el espacio
+                  Positioned.fill(
+                    child: FadeTransition(
+                      opacity: _fadeIn,
+                      child: Image.asset(
+                        'assets/eee.jpg',
+                        fit: BoxFit.cover, // Para que llene todo y no queden franjas
+                        alignment: Alignment.center,
                       ),
                     ),
                   ),
-                ),
-                // Texto sobre la imagen
-                Positioned(
-                  bottom: 60, left: 50, right: 50,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.6)),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          '✦  PANEL ADMINISTRATIVO',
-                          style: TextStyle(color: Color(0xFFD4AF37), fontFamily: 'Karla', fontSize: 12, letterSpacing: 2),
+                  // Logo sutil arriba con efecto cristal (glassmorphism)
+                  Positioned(
+                    top: 48,
+                    left: 48,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF6B1233), Color(0xFF3A0A1B)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(color: const Color(0xFF6B1233).withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))
+                                  ],
+                                ),
+                                child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 22),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                'Mesa Chapaca',
+                                style: GoogleFonts.piazzolla(
+                                  fontSize: 22,
+                                  color: Colors.white, // Blanco para que resalte sobre el collage oscuro
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Gestiona tu\nRestaurante\ndesde cualquier\nlugar',
-                        style: TextStyle(
-                          fontFamily: 'BodoniModa',
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          _FeatureChip(Icons.calendar_month_outlined, 'Reservas en tiempo real'),
-                          const SizedBox(width: 12),
-                          _FeatureChip(Icons.star_outline, 'Gestión de reseñas'),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
-          // ── LADO DERECHO: formulario ─────────────────────────────────────────
+          // ── LADO DERECHO: Formulario sobre fondo Paper ─────────────────────────────
           Expanded(
-            flex: 4,
+            flex: 9,
             child: Container(
-              color: const Color(0xFF0D0401),
+              color: const Color(0xFFF5EEE0), // paper
               child: Center(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
                   child: FadeTransition(
                     opacity: _fadeIn,
                     child: SlideTransition(
@@ -197,46 +201,49 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Logo
-                            Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD4AF37),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 22),
-                                ),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'Mesa Chapaca',
-                                  style: TextStyle(
-                                    fontFamily: 'BodoniModa',
-                                    fontSize: 20,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
+                            // Back
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.arrow_back_ios_new, size: 14, color: Color(0xFF7A6A5C)),
+                                label: Text(
+                                  'Volver al inicio',
+                                  style: GoogleFonts.manrope(
+                                    color: const Color(0xFF7A6A5C), // ink-soft
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 32),
-                            const Text(
-                              'Bienvenido de vuelta',
-                              style: TextStyle(
-                                fontFamily: 'BodoniModa',
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  alignment: Alignment.centerLeft,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Ingresa tus credenciales para continuar al panel.',
-                              style: TextStyle(fontFamily: 'Karla', fontSize: 15, color: Color(0x88FFFFFF), height: 1.4),
+                            const SizedBox(height: 40),
+
+                            Text(
+                              'Bienvenido',
+                              style: GoogleFonts.piazzolla(
+                                fontSize: 42,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF241512), // ink
+                                height: 1.1,
+                                letterSpacing: -0.5,
+                              ),
                             ),
-                            const SizedBox(height: 28),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Ingresa al panel administrativo de tu restaurante para\ngestionar reservas y más.',
+                              style: GoogleFonts.manrope(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF7A6A5C), // ink-soft
+                                height: 1.5,
+                              ),
+                            ),
+                            const SizedBox(height: 48),
 
                             // Form
                             Form(
@@ -246,16 +253,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                                   // Email field
                                   _LoginField(
                                     controller: _correoCtrl,
-                                    label: 'Correo electrónico',
+                                    label: 'CORREO ELECTRÓNICO',
+                                    hintText: 'tunombre@correo.com',
                                     icon: Icons.email_outlined,
                                     keyboardType: TextInputType.emailAddress,
                                     validator: (v) => v == null || !v.contains('@') ? 'Correo inválido' : null,
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 24),
                                   // Password field
                                   _LoginField(
                                     controller: _passwordCtrl,
-                                    label: 'Contraseña',
+                                    label: 'CONTRASEÑA',
+                                    hintText: '••••••••',
                                     icon: Icons.lock_outline,
                                     obscureText: _obscureText,
                                     validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
@@ -263,7 +272,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                        color: const Color(0x55FFFFFF),
+                                        color: const Color(0xFF7A6A5C), // ink-soft
                                         size: 20,
                                       ),
                                       onPressed: () => setState(() => _obscureText = !_obscureText),
@@ -273,64 +282,151 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                               ),
                             ),
                             const SizedBox(height: 24),
+                            
+                            // Recuérdame y Olvidaste contraseña
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: Checkbox(
+                                        value: _rememberMe,
+                                        onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                                        activeColor: const Color(0xFF6B1233), // wine
+                                        side: const BorderSide(color: Color(0xFFDCD6CC), width: 1.5), // border soft
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Mantener sesión',
+                                      style: GoogleFonts.manrope(
+                                        color: const Color(0xFF7A6A5C), // ink-soft
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                TextButton(
+                                  onPressed: () {}, // placeholder
+                                  style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerRight),
+                                  child: Text(
+                                    '¿Olvidaste tu contraseña?',
+                                    style: GoogleFonts.manrope(
+                                      color: const Color(0xFF6B1233), // wine
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 32),
 
                             // Login button
                             SizedBox(
-                              height: 50,
+                              height: 56,
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _login,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFD4AF37),
-                                  foregroundColor: const Color(0xFF1A0A00),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  backgroundColor: const Color(0xFF6B1233), // wine
+                                  foregroundColor: Colors.white,
+                                  elevation: 8,
+                                  shadowColor: const Color(0xFF6B1233).withValues(alpha: 0.4),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 ),
                                 child: _isLoading
                                     ? const SizedBox(
-                                        height: 22, width: 22,
-                                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF1A0A00)),
+                                        height: 24, width: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                                       )
-                                    : const Text(
-                                        'Iniciar Sesión',
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Karla', letterSpacing: 0.5),
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Ingresar',
+                                            style: GoogleFonts.manrope(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Icon(Icons.arrow_forward, size: 20),
+                                        ],
                                       ),
                               ),
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 32),
 
-                            // Back
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text(
-                                '← Volver al inicio',
-                                style: TextStyle(color: Color(0x66FFFFFF), fontFamily: 'Karla', fontSize: 14),
+                            // Box Registro link
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEBE3D5), // Slightly darker paper for contrast
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '¿Tu restaurante aún no está en\nMesa Chapaca?',
+                                      style: GoogleFonts.manrope(
+                                        color: const Color(0xFF7A6A5C), // ink-soft
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen()),
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Solicitar registro gratis',
+                                          style: GoogleFonts.manrope(
+                                            color: const Color(0xFF6B1233), // wine
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.arrow_forward, size: 16, color: Color(0xFF6B1233)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                            const SizedBox(height: 32),
 
-                            const SizedBox(height: 28),
-                            // divider + help
+                            // Footer de privacidad
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Expanded(child: Container(height: 1, color: const Color(0x22FFFFFF))),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text('¿Necesitas acceso?', style: TextStyle(color: Color(0x55FFFFFF), fontFamily: 'Karla', fontSize: 13)),
+                                const Icon(Icons.shield_outlined, size: 16, color: Color(0xFF8C7A6B)),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Tus datos están protegidos y encriptados.',
+                                  style: GoogleFonts.manrope(
+                                    color: const Color(0xFF8C7A6B),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                                Expanded(child: Container(height: 1, color: const Color(0x22FFFFFF))),
                               ],
-                            ),
-                            const SizedBox(height: 16),
-                            OutlinedButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Color(0x33FFFFFF)),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('Solicitar acceso para mi restaurante', style: TextStyle(fontFamily: 'Karla', fontSize: 14)),
                             ),
                           ],
                         ),
@@ -352,6 +448,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
 class _LoginField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
+  final String hintText;
   final IconData icon;
   final bool obscureText;
   final TextInputType? keyboardType;
@@ -362,6 +459,7 @@ class _LoginField extends StatelessWidget {
   const _LoginField({
     required this.controller,
     required this.label,
+    required this.hintText,
     required this.icon,
     this.obscureText = false,
     this.keyboardType,
@@ -372,39 +470,75 @@ class _LoginField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white, fontFamily: 'Karla', fontSize: 16),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Color(0x66FFFFFF), fontFamily: 'Karla'),
-        prefixIcon: Icon(icon, color: const Color(0xFFD4AF37), size: 20),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: const Color(0xFF1A0A00),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0x22FFFFFF)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.manrope(
+            color: const Color(0xFF8C7A6B), // ink-soft a bit browner
+            fontSize: 12.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+          ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0x22FFFFFF)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF241512).withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            style: GoogleFonts.manrope(
+              color: const Color(0xFF241512), // ink
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: GoogleFonts.manrope(
+                color: const Color(0xFFB5A89D), // light placeholder
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+              prefixIcon: Icon(icon, color: const Color(0xFFC08A1E), size: 20), // gold accent
+              suffixIcon: suffixIcon,
+              filled: true,
+              fillColor: Colors.transparent, // Color is handled by outer Container
+              contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFEAE0C9), width: 1), // soft border
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFFEAE0C9), width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Color(0xFF6B1233), width: 1.5), // wine
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: Colors.red, width: 1),
+              ),
+              errorStyle: GoogleFonts.manrope(fontWeight: FontWeight.w600),
+            ),
+            validator: validator,
+            onFieldSubmitted: onFieldSubmitted,
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF6B1A35)),
-        ),
-        errorStyle: const TextStyle(fontFamily: 'Karla'),
-      ),
-      validator: validator,
-      onFieldSubmitted: onFieldSubmitted,
+      ],
     );
   }
 }

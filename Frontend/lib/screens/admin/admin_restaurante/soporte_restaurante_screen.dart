@@ -5,6 +5,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/soporte_admin_model.dart';
 import 'package:frontend/models/admin/categoria_soporte_admin_model.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
 
 class SoporteRestauranteScreen extends StatefulWidget {
   const SoporteRestauranteScreen({super.key});
@@ -67,51 +68,45 @@ class _SoporteRestauranteScreenState extends State<SoporteRestauranteScreen> {
     final descCtrl = TextEditingController();
     int? selectedCategoriaId = _categorias.isNotEmpty ? _categorias.first.id : null;
 
-    showDialog(
+    AdminModal.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nuevo Ticket de Soporte', style: TextStyle(fontFamily: 'BodoniModa', fontWeight: FontWeight.bold)),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: selectedCategoriaId,
-                decoration: const InputDecoration(labelText: 'Categoría', border: OutlineInputBorder()),
-                items: _categorias.map<DropdownMenuItem<int>>((c) => DropdownMenuItem<int>(value: c.id, child: Text(c.nombre))).toList(),
-                onChanged: (v) => selectedCategoriaId = v,
-                validator: (v) => v == null ? 'Selecciona una categoría' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: asuntoCtrl,
-                decoration: const InputDecoration(labelText: 'Asunto', border: OutlineInputBorder()),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Ingresa un asunto' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: descCtrl,
-                maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Descripción', border: OutlineInputBorder()),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Ingresa una descripción' : null,
-              ),
-            ],
-          ),
+      title: 'Nuevo Ticket de Soporte',
+      confirmText: 'Enviar Ticket',
+      onConfirm: () async {
+        if (formKey.currentState!.validate() && selectedCategoriaId != null) {
+          Navigator.pop(context);
+          _crearTicket(selectedCategoriaId!, asuntoCtrl.text, descCtrl.text);
+        }
+      },
+      content: Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<int>(
+              value: selectedCategoriaId,
+              decoration: AdminInputDecoration.get(labelText: 'Categoría'),
+              items: _categorias.map<DropdownMenuItem<int>>((c) => DropdownMenuItem<int>(value: c.id, child: Text(c.nombre, style: const TextStyle(fontFamily: 'Karla')))).toList(),
+              onChanged: (v) => selectedCategoriaId = v,
+              validator: (v) => v == null ? 'Selecciona una categoría' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: asuntoCtrl,
+              style: const TextStyle(fontFamily: 'Karla', fontSize: 14),
+              decoration: AdminInputDecoration.get(labelText: 'Asunto'),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Ingresa un asunto' : null,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: descCtrl,
+              maxLines: 3,
+              style: const TextStyle(fontFamily: 'Karla', fontSize: 14),
+              decoration: AdminInputDecoration.get(labelText: 'Descripción'),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Ingresa una descripción' : null,
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate() && selectedCategoriaId != null) {
-                Navigator.pop(ctx);
-                _crearTicket(selectedCategoriaId!, asuntoCtrl.text, descCtrl.text);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B1A35), foregroundColor: Colors.white),
-            child: const Text('Enviar Ticket'),
-          ),
-        ],
       ),
     );
   }

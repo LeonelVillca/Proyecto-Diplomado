@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
@@ -137,7 +138,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9F9), // Fondo muy claro como OpenTable
+      backgroundColor: const Color(0xFFF5EEE0), // paper
       body: CustomScrollView(
         slivers: [
           const SliverToBoxAdapter(child: LandingNavbar()),
@@ -179,22 +180,21 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
         children: [
           const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
           const SizedBox(height: 24),
-          const Text(
+          const SizedBox(height: 24),
+          Text(
             'Solicitud enviada con éxito',
-            style: TextStyle(
-              fontFamily: 'BodoniModa',
+            style: GoogleFonts.piazzolla(
               fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF6B1A35),
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF6B1233), // wine
             ),
           ),
           const SizedBox(height: 16),
           Text(
             'Hemos recibido tus datos. Nuestro equipo se pondrá en contacto contigo pronto.',
-            style: TextStyle(
-              fontFamily: 'Karla',
+            style: GoogleFonts.manrope(
               fontSize: 16,
-              color: Colors.grey.shade600,
+              color: const Color(0xFF7A6A5C),
             ),
             textAlign: TextAlign.center,
           ),
@@ -207,14 +207,14 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6B1A35),
+              backgroundColor: const Color(0xFF6B1233),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text('Volver al inicio', style: TextStyle(fontSize: 16)),
+            child: Text('Volver al inicio', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800)),
           ),
         ],
       ),
@@ -243,23 +243,21 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Comience hoy mismo.',
-                style: TextStyle(
-                  fontFamily: 'BodoniModa',
+                style: GoogleFonts.piazzolla(
                   fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF241512), // ink
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
                 'Un miembro de nuestro equipo se pondrá en contacto con usted en breve para hablar sobre sus necesidades.',
-                style: TextStyle(
-                  fontFamily: 'Karla',
+                style: GoogleFonts.manrope(
                   fontSize: 16,
-                  color: Colors.grey.shade800,
+                  color: const Color(0xFF7A6A5C), // ink-soft
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -270,23 +268,22 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                 children: [
                   Expanded(
                     flex: 1,
-                    child: Container(height: 4, color: const Color(0xFFE53935)), // Rojo/Vino vibrante
+                    child: Container(height: 4, color: const Color(0xFF6B1233)), // wine
                   ),
                   Expanded(
                     flex: 1,
-                    child: Container(height: 4, color: _currentStep == 2 ? const Color(0xFFE53935) : Colors.grey.shade200),
+                    child: Container(height: 4, color: _currentStep == 2 ? const Color(0xFF6B1233) : const Color(0xFFEAE0C9)), // wine : paper-deep
                   ),
                 ],
               ),
               const SizedBox(height: 24),
               
-              const Text(
+              Text(
                 '¡Empecemos!',
-                style: TextStyle(
-                  fontFamily: 'Karla',
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                style: GoogleFonts.piazzolla(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF241512), // ink
                 ),
               ),
               const SizedBox(height: 8),
@@ -294,10 +291,9 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                 _currentStep == 1 
                     ? 'Cuéntanos un poco sobre ti para que podamos personalizar tu experiencia.'
                     : 'Necesitamos algunos documentos para validar tu restaurante.',
-                style: TextStyle(
-                  fontFamily: 'Karla',
+                style: GoogleFonts.manrope(
                   fontSize: 15,
-                  color: Colors.grey.shade700,
+                  color: const Color(0xFF7A6A5C), // ink-soft
                 ),
               ),
               const SizedBox(height: 32),
@@ -362,16 +358,16 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black, // Como OpenTable
+                        backgroundColor: const Color(0xFF6B1233), // wine
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4), // Bordes menos redondeados
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Próximo',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800),
                       ),
                     ),
                   ),
@@ -412,11 +408,11 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _enviarSolicitud,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: const Color(0xFF6B1233), // wine
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: _isLoading
@@ -425,9 +421,9 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                                 width: 20,
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
-                            : const Text(
+                            : Text(
                                 'Enviar Solicitud',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800),
                               ),
                       ),
                     ),
@@ -438,10 +434,9 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
               const SizedBox(height: 40),
               Text(
                 'Al hacer clic en «Próximo», acepta nuestra Política de privacidad.\n\nTambién acepta recibir comunicaciones de marketing de Mesa Chapaca sobre noticias, eventos, promociones y boletines mensuales. Puede cancelar su suscripción a los correos electrónicos en cualquier momento.',
-                style: TextStyle(
-                  fontFamily: 'Karla',
+                style: GoogleFonts.manrope(
                   fontSize: 12,
-                  color: Colors.grey.shade600,
+                  color: const Color(0xFF7A6A5C), // ink-soft
                   height: 1.5,
                 ),
               ),

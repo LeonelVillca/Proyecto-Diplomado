@@ -5,6 +5,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/resena_admin_model.dart';
 import 'package:frontend/models/admin/respuesta_resena_admin_model.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
 
 class GestionResenasScreen extends StatefulWidget {
   const GestionResenasScreen({super.key});
@@ -83,51 +84,70 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
     final formKey = GlobalKey<FormState>();
     final textoCtrl = TextEditingController(text: respuestaExistente?.texto ?? '');
 
-    showDialog(
+    AdminModal.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(respuestaExistente == null ? 'Responder Reseña' : 'Editar Respuesta', style: const TextStyle(fontFamily: 'BodoniModa', fontWeight: FontWeight.bold)),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Reseña de ${resena.usuario?['nombre'] ?? 'Usuario'}:', style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text(resena.comentario ?? '(Sin comentario)', style: const TextStyle(fontStyle: FontStyle.italic)),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: textoCtrl,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Tu respuesta',
-                  border: OutlineInputBorder(),
-                  hintText: 'Agradece o responde educadamente al cliente...',
-                ),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Escribe una respuesta' : null,
+      title: respuestaExistente == null ? 'Responder Reseña' : 'Editar Respuesta',
+      confirmText: 'Publicar Respuesta',
+      onConfirm: () async {
+        if (formKey.currentState!.validate()) {
+          Navigator.pop(context);
+          _guardarRespuesta(resena.id, textoCtrl.text, respuestaId: respuestaExistente?.id);
+        }
+      },
+      content: Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9F5EE).withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE8DCC4).withValues(alpha: 0.5)),
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: const Color(0xFF6E1F35).withValues(alpha: 0.1),
+                        child: const Icon(Icons.person, size: 14, color: Color(0xFF6E1F35)),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(resena.usuario?['nombre'] ?? 'Usuario', style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Karla', color: Color(0xFF1A0A00))),
+                      const Spacer(),
+                      Row(
+                        children: List.generate(5, (starIndex) {
+                          return Icon(
+                            starIndex < resena.calificacion ? Icons.star_rounded : Icons.star_border_rounded,
+                            color: const Color(0xFFD4AF37),
+                            size: 14,
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text('"${resena.comentario ?? '(Sin comentario)'}"', style: const TextStyle(fontFamily: 'Karla', fontStyle: FontStyle.italic, color: Color(0xFF6B5A4A))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            TextFormField(
+              controller: textoCtrl,
+              maxLines: 4,
+              style: const TextStyle(fontFamily: 'Karla'),
+              decoration: AdminInputDecoration.get(
+                labelText: 'Tu respuesta pública',
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Escribe una respuesta' : null,
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(ctx);
-                _guardarRespuesta(resena.id, textoCtrl.text, respuestaId: respuestaExistente?.id);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B1A35), foregroundColor: Colors.white),
-            child: const Text('Publicar Respuesta'),
-          ),
-        ],
       ),
     );
   }
@@ -178,104 +198,146 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
       children: [
         const Text(
           'Gestión de Reseñas',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Colors.black87),
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Color(0xFF1A0A00)),
         ),
         const SizedBox(height: 8),
-        Text(
+        const Text(
           'Revisa el feedback de tus clientes y dales una respuesta profesional.',
-          style: TextStyle(color: Colors.grey.shade600, fontFamily: 'Karla', fontSize: 14),
+          style: TextStyle(color: Color(0xFF6B5A4A), fontFamily: 'Karla', fontSize: 16),
         ),
         const SizedBox(height: 32),
 
         Expanded(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFF6E1F35)))
               : _resenas.isEmpty
-                  ? Center(child: Text('No has recibido reseñas todavía.', style: TextStyle(color: Colors.grey.shade500)))
+                  ? const Center(child: Text('No has recibido reseñas todavía.', style: TextStyle(color: Color(0xFF6B5A4A), fontFamily: 'Karla', fontSize: 16)))
                   : ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 32, right: 16),
                       itemCount: _resenas.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      separatorBuilder: (_, __) => const SizedBox(height: 24),
                       itemBuilder: (context, index) {
                         final resena = _resenas[index];
                         final respuesta = _respuestas[resena.id];
                         final fecha = DateTime.tryParse(resena.fecha);
                         final strFecha = fecha != null ? '${fecha.day.toString().padLeft(2,'0')}/${fecha.month.toString().padLeft(2,'0')}/${fecha.year}' : '';
 
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade300)),
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                            border: Border.all(color: const Color(0xFFF0EBE1)),
+                          ),
                           child: Padding(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(28),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     CircleAvatar(
-                                      backgroundColor: const Color(0xFF6B1A35).withValues(alpha: 0.1),
-                                      child: const Icon(Icons.person, color: Color(0xFF6B1A35)),
+                                      radius: 24,
+                                      backgroundColor: const Color(0xFFF9F5EE),
+                                      child: Text(
+                                        (resena.usuario?['nombre'] ?? 'U')[0].toUpperCase(),
+                                        style: const TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', fontSize: 20),
+                                      ),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(resena.usuario?['nombre'] ?? 'Usuario', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Karla')),
-                                          const SizedBox(height: 4),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(resena.usuario?['nombre'] ?? 'Usuario', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Karla', color: Color(0xFF1A0A00))),
+                                              Text(strFecha, style: const TextStyle(color: Color(0xFF9E9284), fontSize: 13, fontFamily: 'Karla')),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
                                           Row(
                                             children: List.generate(5, (starIndex) {
                                               return Icon(
-                                                starIndex < resena.calificacion ? Icons.star : Icons.star_border,
-                                                color: Colors.amber,
-                                                size: 16,
+                                                starIndex < resena.calificacion ? Icons.star_rounded : Icons.star_border_rounded,
+                                                color: const Color(0xFFD4AF37),
+                                                size: 20,
                                               );
                                             }),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    Text(strFecha, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
-                                Text(resena.comentario ?? '(Sin comentario)', style: const TextStyle(fontSize: 15)),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 20),
+                                Text(
+                                  resena.comentario ?? '(Sin comentario)', 
+                                  style: const TextStyle(fontSize: 16, fontFamily: 'Karla', color: Color(0xFF4A3F35), height: 1.5)
+                                ),
+                                const SizedBox(height: 24),
 
                                 if (respuesta != null) ...[
                                   Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade50,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.grey.shade200),
+                                      color: const Color(0xFFF9F5EE),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: const Color(0xFFE8DCC4).withValues(alpha: 0.5)),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
-                                            const Icon(Icons.reply, size: 16, color: Colors.grey),
+                                            const Icon(Icons.subdirectory_arrow_right_rounded, size: 20, color: Color(0xFFD4AF37)),
                                             const SizedBox(width: 8),
-                                            const Text('Tu respuesta', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                                            const Text('Tu respuesta', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A0A00), fontFamily: 'Karla', fontSize: 15)),
                                             const Spacer(),
-                                            TextButton(
+                                            TextButton.icon(
                                               onPressed: () => _abrirModalRespuesta(resena, respuestaExistente: respuesta),
-                                              child: const Text('Editar'),
+                                              icon: const Icon(Icons.edit_outlined, size: 16),
+                                              label: const Text('Editar'),
+                                              style: TextButton.styleFrom(
+                                                foregroundColor: const Color(0xFF6E1F35),
+                                                textStyle: const TextStyle(fontFamily: 'Karla', fontWeight: FontWeight.bold),
+                                              ),
                                             ),
                                           ],
                                         ),
-                                        Text(respuesta.texto, style: TextStyle(color: Colors.grey.shade700)),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          respuesta.texto, 
+                                          style: const TextStyle(color: Color(0xFF6B5A4A), fontFamily: 'Karla', fontSize: 15, height: 1.5)
+                                        ),
                                       ],
                                     ),
                                   ),
                                 ] else ...[
                                   Align(
                                     alignment: Alignment.centerRight,
-                                    child: OutlinedButton.icon(
+                                    child: ElevatedButton.icon(
                                       onPressed: () => _abrirModalRespuesta(resena),
-                                      icon: const Icon(Icons.reply),
+                                      icon: const Icon(Icons.reply_rounded, size: 18),
                                       label: const Text('Responder'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: const Color(0xFF6E1F35),
+                                        elevation: 0,
+                                        side: const BorderSide(color: Color(0xFF6E1F35)),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                        textStyle: const TextStyle(fontFamily: 'Karla', fontWeight: FontWeight.bold),
+                                      ),
                                     ),
                                   ),
                                 ],

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/usuario_admin_model.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
 
 class UsuariosRolesScreen extends StatefulWidget {
   const UsuariosRolesScreen({super.key});
@@ -104,58 +105,40 @@ class _UsuariosRolesScreenState extends State<UsuariosRolesScreen> {
     // Variable local para manejar estado de los checkboxes sin redibujar toda la pantalla
     Set<int> rolesModificados = Set.from(rolesAsignados);
 
-    showDialog(
+    AdminModal.show(
       context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setStateModal) {
-            return AlertDialog(
-              title: Text(
-                'Roles: ${usuario.nombre} ${usuario.apellido ?? ''}'.trim(),
-                style: const TextStyle(fontFamily: 'BodoniModa', fontWeight: FontWeight.bold),
-              ),
-              content: SizedBox(
-                width: 400,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _rolesDisponibles.map((rol) {
-                    final hasRole = rolesModificados.contains(rol.id);
-                    return CheckboxListTile(
-                      title: Text(rol.nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Karla')),
-                      subtitle: Text(rol.descripcion ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                      activeColor: const Color(0xFF6B1A35),
-                      value: hasRole,
-                      onChanged: (val) {
-                        setStateModal(() {
-                          if (val == true) {
-                            rolesModificados.add(rol.id);
-                          } else {
-                            rolesModificados.remove(rol.id);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _guardarRoles(usuario.id, rolesAsignados, rolesModificados);
-                  },
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B1A35), foregroundColor: Colors.white),
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
+      title: 'Roles: ${usuario.nombre} ${usuario.apellido ?? ''}'.trim(),
+      width: 500,
+      confirmText: 'Guardar',
+      onConfirm: () {
+        Navigator.pop(context);
+        _guardarRoles(usuario.id, rolesAsignados, rolesModificados);
       },
+      content: StatefulBuilder(
+        builder: (context, setStateModal) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _rolesDisponibles.map((rol) {
+              final hasRole = rolesModificados.contains(rol.id);
+              return CheckboxListTile(
+                title: Text(rol.nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Karla')),
+                subtitle: Text(rol.descripcion ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13, fontFamily: 'Karla')),
+                activeColor: const Color(0xFF6E1F35),
+                value: hasRole,
+                onChanged: (val) {
+                  setStateModal(() {
+                    if (val == true) {
+                      rolesModificados.add(rol.id);
+                    } else {
+                      rolesModificados.remove(rol.id);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          );
+        },
+      ),
     );
   }
 

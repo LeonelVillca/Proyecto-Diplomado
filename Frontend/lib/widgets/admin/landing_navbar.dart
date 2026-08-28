@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/admin/public/solicitud_registro_screen.dart';
 import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class LandingNavbar extends StatefulWidget {
   const LandingNavbar({super.key});
@@ -14,49 +16,53 @@ class _LandingNavbarState extends State<LandingNavbar> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 0),
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Logo
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 0),
+          height: 80,
+          decoration: const BoxDecoration(
+            color: Color(0xCCF5EEE0), // paper with opacity
+            border: Border(bottom: BorderSide(color: Color.fromRGBO(36, 21, 18, 0.10), width: 1)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Logo
           Row(
             children: [
               Container(
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6B1233), Color(0xFF3A0A1B)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 22),
               ),
               const SizedBox(width: 14),
               RichText(
-                text: const TextSpan(
+                text: TextSpan(
                   children: [
                     TextSpan(
                       text: 'Mesa ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: 'BodoniModa',
-                        letterSpacing: 1,
+                      style: GoogleFonts.piazzolla(
+                        color: const Color(0xFF241512), // ink
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     TextSpan(
                       text: 'Chapaca',
-                      style: TextStyle(
-                        color: Color(0xFFD4AF37),
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'BodoniModa',
-                        letterSpacing: 1,
+                      style: GoogleFonts.piazzolla(
+                        color: const Color(0xFFC08A1E), // gold or accent
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -82,73 +88,127 @@ class _LandingNavbarState extends State<LandingNavbar> {
               const SizedBox(width: 40),
 
               // Acceso
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text(
-                      'Acceso',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Karla',
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
+              _GhostButton(
+                label: 'Iniciar sesión',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
                 ),
               ),
               const SizedBox(width: 14),
 
               // Comienza
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen()),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37),
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Text(
-                      'Comienza Gratis',
-                      style: TextStyle(
-                        color: Color(0xFF1A0A00),
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Karla',
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
+              _PrimaryButton(
+                label: 'Crear cuenta',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen()),
                 ),
               ),
-            ],
+            ], // closes inner Row children
+          ), // closes inner Row
+        ), // closes FittedBox
+      ), // closes Expanded
+    ], // closes outer Row children
+  ), // closes outer Row
+), // closes Container
+), // closes BackdropFilter
+); // closes ClipRRect
+}
+}
+
+class _GhostButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _GhostButton({required this.label, required this.onTap});
+
+  @override
+  State<_GhostButton> createState() => _GhostButtonState();
+}
+
+class _GhostButtonState extends State<_GhostButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            border: Border.all(
+              color: _hovered ? const Color(0xFF6B1233) : const Color.fromRGBO(36, 21, 18, 0.10),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(16),
           ),
+          child: Text(
+            widget.label,
+            style: GoogleFonts.manrope(
+              color: _hovered ? const Color(0xFF6B1233) : const Color(0xFF241512),
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.01,
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _PrimaryButton({required this.label, required this.onTap});
+
+  @override
+  State<_PrimaryButton> createState() => _PrimaryButtonState();
+}
+
+class _PrimaryButtonState extends State<_PrimaryButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: _hovered ? const Color(0xFF8C3350) : const Color(0xFF6B1233),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: _hovered
+                ? [
+                    const BoxShadow(
+                      color: Color.fromRGBO(107, 18, 51, 0.32),
+                      blurRadius: 26,
+                      offset: Offset(0, 12),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Text(
+            widget.label,
+            style: GoogleFonts.manrope(
+              color: Colors.white,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.01,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -177,11 +237,10 @@ class _NavLinkState extends State<_NavLink> {
         children: [
           Text(
             widget.text,
-            style: TextStyle(
-              color: _hovered ? const Color(0xFFD4AF37) : Colors.white.withValues(alpha: 0.85),
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Karla',
+            style: GoogleFonts.manrope(
+              color: _hovered ? const Color(0xFF6B1233) : const Color(0xFF7A6A5C), // wine : ink-soft
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
@@ -190,7 +249,7 @@ class _NavLinkState extends State<_NavLink> {
             height: 2,
             width: _hovered ? 30 : 0,
             decoration: BoxDecoration(
-              color: const Color(0xFFD4AF37),
+              color: const Color(0xFF6B1233), // wine
               borderRadius: BorderRadius.circular(1),
             ),
           ),

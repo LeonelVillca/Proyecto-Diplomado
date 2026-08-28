@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/mesa_admin_model.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
 
 class GestionMesasScreen extends StatefulWidget {
   const GestionMesasScreen({super.key});
@@ -106,107 +107,64 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     final capacidadCtrl = TextEditingController(text: mesa?.capacidad.toString() ?? '4');
     String estadoSeleccionado = mesa?.estado ?? 'libre';
 
-    showDialog(
+    AdminModal.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
+      title: mesa == null ? 'Nueva Mesa' : 'Editar Mesa',
+      confirmText: mesa == null ? 'Crear Mesa' : 'Guardar Cambios',
+      onConfirm: () async {
+        if (formKey.currentState!.validate()) {
+          final body = {
+            'idRestaurante': _idRestaurante,
+            'numeroMesa': numeroCtrl.text.trim(),
+            'capacidad': int.parse(capacidadCtrl.text.trim()),
+            'estado': estadoSeleccionado,
+          };
+          Navigator.pop(context);
+          _guardarMesa(body, mesa?.id);
+        }
+      },
+      content: Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: const Color(0xFFFCF4F7), borderRadius: BorderRadius.circular(10)),
-              child: const Icon(Icons.table_restaurant, color: Color(0xFF6E1E39)),
+            TextFormField(
+              controller: numeroCtrl,
+              style: GoogleFonts.manrope(fontSize: 14),
+              decoration: AdminInputDecoration.get(
+                labelText: 'Identificador (Ej: Mesa 1, Barra 2)',
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
             ),
-            const SizedBox(width: 12),
-            Text(mesa == null ? 'Nueva Mesa' : 'Editar Mesa', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold, color: const Color(0xFF2D0A14), fontSize: 22)),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: capacidadCtrl,
+              keyboardType: TextInputType.number,
+              style: GoogleFonts.manrope(fontSize: 14),
+              decoration: AdminInputDecoration.get(
+                labelText: 'Capacidad de Personas',
+              ),
+              validator: (v) => v == null || v.trim().isEmpty || int.tryParse(v) == null ? 'Número válido requerido' : null,
+            ),
+            if (mesa != null) ...[
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: estadoSeleccionado,
+                style: GoogleFonts.manrope(color: const Color(0xFF1E1B1A), fontSize: 14),
+                decoration: AdminInputDecoration.get(
+                  labelText: 'Estado Inicial',
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'libre', child: Text('Libre')),
+                  DropdownMenuItem(value: 'ocupada', child: Text('Ocupada')),
+                  DropdownMenuItem(value: 'reservada', child: Text('Reservada')),
+                  DropdownMenuItem(value: 'inactiva', child: Text('Inactiva')),
+                ],
+                onChanged: (v) => estadoSeleccionado = v!,
+              ),
+            ],
           ],
         ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: numeroCtrl,
-                style: GoogleFonts.manrope(fontSize: 14),
-                decoration: InputDecoration(
-                  labelText: 'Identificador (Ej: Mesa 1, Barra 2)',
-                  labelStyle: GoogleFonts.manrope(color: const Color(0xFF6B635E)),
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                ),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: capacidadCtrl,
-                keyboardType: TextInputType.number,
-                style: GoogleFonts.manrope(fontSize: 14),
-                decoration: InputDecoration(
-                  labelText: 'Capacidad de Personas',
-                  labelStyle: GoogleFonts.manrope(color: const Color(0xFF6B635E)),
-                  filled: true,
-                  fillColor: const Color(0xFFF8FAFC),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                ),
-                validator: (v) => v == null || v.trim().isEmpty || int.tryParse(v) == null ? 'Número válido requerido' : null,
-              ),
-              if (mesa != null) ...[
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: estadoSeleccionado,
-                  style: GoogleFonts.manrope(color: const Color(0xFF1E1B1A), fontSize: 14),
-                  decoration: InputDecoration(
-                    labelText: 'Estado Inicial',
-                    labelStyle: GoogleFonts.manrope(color: const Color(0xFF6B635E)),
-                    filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'libre', child: Text('Libre')),
-                    DropdownMenuItem(value: 'ocupada', child: Text('Ocupada')),
-                    DropdownMenuItem(value: 'reservada', child: Text('Reservada')),
-                    DropdownMenuItem(value: 'inactiva', child: Text('Inactiva')),
-                  ],
-                  onChanged: (v) => estadoSeleccionado = v!,
-                ),
-              ],
-            ],
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancelar', style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: const Color(0xFF6B635E))),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final body = {
-                  'idRestaurante': _idRestaurante,
-                  'numeroMesa': numeroCtrl.text.trim(),
-                  'capacidad': int.parse(capacidadCtrl.text.trim()),
-                  'estado': estadoSeleccionado,
-                };
-                Navigator.pop(ctx);
-                _guardarMesa(body, mesa?.id);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6E1E39),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(mesa == null ? 'Crear Mesa' : 'Guardar Cambios', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
   }
@@ -245,21 +203,13 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
   }
 
   Future<void> _eliminarMesa(int id) async {
-    final conf = await showDialog<bool>(
+    final conf = await AdminModal.show<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Eliminar Mesa', style: GoogleFonts.playfairDisplay(fontWeight: FontWeight.bold, color: const Color(0xFFE74C3C))),
-        content: Text('¿Seguro que deseas eliminar esta mesa permanentemente?', style: GoogleFonts.manrope(color: const Color(0xFF1E1B1A))),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancelar', style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontWeight: FontWeight.bold))),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true), 
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE74C3C), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            child: Text('Eliminar', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
+      title: 'Eliminar Mesa',
+      confirmText: 'Eliminar',
+      confirmColor: const Color(0xFFE74C3C),
+      onConfirm: () => Navigator.pop(context, true),
+      content: Text('¿Seguro que deseas eliminar esta mesa permanentemente?', style: GoogleFonts.manrope(color: const Color(0xFF1E1B1A))),
     );
 
     if (conf != true || !mounted) return;

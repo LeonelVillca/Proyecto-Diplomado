@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/perfil_restaurante_model.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
 
 class OnboardingRestauranteScreen extends StatefulWidget {
   final PerfilRestauranteModel restaurante;
@@ -158,93 +159,51 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
   }
 
   Future<void> _abrirMapaModal() async {
-    final LatLng? result = await showDialog<LatLng>(
-      context: context,
-      builder: (context) {
-        LatLng tempLoc = _selectedLocation ?? const LatLng(-21.5354, -64.7295);
-        GoogleMapController? tempCtrl;
-        final Set<Marker> tempMarkers = {
-          if (_selectedLocation != null)
-            Marker(
-              markerId: const MarkerId('restaurante_loc_temp'),
-              position: _selectedLocation!,
-              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
-            )
-        };
+    LatLng tempLoc = _selectedLocation ?? const LatLng(-21.5354, -64.7295);
+    GoogleMapController? tempCtrl;
+    final Set<Marker> tempMarkers = {
+      if (_selectedLocation != null)
+        Marker(
+          markerId: const MarkerId('restaurante_loc_temp'),
+          position: _selectedLocation!,
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+        )
+    };
 
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              child: Container(
-                width: 800,
-                height: 600,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('Seleccionar Ubicación', style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.bold)),
-                          IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: _mapsSupported
-                          ? GoogleMap(
-                              initialCameraPosition: CameraPosition(target: tempLoc, zoom: 15),
-                              markers: tempMarkers,
-                              onMapCreated: (ctrl) => tempCtrl = ctrl,
-                              onTap: (pos) {
-                                setModalState(() {
-                                  tempLoc = pos;
-                                  tempMarkers.clear();
-                                  tempMarkers.add(Marker(
-                                    markerId: const MarkerId('restaurante_loc_temp'),
-                                    position: pos,
-                                    icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
-                                  ));
-                                });
-                              },
-                              zoomControlsEnabled: true,
-                              mapToolbarEnabled: true,
-                              myLocationButtonEnabled: false,
-                            )
-                          : const Center(child: Text('Mapas no soportados')),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text('Cancelar', style: GoogleFonts.manrope(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, tempLoc),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6E1E39),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                            ),
-                            child: Text('Confirmar Ubicación', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+    final LatLng? result = await AdminModal.show<LatLng>(
+      context: context,
+      title: 'Seleccionar Ubicación',
+      width: 800,
+      confirmText: 'Confirmar Ubicación',
+      onConfirm: () => Navigator.pop(context, tempLoc),
+      content: StatefulBuilder(
+        builder: (context, setModalState) {
+          return SizedBox(
+            height: 500,
+            child: _mapsSupported
+                ? GoogleMap(
+                    initialCameraPosition: CameraPosition(target: tempLoc, zoom: 15),
+                    markers: tempMarkers,
+                    onMapCreated: (ctrl) => tempCtrl = ctrl,
+                    onTap: (pos) {
+                      setModalState(() {
+                        tempLoc = pos;
+                        tempMarkers.clear();
+                        tempMarkers.add(Marker(
+                          markerId: const MarkerId('restaurante_loc_temp'),
+                          position: pos,
+                          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+                        ));
+                      });
+                    },
+                    zoomControlsEnabled: true,
+                    mapToolbarEnabled: true,
+                    myLocationButtonEnabled: false,
+                  )
+                : const Center(child: Text('Mapas no soportados')),
+          );
+        },
+      ),
     );
 
     if (result != null) {
