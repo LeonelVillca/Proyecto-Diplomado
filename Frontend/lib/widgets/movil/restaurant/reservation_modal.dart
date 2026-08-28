@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/core/movil/theme.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:frontend/core/utils/network/api_endpoints.dart';
+import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 
 /// Modal inferior interactivo para realizar una reserva.
@@ -18,6 +22,7 @@ class _ReservationModalState extends State<ReservationModal> {
   late DateTime _selectedDate;
   String? _selectedTime;
   final TextEditingController _commentCtrl = TextEditingController();
+  bool _isLoading = false;
 
   final List<String> _timeSlots = [
     '12:00', '12:30', '13:00', '13:30', '14:00',
@@ -36,7 +41,7 @@ class _ReservationModalState extends State<ReservationModal> {
     super.dispose();
   }
 
-  void _submitReservation() {
+  Future<void> _submitReservation() async {
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -48,53 +53,107 @@ class _ReservationModalState extends State<ReservationModal> {
       return;
     }
 
-    // Aqui se enviarian los datos al backend (NestJS)
-    final data = {
-      'fecha': '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
-      'hora': _selectedTime,
-      'numeroPersonas': _guests,
-      'comentarios': _commentCtrl.text,
-      // 'id_restaurante': widget.restaurant.id,
-    };
-
-    // Simulacion de carga
-    Navigator.pop(context); // Cierra modal
+    setState(() => _isLoading = true);
     
-    // Muestra confirmacion de exito
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFF2E8B57).withAlpha(20), shape: BoxShape.circle),
-              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF2E8B57), size: 48),
+    try {
+      final token = AuthScope.of(context, listen: false).token;
+      
+      // 1. Obtener mesas del restaurante
+      final urlMesas = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/mesa/restaurante/${widget.restaurant.id}');
+      final resMesas = await http.get(urlMesas, headers: {'Authorization': 'Bearer $token'});
+      
+      if (resMesas.statusCode != 200) {
+        throw Exception('Error al obtener mesas');
+      }
+      
+      final List<dynamic> mesas = jsonDecode(utf8.decode(resMesas.bodyBytes));
+      if (mesas.isEmpty) {
+        throw Exception('Este restaurante aún no tiene mesas registradas.');
+      }
+      
+      // Buscar una mesa con capacidad suficiente (o la primera si no hay)
+      int idMesa = mesas.first['id'];
+      for (var mesa in mesas) {
+        if (mesa['capacidad'] != null && mesa['capacidad'] >= _guests) {
+          idMesa = mesa['id'];
+          break;
+        }
+      }
+      
+      // 2. Crear reserva
+      final urlReserva = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/reservas');
+      final data = {
+        'idUsuario': AuthScope.of(context, listen: false).idUsuario ?? 0,
+        'idMesa': idMesa,
+        'fecha': '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}',
+        'hora': _selectedTime,
+        'numeroPersonas': _guests,
+        if (_commentCtrl.text.isNotEmpty) 'comentarios': _commentCtrl.text,
+      };
+
+      final resReserva = await http.post(
+        urlReserva,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(data),
+      );
+
+      if (resReserva.statusCode != 201) {
+        throw Exception('Error al crear la reserva');
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context); // Cierra modal
+      
+      // Muestra confirmacion de exito
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: const Color(0xFF2E8B57).withAlpha(20), shape: BoxShape.circle),
+                child: const Icon(Icons.check_circle_rounded, color: Color(0xFF2E8B57), size: 48),
+              ),
+              const SizedBox(height: 12),
+              Text('Reserva Confirmada', style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 20)),
+            ],
+          ),
+          content: Text(
+            'Tu solicitud para ${widget.restaurant.name} ha sido enviada.\n${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')} a las $_selectedTime para $_guests personas.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(fontSize: 13, color: AppColors.secondaryText),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.wine,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text('Entendido', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
             ),
-            const SizedBox(height: 12),
-            Text('Reserva Confirmada', style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 20)),
           ],
         ),
-        content: Text(
-          'Te esperamos en ${widget.restaurant.name} el ${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')} a las $_selectedTime para $_guests personas.',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(fontSize: 13, color: AppColors.secondaryText),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.wine,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text('Entendido', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', ''), style: GoogleFonts.poppins()),
+            backgroundColor: Colors.redAccent,
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -315,10 +374,12 @@ class _ReservationModalState extends State<ReservationModal> {
                   backgroundColor: AppColors.wine,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: Text(
-                  'Confirmar Reserva',
-                  style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
-                ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    : Text(
+                        'Confirmar Reserva',
+                        style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
               ),
             ),
           ),

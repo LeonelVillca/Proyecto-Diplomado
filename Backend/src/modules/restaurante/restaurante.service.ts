@@ -12,6 +12,7 @@ import { Ubicacion } from '../ubicacion/ubicacion.entity';
 import { HorarioAtencion } from '../horario-atencion/horario-atencion.entity';
 import { Mesa } from '../mesa/mesa.entity';
 import { Imagen } from '../imagen/imagen.entity';
+import { Resena } from '../resenas/resena.entity';
 
 @Injectable()
 export class RestauranteService {
@@ -28,6 +29,8 @@ export class RestauranteService {
     private readonly mesaRepository: Repository<Mesa>,
     @InjectRepository(Imagen)
     private readonly imagenRepository: Repository<Imagen>,
+    @InjectRepository(Resena)
+    private readonly resenaRepository: Repository<Resena>,
   ) {}
 
   async crear(dto: CrearRestauranteDto): Promise<Restaurante> {
@@ -61,6 +64,15 @@ export class RestauranteService {
         const mesas = await this.mesaRepository.find({ where: { restaurante: { id: rest.id } } });
         const imagenes = await this.imagenRepository.find({ where: { restaurante: { id: rest.id } } });
         
+        // Calcular reseñas
+        const resenas = await this.resenaRepository.find({ where: { restaurante: { id: rest.id } } });
+        let rating = 0;
+        let reviewCount = resenas.length;
+        if (reviewCount > 0) {
+          const totalScore = resenas.reduce((sum, r) => sum + r.calificacion, 0);
+          rating = parseFloat((totalScore / reviewCount).toFixed(1));
+        }
+
         return {
           ...rest,
           direccion: ubicacion?.direccion,
@@ -69,6 +81,8 @@ export class RestauranteService {
           horarios,
           mesas,
           imagenes,
+          rating,
+          reviewCount,
         };
       })
     );
@@ -118,6 +132,15 @@ export class RestauranteService {
         const mesas = await this.mesaRepository.find({ where: { restaurante: { id: rest.id } } });
         const imagenes = await this.imagenRepository.find({ where: { restaurante: { id: rest.id } } });
         
+        // Calcular reseñas
+        const resenas = await this.resenaRepository.find({ where: { restaurante: { id: rest.id } } });
+        let rating = 0;
+        let reviewCount = resenas.length;
+        if (reviewCount > 0) {
+          const totalScore = resenas.reduce((sum, r) => sum + r.calificacion, 0);
+          rating = parseFloat((totalScore / reviewCount).toFixed(1));
+        }
+
         return {
           ...rest,
           direccion: ubicacion?.direccion,
@@ -126,6 +149,8 @@ export class RestauranteService {
           horarios,
           mesas,
           imagenes,
+          rating,
+          reviewCount,
         };
       })
     );

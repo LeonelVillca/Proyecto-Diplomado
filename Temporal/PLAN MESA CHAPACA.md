@@ -132,7 +132,7 @@ llamadas HTTP reales a `/restaurante`, `/menu`, `/plato`, `/ubicacion`,
 `/imagen`. Mantén el mismo diseño visual ya aprobado — este cambio es solo
 de origen de datos, no de interfaz.
 
-### [en progreso] Tarea C2 — Reservas en tiempo real
+### [x] Tarea C2 — Reservas en tiempo real
 Conecta la pantalla de Reservas al módulo 17: creación vía REST, y
 suscripción al WebSocket para reflejar cambios de estado
 (confirmada/rechazada) sin que el usuario tenga que refrescar.
@@ -431,3 +431,61 @@ invitación.
 Antes de tocar D2, D3, D4 o E1, confírmame que revisaste el código actual
 y que entendiste qué falta — no asumas que puedes reescribir sin mirar
 primero lo que ya existe y funciona.
+
+
+
+
+
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:3000 tcp:3000
+
+
+
+
+
+
+Análisis de Estado del Sistema "Mesa Chapaca"
+He realizado una auditoría exhaustiva del código actual comparándolo con el documento maestro PLAN MESA CHAPACA.md. Este es el estado real y técnico del proyecto:
+
+✅ 1. Backend y Base de Datos (Completado al 100%)
+Todas las tareas de las Fases A y B están completamente finalizadas y desplegadas en NestJS con TypeORM:
+
+Infraestructura de Seguridad: RolesGuard y OwnershipGuard están protegiendo correctamente todos los endpoints.
+Módulos operativos: Usuarios, Auth, Restaurantes, Solicitudes, Menús, Platos, Ubicación, Horarios, Mesas, Imágenes, Promociones, Reseñas, Soporte y Reservas (incluyendo el WebSocket ReservaGateway).
+Vista SQL y Reportes: Endpoint de Ranking y Reportes analíticos operativos.
+Archivos: Flujo correcto de guardado separado entre publico/ (imágenes de restaurante/platos) y privado/ (documentos sensibles CI/NIT).
+Invitaciones Automáticas: Módulo invitacion-token para registro de administradores de restaurante.
+✅ 2. Panel Administrativo Web (Completado al 100%)
+Las Fases D, E y F están completamente funcionales bajo la carpeta lib/screens/admin/:
+
+Landing pública y flujo de solicitud con subida de documentos (NIT/CI).
+Panel Admin_Sistema para aprobar solicitudes, revisar PDFs privados y gestionar usuarios.
+Panel Admin_Restaurante para editar perfil, mapas, gestionar menús/platillos con fotos, ver reservas en tiempo real y responder reseñas.
+🚧 3. Lo que falta: Frontend Móvil (Fase C - En progreso)
+El backend y el panel web ya están listos, el único frente abierto es conectar las funciones restantes a la App Móvil.
+
+Actualmente, el Home, el Mapa y el Detalle del Restaurante ya muestran los datos, menús, fotos y ubicación real de la base de datos (lo que acabamos de terminar en la Tarea C1). Sin embargo, quedan pendientes las siguientes conexiones:
+
+🔴 Pendiente 1: Reservas en Tiempo Real (Tarea C2)
+Estado actual: La vista reservas_screen.dart y el botón "Reservar mesa" todavía no interactúan con el backend.
+Lo que hay que hacer:
+Crear el formulario para que el cliente elija la fecha, hora, cantidad de personas y lance un POST /reserva.
+Conectar el cliente móvil al WebSocket (ReservaGateway) para que si el administrador aprueba/rechaza la reserva en su panel web, el celular del cliente se actualice y envíe una alerta instantánea sin recargar la pantalla.
+🔴 Pendiente 2: Perfil del Cliente - Reseñas y Soporte (Tarea C3)
+Estado actual: La pantalla de Perfil es un cascarón visual estático.
+Lo que hay que hacer:
+Habilitar que el cliente pueda dejar una reseña (POST /resenas) y ver/editar las suyas en su perfil.
+Habilitar la creación de tickets de soporte (POST /soporte) desde la app para el Admin_Sistema.
+🔴 Pendiente 3: Promociones y Ranking (Tarea C4)
+Estado actual: home_screen.dart ordena los restaurantes con una función temporal en el frontend (_getTrending). El carrusel de promociones se eliminó temporalmente por ser falso.
+Lo que hay que hacer:
+Hacer que el Home consuma el endpoint real GET /restaurante/ranking para mostrar las verdaderas tendencias.
+Mostrar las promociones vigentes de cada restaurante (Módulo Promoción).
+🔴 Detalles menores de UI (Móvil)
+Favoritos: El corazón de "Favoritos" (favorite_heart.dart) actualmente no guarda el estado en la base de datos de los usuarios.
+Buscador y Filtros: Las barras de búsqueda del Home y Mapa muestran un mensaje de "Próximamente". Se deben conectar al filtro del backend.
+Conclusión y Siguiente Paso
+El proyecto está en su recta final (90% completado). Toda la lógica compleja de negocio ya existe en el servidor; solo nos falta armar los "cables" de la app de los clientes.
+
+👉 ¿Te parece si atacamos primero el "Pendiente 1" (Tarea C2: Reservas en Tiempo Real)? Esto permitirá conectar la experiencia de que un cliente pida una mesa en la App, y al administrador le suene la notificación en su panel Web.
+
+

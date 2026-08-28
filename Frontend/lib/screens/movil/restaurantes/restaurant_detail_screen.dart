@@ -8,6 +8,7 @@ import 'package:frontend/widgets/movil/restaurant/reservation_modal.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_menu_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_info_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_reviews_tab.dart';
+import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   const RestaurantDetailScreen({super.key, required this.restaurant});
@@ -20,12 +21,14 @@ class RestaurantDetailScreen extends StatefulWidget {
 class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   int _activeTab = 0;
   List<DishItem>? _dishes;
+  List<ReviewItem>? _reviews;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadDishes();
+      _loadReviews();
     });
   }
 
@@ -34,6 +37,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     final plates = await ctrl.obtenerPlatos(widget.restaurant.id);
     if (mounted) {
       setState(() => _dishes = plates);
+    }
+  }
+
+  Future<void> _loadReviews() async {
+    final ctrl = RestauranteScope.of(context, listen: false);
+    final revs = await ctrl.obtenerResenas(widget.restaurant.id);
+    if (mounted) {
+      setState(() => _reviews = revs);
     }
   }
 
@@ -213,7 +224,19 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     } else if (_activeTab == 1) {
       return DetailInfoTab(restaurant: widget.restaurant, schedule: widget.restaurant.schedule);
     } else {
-      return DetailReviewsTab(reviews: const [], avgRating: widget.restaurant.rating);
+      if (_reviews == null) return const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()));
+      
+      double avg = 0;
+      if (_reviews!.isNotEmpty) {
+        avg = _reviews!.map((e) => e.rating).reduce((a, b) => a + b) / _reviews!.length;
+      }
+      
+      return DetailReviewsTab(
+        restaurantId: widget.restaurant.id,
+        reviews: _reviews!, 
+        avgRating: avg > 0 ? avg : widget.restaurant.rating,
+        onReviewAdded: _loadReviews,
+      );
     }
   }
 }
@@ -257,7 +280,7 @@ class _HeroSection extends StatelessWidget {
                     children: [
                       _RoundBtn(icon: Icons.share_rounded, onTap: () {}),
                       const SizedBox(width: 8),
-                      _RoundBtn(icon: Icons.favorite_border_rounded, onTap: () {}),
+                      FavoriteHeart(restaurantId: restaurant.id, onDark: true, size: 24),
                     ],
                   ),
                 ],

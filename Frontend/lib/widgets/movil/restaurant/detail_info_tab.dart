@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DetailInfoTab extends StatelessWidget {
   const DetailInfoTab({super.key, required this.restaurant, required this.schedule});
@@ -202,14 +203,30 @@ class _LocationCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.paperDeep,
-                    borderRadius: BorderRadius.circular(14),
+                  GestureDetector(
+                    onTap: () async {
+                      if (restaurant.lat != null && restaurant.lng != null) {
+                        final url = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${restaurant.lat},${restaurant.lng}');
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No se pudo abrir el mapa')));
+                          }
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ubicación no disponible')));
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.paperDeep,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text('Cómo llegar', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.wine, fontSize: 13)),
+                    ),
                   ),
-                  child: Text('Cómo llegar', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.wine, fontSize: 13)),
-                ),
               ],
             ),
           ),

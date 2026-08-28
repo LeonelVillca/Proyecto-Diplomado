@@ -59,6 +59,89 @@ class RestauranteClienteService {
     }
   }
 
+  Future<List<ReviewItem>> obtenerResenasRestaurante(String restauranteId) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/api/v1/resenas/restaurante/$restauranteId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      List<ReviewItem> reviews = [];
+      for (var resena in data) {
+        String nombre = resena['usuario']?['nombre'] ?? 'Usuario';
+        String apellido = resena['usuario']?['apellido'] ?? '';
+        String authorName = '$nombre $apellido'.trim();
+        
+        // Parse date relatively (e.g. "Hace 2 días") or just simple date
+        DateTime? date = resena['fecha'] != null ? DateTime.tryParse(resena['fecha']) : null;
+        String dateStr = date != null ? '${date.day}/${date.month}/${date.year}' : 'Reciente';
+
+        reviews.add(ReviewItem(
+          id: resena['id'].toString(),
+          authorName: authorName.isEmpty ? 'Anónimo' : authorName,
+          rating: resena['calificacion'] ?? 0,
+          comment: resena['comentario'] ?? '',
+          date: dateStr,
+          ownerReply: resena['respuesta']?['texto'],
+        ));
+      }
+      return reviews;
+    } else {
+      throw Exception('Failed to load reviews');
+    }
+  }
+
+  Future<void> crearResena(String restauranteId, int idUsuario, int calificacion, String comentario) async {
+    final response = await http.post(
+      Uri.parse('${ApiConfig.baseUrl}/api/v1/resenas'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'idRestaurante': int.parse(restauranteId),
+        'idUsuario': idUsuario,
+        'calificacion': calificacion,
+        'comentario': comentario,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to create review: \${response.body}');
+    }
+  }
+
+  Future<void> toggleFavorito(String restauranteId, int idUsuario, bool isFavorite) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/favoritos/usuario/$idUsuario/restaurante/$restauranteId');
+    http.Response response;
+    
+    if (isFavorite) {
+      response = await http.post(url, headers: {'Authorization': 'Bearer $token'});
+    } else {
+      response = await http.delete(url, headers: {'Authorization': 'Bearer $token'});
+    }
+    
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to toggle favorite: \${response.body}');
+    }
+  }
+
+  Future<List<String>> obtenerFavoritosUsuario(int idUsuario) async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/api/v1/favoritos/usuario/$idUsuario'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      // Extract the restaurant IDs
+      return data.map((fav) => fav['restaurante']['id'].toString()).toList();
+    } else {
+      throw Exception('Failed to load favorites');
+    }
+  }
+
   Restaurant _mapToRestaurant(Map<String, dynamic> json) {
     Cuisine cuisine = Cuisine.tipico;
     if (json['tipoComida'] != null) {
@@ -97,11 +180,26 @@ class RestauranteClienteService {
       }
     }
 
+    String mapDiaSemana(dynamic dia) {
+      if (dia == null) return '';
+      final int? d = int.tryParse(dia.toString());
+      switch(d) {
+        case 1: return 'Lunes';
+        case 2: return 'Martes';
+        case 3: return 'Miércoles';
+        case 4: return 'Jueves';
+        case 5: return 'Viernes';
+        case 6: return 'Sábado';
+        case 7: return 'Domingo';
+        default: return dia.toString();
+      }
+    }
+
     List<ScheduleDay> schedule = [];
     if (json['horarios'] != null) {
       for (var h in json['horarios']) {
          schedule.add(ScheduleDay(
-           dayLabel: h['diaSemana'] ?? '',
+           dayLabel: mapDiaSemana(h['diaSemana']),
            openTime: h['horaInicio'] ?? '',
            closeTime: h['horaFin'] ?? '',
          ));
@@ -110,13 +208,13 @@ class RestauranteClienteService {
 
     return Restaurant(
       id: json['id'].toString(),
-      name: json['nombre'],
-      zone: json['direccion'] ?? 'Tarija',
+      name: json['nombre'] ?? 'Restaurante',
       cuisine: cuisine,
-      rating: 0.0, // Ya no usamos Random, si no hay rating real ponemos 0
-      reviewCount: 0,
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      reviewCount: json['reviewCount'] ?? 0,
       priceLevel: 1,
       tagline: json['descripcion'] ?? '',
+      zone: json['direccion'] ?? 'Zona Central',
       emoji: cuisine.icon == Icons.local_fire_department_rounded ? '🔥' : '🍽️',
       tags: [cuisine.label],
       waitMinutes: 0,

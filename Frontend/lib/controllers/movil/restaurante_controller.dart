@@ -59,6 +59,36 @@ class RestauranteController extends ChangeNotifier {
       return []; // Devolver vacío si falla
     }
   }
+
+  Future<List<ReviewItem>> obtenerResenas(String restauranteId) async {
+    if (_service == null) return [];
+    try {
+      return await _service!.obtenerResenasRestaurante(restauranteId);
+    } catch (e) {
+      debugPrint('Error al cargar reseñas del backend: $e');
+      return [];
+    }
+  }
+
+  Future<void> crearResena(String restauranteId, int idUsuario, int calificacion, String comentario) async {
+    if (_service == null) throw Exception('No session');
+    await _service!.crearResena(restauranteId, idUsuario, calificacion, comentario);
+  }
+
+  Future<void> toggleFavorito(String restauranteId, int idUsuario, bool isFavorite) async {
+    if (_service == null) throw Exception('No session');
+    await _service!.toggleFavorito(restauranteId, idUsuario, isFavorite);
+  }
+
+  Future<List<String>> obtenerFavoritos(int idUsuario) async {
+    if (_service == null) return [];
+    try {
+      return await _service!.obtenerFavoritosUsuario(idUsuario);
+    } catch (e) {
+      debugPrint('Error al cargar favoritos: $e');
+      return [];
+    }
+  }
 }
 
 class RestauranteScope extends InheritedNotifier<RestauranteController> {

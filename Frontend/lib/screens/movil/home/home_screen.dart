@@ -7,6 +7,7 @@ import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/widgets/movil/ui/app_avatar.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
+import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 
 /// Pantalla principal rediseñada.
 class HomeScreen extends StatefulWidget {
@@ -18,9 +19,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Cuisine? _selected;
+  String _searchQuery = '';
 
-  List<Restaurant> _getFiltered(List<Restaurant> all) =>
-      _selected == null ? all : all.where((r) => r.cuisine == _selected).toList();
+  List<Restaurant> _getFiltered(List<Restaurant> all) {
+    var result = all;
+    if (_selected != null) {
+      result = result.where((r) => r.cuisine == _selected).toList();
+    }
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      result = result.where((r) => 
+        r.name.toLowerCase().contains(q) || 
+        r.cuisine.label.toLowerCase().contains(q) ||
+        (r.address ?? r.zone).toLowerCase().contains(q)
+      ).toList();
+    }
+    return result;
+  }
 
   List<Restaurant> _getTrending(List<Restaurant> all) {
     final sorted = [...all]..sort((a, b) => b.rating.compareTo(a.rating));
@@ -51,6 +66,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final trending = _getTrending(allRestaurants);
     final forYou = _getForYou(allRestaurants);
     final heroRest = allRestaurants.isNotEmpty ? allRestaurants.first : null;
+    
+    final bool isSearchingOrFiltering = _selected != null || _searchQuery.isNotEmpty;
 
     return SafeArea(
       bottom: false,
@@ -65,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(22, 16, 22, 24),
-              child: _SearchBar(),
+              child: _SearchBar(onChanged: (q) => setState(() => _searchQuery = q)),
             ),
           ),
           
@@ -79,13 +96,12 @@ class _HomeScreenState extends State<HomeScreen> {
           
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
 
-          // Si hay filtro seleccionado, mostramos solo una lista filtrada.
-          // Si no, mostramos el diseño editorial (Hero, Bento, Para ti).
-          if (_selected != null) ...[
+          // Si hay filtro seleccionado o búsqueda, mostramos la lista.
+          if (isSearchingOrFiltering) ...[
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
-                child: Text('Resultados para ${_selected!.label}', 
+                child: Text('Resultados de búsqueda', 
                   style: Theme.of(context).textTheme.titleLarge),
               ),
             ),
@@ -244,6 +260,9 @@ class _Header extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
+  final ValueChanged<String> onChanged;
+  const _SearchBar({required this.onChanged});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -259,7 +278,16 @@ class _SearchBar extends StatelessWidget {
           const Icon(Icons.search_rounded, color: AppColors.inkSoft, size: 22),
           const SizedBox(width: 12),
           Expanded(
-            child: Text('Silpancho, vino, zona...', style: Theme.of(context).textTheme.bodyMedium),
+            child: TextField(
+              onChanged: onChanged,
+              decoration: InputDecoration(
+                hintText: 'Silpancho, vino, zona...',
+                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.inkSoft),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
           Container(
             padding: const EdgeInsets.all(6),
@@ -377,11 +405,7 @@ class _HeroCard extends StatelessWidget {
             Positioned(
               top: 16,
               right: 16,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 20),
-              ),
+              child: FavoriteHeart(restaurantId: restaurant.id, onDark: true, size: 24),
             ),
             // Contenido inferior
             Positioned(
@@ -517,11 +541,7 @@ class _VerticalCard extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                    child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 14),
-                  ),
+                  child: FavoriteHeart(restaurantId: restaurant.id, onDark: true, size: 18),
                 ),
               ],
             ),

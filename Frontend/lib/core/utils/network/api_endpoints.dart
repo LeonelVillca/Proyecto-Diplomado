@@ -11,7 +11,7 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   // Cambia este valor manualmente según dónde se esté probando:
-  static const Environment currentEnv = Environment.emulador;
+  static const Environment currentEnv = Environment.dispositivoFisico;
 
   static String get baseUrl {
     // En web (Chrome corriendo en la misma PC) el navegador alcanza el
@@ -24,7 +24,7 @@ class ApiEndpoints {
       case Environment.emulador:
         return 'http://10.0.2.2:3000';
       case Environment.dispositivoFisico:
-        return 'http://10.110.17.153:3000'; // IP WiFi actual de la PC
+        return 'http://127.0.0.1:3000'; // Usando ADB Reverse
       case Environment.produccion:
         return 'https://tu-dominio-futuro.com';
     }

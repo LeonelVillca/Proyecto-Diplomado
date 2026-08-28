@@ -20,38 +20,13 @@ class LocationScreen extends StatefulWidget {
 
 class _LocationScreenState extends State<LocationScreen> {
   GoogleMapController? _mapCtrl;
-  final Set<Marker> _markers = {};
-  bool _markersBuilt = false;
+  String _searchQuery = '';
 
   // El mapa solo funciona en Web, Android e iOS.
   bool get _mapsSupported =>
       kIsWeb ||
       defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_markersBuilt) {
-      _buildMarkers();
-      _markersBuilt = true;
-    }
-  }
-
-  void _buildMarkers() {
-    final restaurants = RestauranteScope.of(context).restaurants;
-    for (final r in restaurants) {
-      if (r.lat != null && r.lng != null) {
-        _markers.add(Marker(
-          markerId: MarkerId(r.id),
-          position: LatLng(r.lat!, r.lng!),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
-          infoWindow: InfoWindow(title: r.name, snippet: r.cuisine.label),
-          onTap: () => _onMarkerTap(r),
-        ));
-      }
-    }
-  }
 
   void _onMarkerTap(Restaurant r) {
     if (r.lat != null && r.lng != null) {
@@ -99,6 +74,28 @@ class _LocationScreenState extends State<LocationScreen> {
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom + 72; // nav bar
     final restaurants = RestauranteScope.of(context).restaurants;
+    
+    final query = _searchQuery.trim().toLowerCase();
+    
+    final filteredRestaurants = restaurants.where((r) {
+      if (query.isEmpty) return true;
+      return r.name.toLowerCase().contains(query) ||
+             r.cuisine.label.toLowerCase().contains(query) ||
+             (r.address ?? r.zone).toLowerCase().contains(query);
+    }).toList();
+
+    final markers = <Marker>{};
+    for (final r in filteredRestaurants) {
+      if (r.lat != null && r.lng != null) {
+        markers.add(Marker(
+          markerId: MarkerId(r.id),
+          position: LatLng(r.lat!, r.lng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+          infoWindow: InfoWindow(title: r.name, snippet: r.cuisine.label),
+          onTap: () => _onMarkerTap(r),
+        ));
+      }
+    }
 
     return Stack(
       children: [
@@ -107,7 +104,7 @@ class _LocationScreenState extends State<LocationScreen> {
           child: _mapsSupported
               ? GoogleMap(
                   initialCameraPosition: const CameraPosition(target: kInitialPosition, zoom: 14),
-                  markers: _markers,
+                  markers: markers,
                   zoomControlsEnabled: false,
                   mapToolbarEnabled: false,
                   myLocationButtonEnabled: false,
@@ -122,10 +119,16 @@ class _LocationScreenState extends State<LocationScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                MapSearchBar(),
-                SizedBox(height: 10),
-                MapFilterChips(),
+              children: [
+                MapSearchBar(
+                  onChanged: (q) {
+                    setState(() {
+                      _searchQuery = q;
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                const MapFilterChips(),
               ],
             ),
           ),
@@ -140,7 +143,7 @@ class _LocationScreenState extends State<LocationScreen> {
             padding: EdgeInsets.only(bottom: bottomPad),
             child: _BottomSheet(
               ctrl: ctrl, 
-              restaurants: restaurants,
+              restaurants: filteredRestaurants,
               onCardTap: _onMarkerTap
             ),
           ),

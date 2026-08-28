@@ -47,12 +47,37 @@ export class ResenasService {
     return resena;
   }
   
-  async listarPorRestaurante(idRestaurante: number): Promise<Resena[]> {
-    return this.resenasRepo.find({
-      where: { restaurante: { id: idRestaurante } },
-      relations: { usuario: true },
-      order: { fecha: 'DESC' }
-    });
+  async listarPorRestaurante(idRestaurante: number): Promise<any[]> {
+    return this.resenasRepo.createQueryBuilder('resena')
+      .leftJoinAndSelect('resena.usuario', 'usuario')
+      .leftJoinAndSelect('respuesta_resena', 'respuesta', 'respuesta.id_resena = resena.id_resena')
+      .where('resena.id_restaurante = :idRestaurante', { idRestaurante })
+      .orderBy('resena.fecha', 'DESC')
+      .select([
+        'resena.id',
+        'resena.comentario',
+        'resena.calificacion',
+        'resena.fecha',
+        'usuario.nombre',
+        'usuario.apellido',
+        'respuesta.texto',
+        'respuesta.fechaRespuesta'
+      ])
+      .getRawMany()
+      .then(rows => rows.map(r => ({
+        id: r.resena_id_resena,
+        comentario: r.resena_comentario,
+        calificacion: r.resena_calificacion,
+        fecha: r.resena_fecha,
+        usuario: {
+          nombre: r.usuario_nombre,
+          apellido: r.usuario_apellido,
+        },
+        respuesta: r.respuesta_texto ? {
+          texto: r.respuesta_texto,
+          fechaRespuesta: r.respuesta_fecha_respuesta
+        } : null
+      })));
   }
 
   async actualizar(id: number, dto: ActualizarResenaDto): Promise<Resena> {

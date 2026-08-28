@@ -36,8 +36,13 @@ export class RestauranteController {
   }
 
   @Get()
-  listarTodos(): Promise<any[]> {
-    return this.restauranteService.listarTodos();
+  async listarTodos(): Promise<any[]> {
+    try {
+      return await this.restauranteService.listarTodos();
+    } catch (e: any) {
+      console.error('ERROR EN LISTAR TODOS:', e);
+      return [{ error: e.message, stack: e.stack }];
+    }
   }
 
   @Roles('admin_restaurante')

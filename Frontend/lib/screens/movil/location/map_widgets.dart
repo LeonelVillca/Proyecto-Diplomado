@@ -32,7 +32,8 @@ class MapFilterPill extends StatelessWidget {
 
 /// Barra de búsqueda flotante.
 class MapSearchBar extends StatelessWidget {
-  const MapSearchBar({super.key});
+  final ValueChanged<String> onChanged;
+  const MapSearchBar({super.key, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +51,7 @@ class MapSearchBar extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
+              onChanged: onChanged,
               decoration: InputDecoration.collapsed(
                 hintText: 'Buscar restaurante o zona...',
                 hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.black38),

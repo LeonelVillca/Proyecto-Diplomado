@@ -1,12 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
+import 'package:frontend/controllers/movil/restaurante_controller.dart';
+import 'package:frontend/widgets/movil/restaurant/create_review_modal.dart';
 
 class DetailReviewsTab extends StatelessWidget {
-  const DetailReviewsTab({super.key, required this.reviews, required this.avgRating});
+  const DetailReviewsTab({
+    super.key, 
+    required this.restaurantId,
+    required this.reviews, 
+    required this.avgRating,
+    required this.onReviewAdded,
+  });
 
+  final String restaurantId;
   final List<ReviewItem> reviews;
   final double avgRating;
+  final VoidCallback onReviewAdded;
+
+  void _showCreateReview(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CreateReviewModal(
+        restaurantId: restaurantId,
+        onSuccess: onReviewAdded,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +44,7 @@ class DetailReviewsTab extends StatelessWidget {
             Text('Comparte tu experiencia y ayuda a otros a descubrir este restaurante.', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 24),
             OutlinedButton(
-              onPressed: () {},
+              onPressed: () => _showCreateReview(context),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.wine, width: 1.5),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -38,8 +60,23 @@ class DetailReviewsTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _RatingSummary(avgRating: avgRating, total: reviews.length),
+        _RatingSummary(avgRating: avgRating, total: reviews.length, reviews: reviews),
         const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Reseñas', style: Theme.of(context).textTheme.titleLarge),
+              TextButton.icon(
+                onPressed: () => _showCreateReview(context),
+                icon: const Icon(Icons.edit_rounded, size: 16, color: AppColors.wine),
+                label: Text('Opinar', style: TextStyle(color: AppColors.wine)),
+              )
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
         ...reviews.map((r) => _ReviewCard(review: r)),
       ],
     );
@@ -47,12 +84,25 @@ class DetailReviewsTab extends StatelessWidget {
 }
 
 class _RatingSummary extends StatelessWidget {
-  const _RatingSummary({required this.avgRating, required this.total});
+  const _RatingSummary({required this.avgRating, required this.total, required this.reviews});
   final double avgRating;
   final int total;
+  final List<ReviewItem> reviews;
 
   @override
   Widget build(BuildContext context) {
+    int count5 = reviews.where((r) => r.rating == 5).length;
+    int count4 = reviews.where((r) => r.rating == 4).length;
+    int count3 = reviews.where((r) => r.rating == 3).length;
+    int count2 = reviews.where((r) => r.rating == 2).length;
+    int count1 = reviews.where((r) => r.rating == 1).length;
+
+    double p5 = total > 0 ? count5 / total : 0;
+    double p4 = total > 0 ? count4 / total : 0;
+    double p3 = total > 0 ? count3 / total : 0;
+    double p2 = total > 0 ? count2 / total : 0;
+    double p1 = total > 0 ? count1 / total : 0;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 22),
       padding: const EdgeInsets.all(20),
@@ -92,11 +142,11 @@ class _RatingSummary extends StatelessWidget {
             flex: 5,
             child: Column(
               children: [
-                _RatingBarRow(stars: 5, percent: 0.7),
-                _RatingBarRow(stars: 4, percent: 0.2),
-                _RatingBarRow(stars: 3, percent: 0.1),
-                _RatingBarRow(stars: 2, percent: 0.0),
-                _RatingBarRow(stars: 1, percent: 0.0),
+                _RatingBarRow(stars: 5, percent: p5),
+                _RatingBarRow(stars: 4, percent: p4),
+                _RatingBarRow(stars: 3, percent: p3),
+                _RatingBarRow(stars: 2, percent: p2),
+                _RatingBarRow(stars: 1, percent: p1),
               ],
             ),
           ),

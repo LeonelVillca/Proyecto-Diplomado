@@ -24,7 +24,10 @@ export class ReservasService {
     const usuario = await this.usuariosRepo.findOne({ where: { id: dto.idUsuario } });
     if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
-    const mesa = await this.mesasRepo.findOne({ where: { id: dto.idMesa } });
+    const mesa = await this.mesasRepo.findOne({ 
+      where: { id: dto.idMesa },
+      relations: { restaurante: true } 
+    });
     if (!mesa) throw new NotFoundException('Mesa no encontrada');
 
     const reserva = this.reservasRepo.create({
@@ -35,7 +38,13 @@ export class ReservasService {
     });
 
     const guardada = await this.reservasRepo.save(reserva);
-    this.reservasGateway.emitNuevaReserva(guardada);
+    
+    // Attach idRestaurante for the WebSocket event
+    const payload = {
+      ...guardada,
+      idRestaurante: mesa.restaurante.id
+    };
+    this.reservasGateway.emitNuevaReserva(payload);
     
     return guardada;
   }
@@ -78,7 +87,13 @@ export class ReservasService {
 
     if (dto.estado && dto.estado !== reserva.estado) {
         reserva.estado = dto.estado;
-        this.reservasGateway.emitActualizacionReserva(reserva.id, reserva.estado);
+        
+        // Emite evento con idRestaurante
+        this.reservasGateway.emitActualizacionReserva(
+          reserva.id, 
+          reserva.estado, 
+          reserva.mesa.restaurante.id
+        );
     }
     
     if (dto.fecha) reserva.fecha = dto.fecha;

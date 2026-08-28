@@ -1,0 +1,5 @@
+# Archivos de documentación y texto
+*.md
+*.txt
+!CMakeLists.txt
+

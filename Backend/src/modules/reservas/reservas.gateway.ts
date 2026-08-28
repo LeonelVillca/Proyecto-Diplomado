@@ -18,7 +18,7 @@ export class ReservasGateway implements OnGatewayInit {
     this.server.emit('nueva_reserva', reserva);
   }
 
-  emitActualizacionReserva(idReserva: number, estado: string) {
-    this.server.emit('reserva_actualizada', { id: idReserva, estado });
+  emitActualizacionReserva(idReserva: number, estado: string, idRestaurante: number) {
+    this.server.emit('reserva_actualizada', { id: idReserva, estado, idRestaurante });
   }
 }

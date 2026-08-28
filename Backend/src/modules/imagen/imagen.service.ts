@@ -9,6 +9,9 @@ import { Restaurante } from '../restaurante/restaurante.entity';
 
 @Injectable()
 export class ImagenService {
+  upload(file: Express.Multer.File, filename: string) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     @InjectRepository(Imagen)
     private readonly imagenRepository: Repository<Imagen>,

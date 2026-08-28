@@ -20,6 +20,12 @@ class FavoritesController extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  void loadFavorites(List<String> ids) {
+    _ids.clear();
+    _ids.addAll(ids);
+    notifyListeners();
+  }
 }
 
 /// Permite exponer [FavoritesController] a todo el árbol sin dependencias externas.
@@ -30,8 +36,10 @@ class FavoritesScope extends InheritedNotifier<FavoritesController> {
     required super.child,
   }) : super(notifier: favoritesController);
 
-  static FavoritesController of(BuildContext context) {
-    final scope = context.dependOnInheritedWidgetOfExactType<FavoritesScope>();
+  static FavoritesController of(BuildContext context, {bool listen = true}) {
+    final scope = listen
+        ? context.dependOnInheritedWidgetOfExactType<FavoritesScope>()
+        : context.getInheritedWidgetOfExactType<FavoritesScope>();
     assert(scope != null, 'Se requiere un FavoritesScope por encima del widget.');
     return scope!.notifier!;
   }

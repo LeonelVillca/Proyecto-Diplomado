@@ -33,9 +33,20 @@ class _AppScopeManagerState extends State<AppScopeManager> {
     
     if (_restauranteController == null || _lastToken != auth.token) {
       _lastToken = auth.token;
-      // No liberamos el anterior inmediatamente si aún se está dibujando,
-      // pero para simplificar lo reemplazamos.
       _restauranteController = RestauranteController(auth.token);
+      
+      // Load favorites if user is logged in
+      if (auth.idUsuario != null) {
+        // We use a post-frame callback to avoid depending on context while building
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            final favs = FavoritesScope.of(context, listen: false);
+            _restauranteController!.obtenerFavoritos(auth.idUsuario!).then((ids) {
+              favs.loadFavorites(ids);
+            });
+          }
+        });
+      }
     }
 
     return RestauranteScope(
