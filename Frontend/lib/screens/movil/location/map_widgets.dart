@@ -21,7 +21,7 @@ class MapFilterPill extends StatelessWidget {
         children: [
           const Icon(Icons.people_outline, size: 18, color: kWineColor),
           const SizedBox(width: 6),
-          Text('2  ·  Esta noche - 19:00', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
+          Text('2  ·  Esta noche - 19:00', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
           const SizedBox(width: 8),
           const Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.black54),
         ],
@@ -54,7 +54,7 @@ class MapSearchBar extends StatelessWidget {
               onChanged: onChanged,
               decoration: InputDecoration.collapsed(
                 hintText: 'Buscar restaurante o zona...',
-                hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.black38),
+                hintStyle: GoogleFonts.manrope(fontSize: 13, color: Colors.black38),
               ),
             ),
           ),
@@ -103,7 +103,7 @@ class _MapFilterChipsState extends State<MapFilterChips> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6, offset: const Offset(0, 2))],
               ),
-              child: Text(_cats[i], style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : Colors.black87)),
+              child: Text(_cats[i], style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : Colors.black87)),
             ),
           );
         },
@@ -165,17 +165,17 @@ class RestaurantMapCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(restaurant.name, style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(restaurant.name, style: GoogleFonts.piazzolla(fontSize: 15, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 3),
-                  Text(tags, style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54)),
+                  Text(tags, style: GoogleFonts.manrope(fontSize: 12, color: Colors.black54)),
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       const Icon(Icons.star_rounded, color: kGoldColor, size: 15),
                       const SizedBox(width: 3),
-                      Text('${restaurant.rating}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('${restaurant.rating}', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600)),
                       const SizedBox(width: 10),
-                      Text('\$\$', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black45)),
+                      Text('\$\$', style: GoogleFonts.manrope(fontSize: 12, color: Colors.black45)),
                     ],
                   ),
                 ],

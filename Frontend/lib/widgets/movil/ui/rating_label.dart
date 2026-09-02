@@ -21,7 +21,7 @@ class RatingLabel extends StatelessWidget {
     final body = textColor ??
         (onDark ? Colors.white : const Color(0xFF3C3C43));
 
-    final label = GoogleFonts.poppins(
+    final label = GoogleFonts.manrope(
       fontSize: 12,
       fontWeight: FontWeight.w700,
       color: body,

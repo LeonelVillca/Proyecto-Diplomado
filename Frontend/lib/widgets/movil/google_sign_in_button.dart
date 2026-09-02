@@ -58,9 +58,9 @@ class GoogleSignInButton extends StatelessWidget {
                   'Continuar con Google',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.montserrat(
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 15.5,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.googleInk,
                     letterSpacing: 0.1,
                   ),

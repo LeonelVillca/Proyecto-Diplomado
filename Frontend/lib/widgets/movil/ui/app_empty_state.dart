@@ -40,7 +40,7 @@ class AppEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.piazzolla(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.ink,
@@ -50,7 +50,7 @@ class AppEmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 13.5,
               height: 1.5,
               color: AppColors.secondaryText,
@@ -69,7 +69,7 @@ class AppEmptyState extends StatelessWidget {
               ),
               child: Text(
                 actionLabel!,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,

@@ -30,7 +30,7 @@ class AppSectionHeader extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.montserrat(
+              style: GoogleFonts.piazzolla(
                 fontSize: 17.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
@@ -49,7 +49,7 @@ class AppSectionHeader extends StatelessWidget {
               ),
               child: Text(
                 trailingLabel!,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),

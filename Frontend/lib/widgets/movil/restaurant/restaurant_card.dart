@@ -54,7 +54,7 @@ class RestaurantCard extends StatelessWidget {
                             restaurant.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.montserrat(
+                            style: GoogleFonts.piazzolla(
                               fontSize: 16.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
@@ -80,7 +80,7 @@ class RestaurantCard extends StatelessWidget {
                             restaurant.zone,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 12,
                               color: AppColors.secondaryText,
                             ),
@@ -128,7 +128,7 @@ class RestaurantCard extends StatelessWidget {
                                   size: 18),
                               label: Text(
                                 'Reservar mesa',
-                                style: GoogleFonts.poppins(
+                                style: GoogleFonts.manrope(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -247,7 +247,7 @@ class _OpenBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             isOpen ? 'Abierto' : 'Cerrado',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
               color: Colors.white,
@@ -294,7 +294,7 @@ class _MetaTag extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 10.5,
               fontWeight: FontWeight.w600,
               color: color,
@@ -328,7 +328,7 @@ class _WaitBadge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '$minutes min',
-            style: GoogleFonts.poppins(
+            style: GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.gold,

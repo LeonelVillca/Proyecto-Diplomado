@@ -167,12 +167,12 @@ class _MapFallback extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Tarija · Bolivia',
-              style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black45),
+              style: GoogleFonts.piazzolla(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.black45),
             ),
             const SizedBox(height: 6),
             Text(
               'El mapa estará disponible en el dispositivo móvil',
-              style: GoogleFonts.poppins(fontSize: 12, color: Colors.black38),
+              style: GoogleFonts.manrope(fontSize: 12, color: Colors.black38),
             ),
           ],
         ),
@@ -207,7 +207,7 @@ class _BottomSheet extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   '${restaurants.length} Restaurantes cerca',
-                  style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54),
+                  style: GoogleFonts.piazzolla(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black54),
                 ),
               ],
             ),
@@ -300,7 +300,7 @@ class _MapMarkerModal extends StatelessWidget {
                           Expanded(
                             child: Text(
                               restaurant.name,
-                              style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF1A0C12)),
+                              style: GoogleFonts.piazzolla(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF1A0C12)),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -311,7 +311,7 @@ class _MapMarkerModal extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 restaurant.rating.toString(),
-                                style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFFD4AF37)),
+                                style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFFD4AF37)),
                               ),
                             ],
                           ),
@@ -320,7 +320,7 @@ class _MapMarkerModal extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${restaurant.cuisine.label} · ${restaurant.price}',
-                        style: GoogleFonts.poppins(fontSize: 13, color: Colors.black54),
+                        style: GoogleFonts.manrope(fontSize: 13, color: Colors.black54),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -334,7 +334,7 @@ class _MapMarkerModal extends StatelessWidget {
                           ),
                           child: Text(
                             'Ver Restaurante',
-                            style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                            style: GoogleFonts.piazzolla(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
                           ),
                         ),
                       ),

@@ -56,7 +56,7 @@ class AppAvatar extends StatelessWidget {
       ),
       child: Text(
         _initials,
-        style: GoogleFonts.montserrat(
+        style: GoogleFonts.piazzolla(
           fontSize: radius * 0.62,
           fontWeight: FontWeight.w700,
           color: Colors.white,

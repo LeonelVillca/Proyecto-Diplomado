@@ -30,7 +30,7 @@ class DetailInfoCard extends StatelessWidget {
           // Nombre del restaurante
           Text(
             restaurant.name,
-            style: GoogleFonts.montserrat(
+            style: GoogleFonts.piazzolla(
               fontSize: 24,
               fontWeight: FontWeight.w800,
               color: AppColors.ink,
@@ -82,7 +82,7 @@ class _PromoChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.wine),
+        style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.wine),
       ),
     );
   }
@@ -109,7 +109,7 @@ class _RatingChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '$rating ($count)',
-            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.gold),
+            style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.gold),
           ),
         ],
       ),
@@ -131,7 +131,7 @@ class _MetaItem extends StatelessWidget {
       children: [
         Icon(icon, size: 14, color: c),
         const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.poppins(fontSize: 12, color: c, fontWeight: FontWeight.w500)),
+        Text(label, style: GoogleFonts.manrope(fontSize: 12, color: c, fontWeight: FontWeight.w500)),
       ],
     );
   }

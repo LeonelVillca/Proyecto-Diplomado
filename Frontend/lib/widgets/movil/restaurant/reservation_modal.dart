@@ -45,7 +45,7 @@ class _ReservationModalState extends State<ReservationModal> {
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Por favor, selecciona una hora para la reserva', style: GoogleFonts.poppins()),
+          content: Text('Por favor, selecciona una hora para la reserva', style: GoogleFonts.manrope()),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
         ),
@@ -121,13 +121,13 @@ class _ReservationModalState extends State<ReservationModal> {
                 child: const Icon(Icons.check_circle_rounded, color: Color(0xFF2E8B57), size: 48),
               ),
               const SizedBox(height: 12),
-              Text('Reserva Confirmada', style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 20)),
+              Text('Reserva Confirmada', style: GoogleFonts.piazzolla(fontWeight: FontWeight.w700, fontSize: 20)),
             ],
           ),
           content: Text(
             'Tu solicitud para ${widget.restaurant.name} ha sido enviada.\n${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')} a las $_selectedTime para $_guests personas.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(fontSize: 13, color: AppColors.secondaryText),
+            style: GoogleFonts.manrope(fontSize: 13, color: AppColors.secondaryText),
           ),
           actionsAlignment: MainAxisAlignment.center,
           actions: [
@@ -137,7 +137,7 @@ class _ReservationModalState extends State<ReservationModal> {
                 backgroundColor: AppColors.wine,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text('Entendido', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              child: Text('Entendido', style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
             ),
           ],
         ),
@@ -146,7 +146,7 @@ class _ReservationModalState extends State<ReservationModal> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', ''), style: GoogleFonts.poppins()),
+            content: Text(e.toString().replaceAll('Exception: ', ''), style: GoogleFonts.manrope()),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -177,7 +177,7 @@ class _ReservationModalState extends State<ReservationModal> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Reservar Mesa', style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.ink)),
+                Text('Reservar Mesa', style: GoogleFonts.piazzolla(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.ink)),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, color: AppColors.secondaryText),
                   onPressed: () => Navigator.pop(context),
@@ -220,7 +220,7 @@ class _ReservationModalState extends State<ReservationModal> {
                             ),
                             child: Text(
                               number == 8 ? '8+' : '$number',
-                              style: GoogleFonts.montserrat(
+                              style: GoogleFonts.piazzolla(
                                 fontSize: 16,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 color: isSelected ? Colors.white : AppColors.ink,
@@ -267,7 +267,7 @@ class _ReservationModalState extends State<ReservationModal> {
                               children: [
                                 Text(
                                   isToday ? 'Hoy' : _getWeekDay(date.weekday),
-                                  style: GoogleFonts.poppins(
+                                  style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                     color: isSelected ? Colors.white70 : AppColors.secondaryText,
@@ -276,7 +276,7 @@ class _ReservationModalState extends State<ReservationModal> {
                                 const SizedBox(height: 4),
                                 Text(
                                   '${date.day}',
-                                  style: GoogleFonts.montserrat(
+                                  style: GoogleFonts.piazzolla(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                     color: isSelected ? Colors.white : AppColors.ink,
@@ -313,7 +313,7 @@ class _ReservationModalState extends State<ReservationModal> {
                           ),
                           child: Text(
                             time,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 14,
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                               color: isSelected ? Colors.white : AppColors.ink,
@@ -332,10 +332,10 @@ class _ReservationModalState extends State<ReservationModal> {
                   TextField(
                     controller: _commentCtrl,
                     maxLines: 3,
-                    style: GoogleFonts.poppins(fontSize: 13, color: AppColors.ink),
+                    style: GoogleFonts.manrope(fontSize: 13, color: AppColors.ink),
                     decoration: InputDecoration(
                       hintText: 'Ej. Aniversario, alergias, mesa cerca de la ventana...',
-                      hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppColors.secondaryText.withAlpha(150)),
+                      hintStyle: GoogleFonts.manrope(fontSize: 13, color: AppColors.secondaryText.withAlpha(150)),
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.all(14),
@@ -378,7 +378,7 @@ class _ReservationModalState extends State<ReservationModal> {
                     ? const Center(child: CircularProgressIndicator(color: Colors.white))
                     : Text(
                         'Confirmar Reserva',
-                        style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: GoogleFonts.piazzolla(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                       ),
               ),
             ),
@@ -397,7 +397,7 @@ class _Label extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink),
+      style: GoogleFonts.piazzolla(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink),
     );
   }
 }

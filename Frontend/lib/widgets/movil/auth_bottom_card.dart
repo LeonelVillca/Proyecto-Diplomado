@@ -63,15 +63,26 @@ class _AuthBottomCardState extends State<AuthBottomCard> {
                 ),
               ),
               const SizedBox(height: 24),
-              if (auth.errorMessage != null) ...[
-                _ErrorBanner(message: auth.errorMessage!),
-                const SizedBox(height: 14),
-              ],
               ListenableBuilder(
                 listenable: auth,
-                builder: (context, _) => GoogleSignInButton(
-                  isLoading: auth.isLoading,
-                  onPressed: () => auth.signInWithGoogle(),
+                builder: (context, _) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (auth.errorMessage != null) ...[
+                      _ErrorBanner(message: auth.errorMessage!),
+                      const SizedBox(height: 14),
+                    ],
+                    GoogleSignInButton(
+                      isLoading: auth.isLoading,
+                      onPressed: () async {
+                        final success = await auth.signInWithGoogle();
+                        if (success && context.mounted) {
+                          Navigator.of(context).popUntil((r) => r.isFirst);
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),

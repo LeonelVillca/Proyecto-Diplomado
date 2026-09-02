@@ -40,14 +40,14 @@ class AppSearchBar extends StatelessWidget {
               onSubmitted: onSubmitted,
               decoration: InputDecoration(
                 hintText: 'Buscar restaurante, cocina o zona…',
-                hintStyle: GoogleFonts.poppins(
+                hintStyle: GoogleFonts.manrope(
                   fontSize: 13.5,
                   color: AppColors.secondaryText,
                 ),
                 border: InputBorder.none,
                 isDense: true,
               ),
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.manrope(
                 fontSize: 13.5,
                 color: AppColors.ink,
               ),

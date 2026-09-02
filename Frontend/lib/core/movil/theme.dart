@@ -102,8 +102,8 @@ class AppGradients {
 class AppFonts {
   AppFonts._();
 
-  static const String display = 'Piazzolla';
-  static const String body = 'Manrope';
+  static const String display = 'Poppins';
+  static const String body = 'Poppins';
 }
 
 /// Tema global de la aplicación.
@@ -124,59 +124,52 @@ class AppTheme {
       splashFactory: InkSparkle.splashFactory,
     );
 
-    final displayFont = GoogleFonts.piazzollaTextTheme(base.textTheme);
-    final bodyFont = GoogleFonts.manropeTextTheme(displayFont);
+    final poppinsTheme = GoogleFonts.poppinsTextTheme(base.textTheme);
 
     return base.copyWith(
-      textTheme: bodyFont.copyWith(
-        displayLarge: displayFont.displayLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontStyle: FontStyle.italic,
+      textTheme: poppinsTheme.copyWith(
+        displayLarge: poppinsTheme.displayLarge?.copyWith(
+          fontWeight: FontWeight.w700,
           color: AppColors.wine,
         ),
-        displayMedium: displayFont.displayMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontStyle: FontStyle.italic,
+        displayMedium: poppinsTheme.displayMedium?.copyWith(
+          fontWeight: FontWeight.w700,
           color: AppColors.wine,
         ),
-        headlineMedium: displayFont.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontStyle: FontStyle.italic,
+        headlineMedium: poppinsTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w700,
           color: AppColors.ink,
         ),
-        headlineSmall: displayFont.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontStyle: FontStyle.italic,
+        headlineSmall: poppinsTheme.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w700,
           color: AppColors.ink,
         ),
-        titleLarge: displayFont.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontStyle: FontStyle.italic,
+        titleLarge: poppinsTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
           color: AppColors.ink,
         ),
-        titleMedium: displayFont.titleMedium?.copyWith(
+        titleMedium: poppinsTheme.titleMedium?.copyWith(
           fontWeight: FontWeight.w600,
-          fontStyle: FontStyle.italic,
           color: AppColors.ink,
         ),
-        titleSmall: bodyFont.titleSmall?.copyWith(
+        titleSmall: poppinsTheme.titleSmall?.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w700,
           color: AppColors.inkSoft,
         ),
-        bodyLarge: bodyFont.bodyLarge?.copyWith(
+        bodyLarge: poppinsTheme.bodyLarge?.copyWith(
           color: AppColors.ink,
           height: 1.5,
         ),
-        bodyMedium: bodyFont.bodyMedium?.copyWith(
+        bodyMedium: poppinsTheme.bodyMedium?.copyWith(
           color: AppColors.inkSoft,
           height: 1.5,
         ),
-        bodySmall: bodyFont.bodySmall?.copyWith(
+        bodySmall: poppinsTheme.bodySmall?.copyWith(
           color: AppColors.inkSoft,
           height: 1.45,
         ),
-        labelLarge: bodyFont.labelLarge?.copyWith(
+        labelLarge: poppinsTheme.labelLarge?.copyWith(
           fontWeight: FontWeight.w800,
         ),
       ),

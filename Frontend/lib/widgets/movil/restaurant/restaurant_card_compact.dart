@@ -102,7 +102,7 @@ class RestaurantCardCompact extends StatelessWidget {
                       restaurant.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.montserrat(
+                      style: GoogleFonts.piazzolla(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.ink,
@@ -119,7 +119,7 @@ class RestaurantCardCompact extends StatelessWidget {
                             restaurant.zone,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
+                            style: GoogleFonts.manrope(
                               fontSize: 10.5,
                               color: AppColors.secondaryText,
                             ),
@@ -134,7 +134,7 @@ class RestaurantCardCompact extends StatelessWidget {
                         RatingLabel(rating: restaurant.rating),
                         Text(
                           restaurant.price,
-                          style: GoogleFonts.poppins(
+                          style: GoogleFonts.manrope(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.gold,

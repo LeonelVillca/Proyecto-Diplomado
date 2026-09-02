@@ -58,7 +58,7 @@ class AppFilterChip extends StatelessWidget {
               ],
               Text(
                 label,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.manrope(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                   color: selected ? Colors.white : AppColors.ink,

@@ -24,7 +24,7 @@ class ApiEndpoints {
       case Environment.emulador:
         return 'http://10.0.2.2:3000';
       case Environment.dispositivoFisico:
-        return 'http://127.0.0.1:3000'; // Usando ADB Reverse
+        return 'http://127.0.0.1:3000'; // Usando ADB Reverse (Red Universitaria)
       case Environment.produccion:
         return 'https://tu-dominio-futuro.com';
     }

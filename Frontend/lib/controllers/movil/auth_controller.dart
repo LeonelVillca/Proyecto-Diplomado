@@ -46,7 +46,7 @@ enum AuthStatus {
 class AuthController extends ChangeNotifier {
   AuthController({
     this._firebaseAuth,
-    this.demoFallback = true,
+    this.demoFallback = false,   // Desactivado: errores reales deben ser visibles
     SessionService? session,
   })  : _session = session ?? SessionService() {
     _subscribeToAuthChanges();
@@ -131,10 +131,10 @@ class AuthController extends ChangeNotifier {
   void _subscribeToAuthChanges() {
     try {
       _auth.authStateChanges().listen((firebaseUser) {
+        // Solo actualizamos el usuario de Firebase.
+        // El estado `authenticated` LO DECIDE el backend (JWT válido).
+        // Si marcamos authenticated aquí, la app entra sin validar el token.
         _user = firebaseUser;
-        if (firebaseUser != null) {
-          _status = AuthStatus.authenticated;
-        }
         notifyListeners();
       });
     } catch (_) {
@@ -143,13 +143,6 @@ class AuthController extends ChangeNotifier {
   }
 
   /// Intenta restaurar una sesión previa guardada en [SessionService].
-  ///
-  /// Lee el JWT y lo valida contra `GET /auth/perfil`. Si el backend
-  /// responde 401 (token vencido/inválido) se limpia el storage y se
-  /// retorna `false` (el usuario vuelve al login). Si no hay token o hay
-  /// problemas de conexión se retorna `false` sin tocar el storage.
-  ///
-  /// Retorna `true` si la sesión quedó activa.
   Future<bool> restaurarSesion() async {
     final token = await _session.obtenerToken();
     if (token == null || token.isEmpty) {
@@ -194,25 +187,12 @@ class AuthController extends ChangeNotifier {
   }
 
   /// Método especial para el flujo administrativo web (login local).
-  /// Guarda el JWT devuelto por `/auth/login` y restaura el perfil.
   Future<bool> restaurarSesionLocalDesdeAdmin(String newToken) async {
     await _session.guardarToken(newToken);
     return restaurarSesion();
   }
 
   /// Inicia sesión con la cuenta de Google del usuario.
-  ///
-  /// Primero entra con Firebase/Google y luego registra la sesión en el
-  /// backend (`POST /auth/google`) mandando el ID Token de Firebase, que el
-  /// backend verifica server-side. A cambio guarda el usuario en `usuarios`,
-  /// vincula `oauth_cuenta` y devuelve un JWT, que se persiste en
-  /// [SessionService].
-  ///
-  /// Si el backend no responde, se cierra la sesión de Google y se muestra
-  /// el error (ya no se cae a demo). Solo si el propio Google falla o el
-  /// usuario cancela, y [demoFallback] está activo, se entra a la simulación.
-  ///
-  /// Retorna `true` si la sesión quedó activa (real o simulada).
   Future<bool> signInWithGoogle() async {
     if (isLoading) return false;
 
@@ -259,11 +239,7 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  /// Envía el ID Token de Firebase al backend para verificar la identidad
-  /// y guardar el usuario en la BD.
-  ///
-  /// Retorna `false` (y deja `_errorMessage` listo) si el servidor no
-  /// respondió o rechazó el token.
+  /// Envía el ID Token de Firebase al backend.
   Future<bool> _registrarGoogleEnBackend(User firebaseUser) async {
     try {
       final idToken = await firebaseUser.getIdToken();
@@ -335,11 +311,16 @@ class AuthController extends ChangeNotifier {
       'este sea el acceso correcto desde tu dispositivo.';
 
   Future<void> _signInWithGoogleMobile() async {
-    final GoogleSignIn signIn = GoogleSignIn.instance;
-    final GoogleSignInAccount account = await signIn.authenticate();
-    final GoogleSignInAuthentication authTokens = await account!.authentication;
-    final credential =
-        GoogleAuthProvider.credential(idToken: authTokens.idToken);
+    final GoogleSignInAccount? account = await GoogleSignIn.instance.authenticate();
+    if (account == null) {
+      throw Exception('Cancelado por el usuario.');
+    }
+    final GoogleSignInAuthentication authTokens = await account.authentication;
+    final idToken = authTokens.idToken;
+    if (idToken == null) {
+      throw Exception('No se pudo obtener el ID token de Google.');
+    }
+    final credential = GoogleAuthProvider.credential(idToken: idToken);
     await _auth.signInWithCredential(credential);
   }
 
@@ -356,6 +337,9 @@ class AuthController extends ChangeNotifier {
   Future<void> signOut() async {
     try {
       if (!_demoMode && !kIsWeb) {
+        // En google_sign_in ^7.0.0, disconnect() revoca la cuenta a nivel OS.
+        // Se llama ANTES de signOut() para evitar excepciones por no tener sesión activa.
+        await GoogleSignIn.instance.disconnect();
         await GoogleSignIn.instance.signOut();
       }
     } catch (_) {
