@@ -5,7 +5,9 @@ import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class LandingNavbar extends StatefulWidget {
-  const LandingNavbar({super.key});
+  final bool showLinks;
+  
+  const LandingNavbar({super.key, this.showLinks = true});
 
   @override
   State<LandingNavbar> createState() => _LandingNavbarState();
@@ -32,18 +34,10 @@ class _LandingNavbarState extends State<LandingNavbar> {
               // Logo
           Row(
             children: [
-              Container(
-                width: 42,
+              Image.asset(
+                'assets/icon_app.png',
                 height: 42,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6B1233), Color(0xFF3A0A1B)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 22),
+                fit: BoxFit.contain,
               ),
               const SizedBox(width: 14),
               RichText(
@@ -72,43 +66,44 @@ class _LandingNavbarState extends State<LandingNavbar> {
           ),
 
           // Nav Links
-          Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Row(
-                children: [
-                  _NavLink('Beneficios', 'beneficios'),
-              const SizedBox(width: 36),
-              _NavLink('Cómo Funciona', 'como'),
-              const SizedBox(width: 36),
-              _NavLink('Restaurantes', 'restaurantes'),
-              const SizedBox(width: 36),
-              _NavLink('Contacto', 'contacto'),
-              const SizedBox(width: 40),
+          if (widget.showLinks)
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  children: [
+                    _NavLink('Beneficios', 'beneficios'),
+                const SizedBox(width: 36),
+                _NavLink('Cómo Funciona', 'como'),
+                const SizedBox(width: 36),
+                _NavLink('Restaurantes', 'restaurantes'),
+                const SizedBox(width: 36),
+                _NavLink('Contacto', 'contacto'),
+                const SizedBox(width: 40),
 
-              // Acceso
-              _GhostButton(
-                label: 'Iniciar sesión',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+                // Acceso
+                _GhostButton(
+                  label: 'Iniciar sesión',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
+                const SizedBox(width: 14),
 
-              // Comienza
-              _PrimaryButton(
-                label: 'Crear cuenta',
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen()),
+                // Comienza
+                _PrimaryButton(
+                  label: 'Crear cuenta',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen()),
+                  ),
                 ),
-              ),
-            ], // closes inner Row children
-          ), // closes inner Row
-        ), // closes FittedBox
-      ), // closes Expanded
+              ], // closes inner Row children
+            ), // closes inner Row
+          ), // closes FittedBox
+        ), // closes Expanded
     ], // closes outer Row children
   ), // closes outer Row
 ), // closes Container

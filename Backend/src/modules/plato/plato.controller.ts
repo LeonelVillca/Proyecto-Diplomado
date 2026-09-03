@@ -10,10 +10,12 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as sharp from 'sharp';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
@@ -39,15 +41,18 @@ export class PlatoController {
     @UploadedFile() file: Express.Multer.File,
     @Body('idRestaurante') idRestaurante: string
   ): Promise<{ url: string }> {
-    if (!idRestaurante) throw new Error('idRestaurante is required');
-    if (!file) throw new Error('file is required');
+    if (!idRestaurante) throw new BadRequestException('idRestaurante is required');
+    if (!file) throw new BadRequestException('Se requiere una imagen');
     
-    const ext = file.originalname.split('.').pop();
-    const fileName = `${Date.now()}.${ext}`;
+    if (!file.mimetype.startsWith('image/')) {
+      throw new BadRequestException('El archivo debe ser una imagen válida (JPG/PNG/WEBP)');
+    }
+    
+    const fileName = `${Date.now()}.webp`;
     const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', idRestaurante, 'platos');
     
     await fs.mkdir(uploadDir, { recursive: true });
-    await fs.writeFile(path.join(uploadDir, fileName), file.buffer);
+    await sharp(file.buffer).webp().toFile(path.join(uploadDir, fileName));
     
     const url = `/publico/restaurantes/${idRestaurante}/platos/${fileName}`;
     return { url };

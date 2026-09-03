@@ -38,14 +38,14 @@ export class SolicitudService {
       throw new BadRequestException('Se requieren los documentos NIT y CI');
     }
 
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'application/octet-stream'];
+    const allowedTypes = ['application/pdf'];
     const nitExt = path.extname(nitFile.originalname).toLowerCase();
     const ciExt = path.extname(ciFile.originalname).toLowerCase();
-    const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png', '.webp'];
+    const allowedExts = ['.pdf'];
 
     if (!allowedTypes.includes(nitFile.mimetype) || !allowedTypes.includes(ciFile.mimetype) ||
         !allowedExts.includes(nitExt) || !allowedExts.includes(ciExt)) {
-      throw new BadRequestException('Los documentos deben ser PDF o imágenes (JPG/PNG/WEBP)');
+      throw new BadRequestException('Los documentos NIT y CI deben ser obligatoriamente en formato PDF.');
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -84,8 +84,8 @@ export class SolicitudService {
       const uploadDir = path.join(process.cwd(), 'storage', 'privado', 'solicitudes', solicitud.id.toString());
       await fs.mkdir(uploadDir, { recursive: true });
 
-      const nitExt = path.extname(nitFile.originalname) || (nitFile.mimetype === 'application/pdf' ? '.pdf' : '.jpg');
-      const ciExt = path.extname(ciFile.originalname) || (ciFile.mimetype === 'application/pdf' ? '.pdf' : '.jpg');
+      const nitExt = '.pdf';
+      const ciExt = '.pdf';
 
       const nitFilename = `nit-${crypto.randomUUID()}${nitExt}`;
       const ciFilename = `ci-${crypto.randomUUID()}${ciExt}`;

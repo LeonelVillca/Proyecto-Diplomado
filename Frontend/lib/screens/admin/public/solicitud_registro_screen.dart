@@ -6,9 +6,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/widgets/admin/landing_navbar.dart';
 import 'package:frontend/widgets/admin/solicitud_hero.dart';
-import 'package:frontend/widgets/admin/solicitud_footer.dart';
-import 'package:frontend/widgets/admin/solicitud_input.dart';
+import 'package:frontend/widgets/admin/landing_footer.dart';
 import 'package:frontend/screens/admin/public/landing_screen.dart';
+import 'package:frontend/screens/admin/auth/widgets/auth_components.dart';
 
 class SolicitudRegistroScreen extends StatefulWidget {
   const SolicitudRegistroScreen({super.key});
@@ -141,7 +141,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
       backgroundColor: const Color(0xFFF5EEE0), // paper
       body: CustomScrollView(
         slivers: [
-          const SliverToBoxAdapter(child: LandingNavbar()),
+          const SliverToBoxAdapter(child: LandingNavbar(showLinks: false)),
           const SliverToBoxAdapter(child: SolicitudHero()),
           SliverToBoxAdapter(
             child: Center(
@@ -152,7 +152,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
             hasScrollBody: false,
             child: Align(
               alignment: Alignment.bottomCenter,
-              child: SolicitudFooter(),
+              child: LandingFooter(),
             ),
           ),
         ],
@@ -299,20 +299,26 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
               const SizedBox(height: 32),
               
               if (_currentStep == 1) ...[
-                SolicitudInput(
-                  label: 'Nombre de pila *',
+                AuthLoginField(
+                  label: 'NOMBRE DE PILA *',
+                  hintText: 'Tu nombre',
+                  icon: Icons.person_outline,
                   controller: _nombreCtrl,
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
                 const SizedBox(height: 24),
-                SolicitudInput(
-                  label: 'Apellido *',
+                AuthLoginField(
+                  label: 'APELLIDO *',
+                  hintText: 'Tu apellido',
+                  icon: Icons.person_outline,
                   controller: _apellidoCtrl,
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
                 const SizedBox(height: 24),
-                SolicitudInput(
-                  label: 'Dirección de correo electrónico *',
+                AuthLoginField(
+                  label: 'CORREO ELECTRÓNICO *',
+                  hintText: 'tunombre@correo.com',
+                  icon: Icons.email_outlined,
                   controller: _correoCtrl,
                   keyboardType: TextInputType.emailAddress,
                   validator: (v) => v!.isEmpty || !v.contains('@') ? 'Correo inválido' : null,
@@ -321,16 +327,20 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: SolicitudInput(
-                        label: 'Nombre del Restaurante *',
+                      child: AuthLoginField(
+                        label: 'RESTAURANTE *',
+                        hintText: 'Nombre de tu negocio',
+                        icon: Icons.storefront_outlined,
                         controller: _restauranteCtrl,
                         validator: (v) => v!.isEmpty ? 'Requerido' : null,
                       ),
                     ),
                     const SizedBox(width: 24),
                     Expanded(
-                      child: SolicitudInput(
-                        label: 'Número de Teléfono *',
+                      child: AuthLoginField(
+                        label: 'TELÉFONO *',
+                        hintText: 'Número de celular',
+                        icon: Icons.phone_outlined,
                         controller: _telefonoCtrl,
                         keyboardType: TextInputType.phone,
                         validator: (v) => v!.isEmpty ? 'Requerido' : null,
@@ -339,8 +349,10 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                SolicitudInput(
-                  label: 'Mensaje o Descripción (Opcional)',
+                AuthLoginField(
+                  label: 'MENSAJE O DESCRIPCIÓN (Opcional)',
+                  hintText: 'Cuéntanos un poco sobre tu restaurante...',
+                  icon: Icons.description_outlined,
                   controller: _descripcionCtrl,
                   maxLines: 3,
                 ),
@@ -350,81 +362,111 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                   alignment: Alignment.centerRight,
                   child: SizedBox(
                     width: 200,
-                    height: 56,
-                    child: ElevatedButton(
+                    child: AuthSubmitButton(
+                      label: 'Siguiente',
+                      loading: false,
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           setState(() => _currentStep = 2);
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6B1233), // wine
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Próximo',
-                        style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800),
-                      ),
                     ),
                   ),
                 ),
               ] else ...[
-                SolicitudInput(
-                  label: 'NIT del Negocio *',
+                AuthLoginField(
+                  label: 'NIT DEL NEGOCIO *',
+                  hintText: 'Ingresa tu NIT',
+                  icon: Icons.badge_outlined,
                   controller: _nitCtrl,
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
-                const SizedBox(height: 24),
-                const Text('Documento NIT (PDF o Imagen) *', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => _seleccionarArchivo(true),
-                  icon: const Icon(Icons.upload_file),
-                  label: Text(_nitFile != null ? _nitFile!.name : 'Seleccionar archivo NIT'),
+                const SizedBox(height: 32),
+                
+                Text(
+                  'DOCUMENTO NIT (Solo PDF) *',
+                  style: GoogleFonts.manrope(color: const Color(0xFF8C7A6B), fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                 ),
-                const SizedBox(height: 24),
-                const Text('Cédula de Identidad (PDF o Imagen) *', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () => _seleccionarArchivo(false),
-                  icon: const Icon(Icons.upload_file),
-                  label: Text(_ciFile != null ? _ciFile!.name : 'Seleccionar archivo CI'),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => _seleccionarArchivo(true),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _nitFile != null ? const Color(0xFF6B1233) : const Color(0xFFDCD6CC), width: _nitFile != null ? 1.6 : 1),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.upload_file_outlined, color: _nitFile != null ? const Color(0xFF6B1233) : const Color(0xFF8C7A6B)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _nitFile != null ? _nitFile!.name : 'Haz clic aquí para seleccionar el archivo',
+                            style: GoogleFonts.manrope(
+                              color: _nitFile != null ? const Color(0xFF241512) : const Color(0xFF8C7A6B),
+                              fontWeight: _nitFile != null ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (_nitFile != null) const Icon(Icons.check_circle, color: Color(0xFF5C7A52)),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
+                
+                Text(
+                  'CÉDULA DE IDENTIDAD (Solo PDF) *',
+                  style: GoogleFonts.manrope(color: const Color(0xFF8C7A6B), fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => _seleccionarArchivo(false),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _ciFile != null ? const Color(0xFF6B1233) : const Color(0xFFDCD6CC), width: _ciFile != null ? 1.6 : 1),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.upload_file_outlined, color: _ciFile != null ? const Color(0xFF6B1233) : const Color(0xFF8C7A6B)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _ciFile != null ? _ciFile!.name : 'Haz clic aquí para seleccionar el archivo',
+                            style: GoogleFonts.manrope(
+                              color: _ciFile != null ? const Color(0xFF241512) : const Color(0xFF8C7A6B),
+                              fontWeight: _ciFile != null ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (_ciFile != null) const Icon(Icons.check_circle, color: Color(0xFF5C7A52)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 48),
+                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    TextButton(
+                    TextButton.icon(
                       onPressed: _isLoading ? null : () => setState(() => _currentStep = 1),
-                      child: const Text('Atrás', style: TextStyle(fontSize: 16, color: Colors.black)),
+                      icon: const Icon(Icons.arrow_back_ios_new, size: 14, color: Color(0xFF7A6A5C)),
+                      label: Text('Atrás', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF7A6A5C))),
                     ),
                     SizedBox(
-                      width: 200,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _enviarSolicitud,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6B1233), // wine
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : Text(
-                                'Enviar Solicitud',
-                                style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800),
-                              ),
+                      width: 220,
+                      child: AuthSubmitButton(
+                        label: 'Enviar Solicitud',
+                        loading: _isLoading,
+                        onPressed: _enviarSolicitud,
                       ),
                     ),
                   ],

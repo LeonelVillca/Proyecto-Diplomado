@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import * as sharp from 'sharp';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurante } from './restaurante.entity';
@@ -246,10 +247,10 @@ export class RestauranteService {
     const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', id.toString(), 'portada');
     await fs.mkdir(uploadDir, { recursive: true });
     
-    const ext = path.extname(file.originalname) || '.webp';
+    const ext = '.webp';
     const filename = `${crypto.randomUUID()}${ext}`;
     
-    await fs.writeFile(path.join(uploadDir, filename), file.buffer);
+    await sharp(file.buffer).webp().toFile(path.join(uploadDir, filename));
     
     const url = `/publico/restaurantes/${id}/portada/${filename}`;
     restaurante.fotoPortada = url;
@@ -269,10 +270,10 @@ export class RestauranteService {
     const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', id.toString(), 'logo');
     await fs.mkdir(uploadDir, { recursive: true });
     
-    const ext = path.extname(file.originalname) || '.webp';
+    const ext = '.webp';
     const filename = `${crypto.randomUUID()}${ext}`;
     
-    await fs.writeFile(path.join(uploadDir, filename), file.buffer);
+    await sharp(file.buffer).webp().toFile(path.join(uploadDir, filename));
     
     restaurante.logo = `/publico/restaurantes/${id}/logo/${filename}`;
     
@@ -289,9 +290,9 @@ export class RestauranteService {
     const nuevasImagenes = await Promise.all(
       files.map(async (file) => {
         if (!file.mimetype.startsWith('image/')) throw new BadRequestException('Los archivos deben ser imágenes');
-        const ext = path.extname(file.originalname) || '.webp';
+        const ext = '.webp';
         const filename = `${crypto.randomUUID()}${ext}`;
-        await fs.writeFile(path.join(uploadDir, filename), file.buffer);
+        await sharp(file.buffer).webp().toFile(path.join(uploadDir, filename));
         
         return this.imagenRepository.create({
           restaurante: { id: restaurante.id },

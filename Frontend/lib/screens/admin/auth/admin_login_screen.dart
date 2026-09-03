@@ -354,11 +354,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         RichText(
           text: TextSpan(
             style: GoogleFonts.piazzolla(
-              fontSize: 38,
+              fontSize: 32,
               fontWeight: FontWeight.w700,
               color: authInk,
-              height: 1.08,
-              letterSpacing: -0.5,
+              height: 1.1,
+              letterSpacing: -0.8,
             ),
             children: [
               const TextSpan(text: 'Bienvenido '),
@@ -372,7 +372,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         const SizedBox(height: 10),
         Text(
           'Ingresa con tu correo y contraseña para gestionar tu restaurante.',
-          style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.4),
+          style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.4),
         ),
         const SizedBox(height: 24),
         Form(
@@ -442,21 +442,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         AuthSubmitButton(label: 'Ingresar', loading: _isLoading, onPressed: _login),
         const SizedBox(height: 20),
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 18, 10, 18),
+          padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
           decoration: BoxDecoration(
             color: authCard,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: const Color(0xFFEAE0C9)),
-            boxShadow: [BoxShadow(color: authInk.withValues(alpha: 0.05), blurRadius: 16, offset: const Offset(0, 8))],
+            boxShadow: [BoxShadow(color: authInk.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
           ),
           child: Row(
             children: [
-              Container(width: 4, height: 46, decoration: BoxDecoration(color: authGoldAccent, borderRadius: BorderRadius.circular(4))),
+              Container(width: 3, height: 38, decoration: BoxDecoration(color: authGoldAccent, borderRadius: BorderRadius.circular(3))),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   '¿Tu restaurante aún no está\nen Mesa Chapaca?',
-                  style: GoogleFonts.manrope(color: authInkSoft, fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.35),
+                  style: GoogleFonts.manrope(color: authInkSoft, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
                 ),
               ),
               TextButton(
