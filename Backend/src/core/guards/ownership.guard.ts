@@ -6,7 +6,7 @@ import { Solicitud } from '../../modules/solicitud/solicitud.entity';
 import { SetMetadata } from '@nestjs/common';
 
 export const RESOURCE_TYPE_KEY = 'resource_type';
-export const CheckOwnership = (resource: 'restaurante' | 'menu' | 'plato' | 'mesa' | 'horario_atencion' | 'promocion' | 'reserva' | 'resena') => 
+export const CheckOwnership = (resource: 'restaurante' | 'menu' | 'plato' | 'mesa' | 'horario_atencion' | 'reserva' | 'resena') => 
   SetMetadata(RESOURCE_TYPE_KEY, resource);
 
 @Injectable()

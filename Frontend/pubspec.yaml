@@ -91,6 +91,7 @@ flutter:
     - assets/uno.png
     - assets/2.png
     - assets/tres.png
+    - assets/fondoTarija.jpg
 
   fonts:
     - family: BodoniModa

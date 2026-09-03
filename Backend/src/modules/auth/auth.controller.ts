@@ -13,6 +13,7 @@ import { RegistroDto } from './dto/registro.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
+import { SolicitarRecuperacionDto, RestablecerPasswordDto, VerificarPinDto } from './dto/recuperar-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 interface RequestConUsuario {
@@ -45,6 +46,24 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   crearContrasena(@Body() dto: CrearContrasenaDto) {
     return this.authService.crearContrasena(dto);
+  }
+
+  @Post('solicitar-recuperacion')
+  @HttpCode(HttpStatus.OK)
+  solicitarRecuperacion(@Body() dto: SolicitarRecuperacionDto) {
+    return this.authService.solicitarRecuperacion(dto);
+  }
+
+  @Post('verificar-pin-recuperacion')
+  @HttpCode(HttpStatus.OK)
+  verificarPinRecuperacion(@Body() dto: VerificarPinDto) {
+    return this.authService.verificarPinRecuperacion(dto);
+  }
+
+  @Post('restablecer-password')
+  @HttpCode(HttpStatus.OK)
+  restablecerPassword(@Body() dto: RestablecerPasswordDto) {
+    return this.authService.restablecerPassword(dto);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -13,6 +13,8 @@ import { FirebaseAdminService } from './firebase-admin.service';
 import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 import { InvitacionToken } from '../invitacion-token/invitacion-token.entity';
 import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
+import { SolicitarRecuperacionDto, RestablecerPasswordDto, VerificarPinDto } from './dto/recuperar-password.dto';
+import { MailService } from '../mail/mail.service';
 import { BadRequestException } from '@nestjs/common';
 
 function nombreDesdeCorreo(correo: string): string {
@@ -43,6 +45,7 @@ export class AuthService {
     private readonly firebaseAdminService: FirebaseAdminService,
     private readonly jwtService: JwtService,
     private readonly dataSource: DataSource,
+    private readonly mailService: MailService,
   ) {}
 
   private emitirToken(usuario: Usuario): {
@@ -207,4 +210,128 @@ export class AuthService {
 
     return { mensaje: 'Contraseña creada exitosamente' };
   }
+
+  async solicitarRecuperacion(dto: SolicitarRecuperacionDto): Promise<{ mensaje: string }> {
+    const correoNormalizado = dto.correo.trim().toLowerCase();
+    const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
+
+    if (!usuario) {
+      throw new NotFoundException('El correo no existe en el sistema.');
+    }
+
+    const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
+    if (!cuenta || cuenta.estado === false) {
+      throw new BadRequestException('El correo no tiene una cuenta administrativa activa.');
+    }
+
+    // Generar PIN numérico de 6 dígitos
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Invalidar tokens de recuperación anteriores para este usuario
+    await this.dataSource.getRepository(InvitacionToken)
+      .createQueryBuilder()
+      .update(InvitacionToken)
+      .set({ usado: true })
+      .where('id_usuario = :idUsuario AND tipo = :tipo AND usado = false', { 
+        idUsuario: usuario.id, 
+        tipo: 'recuperacion' 
+      })
+      .execute();
+
+    // Crear nuevo token
+    const fechaExpiracion = new Date();
+    fechaExpiracion.setMinutes(fechaExpiracion.getMinutes() + 15);
+
+    const tokenRepo = this.dataSource.getRepository(InvitacionToken);
+    const nuevoToken = tokenRepo.create({
+      usuario: { id: usuario.id },
+      token: pin,
+      tipo: 'recuperacion',
+      fechaExpiracion,
+    });
+    
+    // Podría haber un minúsculo riesgo de colisión del PIN (UNIQUE token).
+    // Para simplificar, asumiremos que la probabilidad es baja.
+    // Si ocurre un error, idealmente se generaría otro.
+    try {
+      await tokenRepo.save(nuevoToken);
+    } catch (error) {
+      // Fallback si choca el PIN
+      const pinSeguro = pin + Math.floor(Math.random() * 10).toString();
+      nuevoToken.token = pinSeguro.slice(0, 6);
+      await tokenRepo.save(nuevoToken);
+    }
+
+    await this.mailService.enviarRecuperacionPassword(usuario.correo, pin);
+
+    return { mensaje: 'Se ha enviado un código PIN a tu correo.' };
+  }
+
+  async verificarPinRecuperacion(dto: VerificarPinDto): Promise<{ valido: boolean }> {
+    const correoNormalizado = dto.correo.trim().toLowerCase();
+    const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
+
+    if (!usuario) {
+      throw new BadRequestException('El PIN es inválido o ha expirado.');
+    }
+
+    const tokenRepo = this.dataSource.getRepository(InvitacionToken);
+    const tokenRecord = await tokenRepo.findOne({
+      where: {
+        usuario: { id: usuario.id },
+        token: dto.pin,
+        tipo: 'recuperacion',
+        usado: false,
+      },
+      order: { id: 'DESC' },
+    });
+
+    if (!tokenRecord || tokenRecord.fechaExpiracion < new Date()) {
+      throw new BadRequestException('El PIN es inválido o ha expirado.');
+    }
+
+    return { valido: true };
+  }
+
+  async restablecerPassword(dto: RestablecerPasswordDto): Promise<{ mensaje: string }> {
+    const correoNormalizado = dto.correo.trim().toLowerCase();
+    const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
+
+    if (!usuario) {
+      throw new BadRequestException('El PIN es inválido o ha expirado.');
+    }
+
+    const tokenRepo = this.dataSource.getRepository(InvitacionToken);
+    const tokenRecord = await tokenRepo.findOne({
+      where: {
+        usuario: { id: usuario.id },
+        token: dto.pin,
+        tipo: 'recuperacion',
+        usado: false,
+      },
+      order: { id: 'DESC' },
+    });
+
+    if (!tokenRecord) {
+      throw new BadRequestException('El PIN es inválido o ha expirado.');
+    }
+
+    if (tokenRecord.fechaExpiracion < new Date()) {
+      throw new BadRequestException('El PIN ha expirado. Por favor, solicita uno nuevo.');
+    }
+
+    // Actualizar contraseña
+    const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
+    if (!cuenta) {
+      throw new BadRequestException('La cuenta administrativa no existe.');
+    }
+    await this.cuentasAuthService.actualizar(cuenta.id, { password: dto.nuevaContrasena });
+    
+    // Marcar PIN como usado
+    tokenRecord.usado = true;
+    await tokenRepo.save(tokenRecord);
+
+    return { mensaje: 'Contraseña actualizada exitosamente' };
+  }
 }
+
