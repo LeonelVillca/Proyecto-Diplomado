@@ -4,7 +4,11 @@ import 'package:frontend/widgets/admin/admin_shell.dart';
 import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
 import 'package:frontend/screens/admin/moderacion/moderacion_screen.dart';
 import 'package:frontend/screens/admin/solicitudes/solicitudes_screen.dart';
-import 'package:frontend/screens/admin/usuarios/usuarios_roles_screen.dart';
+import 'package:frontend/screens/admin/usuarios/usuarios_screen.dart';
+import 'package:frontend/screens/admin/usuarios/roles_crud_screen.dart';
+import 'package:frontend/screens/admin/usuarios/asignacion_roles_screen.dart';
+import 'package:frontend/screens/admin/usuarios/asignacion_permisos_screen.dart';
+import 'package:frontend/screens/admin/soporte/admin_soporte_screen.dart';
 
 class AdminSistemaDashboard extends StatefulWidget {
   const AdminSistemaDashboard({super.key});
@@ -18,7 +22,11 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
 
   final List<Widget> _screens = [
     const SolicitudesScreen(),
-    const UsuariosRolesScreen(),
+    const UsuariosScreen(),
+    const RolesCrudScreen(),
+    const AsignacionRolesScreen(),
+    const AsignacionPermisosScreen(),
+    const AdminSoporteScreen(),
     const ModeracionScreen(),
   ];
 
@@ -27,13 +35,17 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
       title: 'MENÚ',
       items: [
         SidebarItem(icon: Icons.assignment_ind_outlined, label: 'Solicitudes', index: 0),
-        SidebarItem(icon: Icons.people_outline, label: 'Usuarios y Roles', index: 1),
+        SidebarItem(icon: Icons.people_outline, label: 'Usuarios', index: 1),
+        SidebarItem(icon: Icons.shield_outlined, label: 'Roles', index: 2),
+        SidebarItem(icon: Icons.manage_accounts_outlined, label: 'Asignar Roles', index: 3),
+        SidebarItem(icon: Icons.vpn_key_outlined, label: 'Permisos', index: 4),
       ],
     ),
     SidebarSection(
       title: 'GENERAL',
       items: [
-        SidebarItem(icon: Icons.reviews_outlined, label: 'Moderación', index: 2),
+        SidebarItem(icon: Icons.support_agent_outlined, label: 'Soporte', index: 5),
+        SidebarItem(icon: Icons.reviews_outlined, label: 'Moderación', index: 6),
       ],
     ),
   ];

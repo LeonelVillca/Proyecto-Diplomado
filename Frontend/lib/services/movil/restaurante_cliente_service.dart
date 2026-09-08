@@ -25,6 +25,20 @@ class RestauranteClienteService {
     }
   }
 
+  Future<List<Restaurant>> obtenerRanking() async {
+    final response = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}/api/v1/restaurante/ranking'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      return data.map((json) => _mapToRestaurant(json)).toList();
+    } else {
+      throw Exception('Failed to load ranking');
+    }
+  }
+
   Future<List<DishItem>> obtenerPlatosRestaurante(String restauranteId) async {
     final response = await http.get(
       Uri.parse('${ApiConfig.baseUrl}/api/v1/menu/restaurante/$restauranteId'),

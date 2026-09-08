@@ -35,6 +35,11 @@ export class RestauranteController {
     return this.restauranteService.crear(dto);
   }
 
+  @Get('ranking')
+  async obtenerRanking(): Promise<any[]> {
+    return this.restauranteService.obtenerRanking();
+  }
+
   @Get()
   async listarTodos(): Promise<any[]> {
     try {

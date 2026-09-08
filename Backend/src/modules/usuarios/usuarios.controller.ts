@@ -17,14 +17,34 @@ import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { Usuario } from './usuario.entity';
 
+import { CuentasAuthService } from '../cuentas-auth/cuentas-auth.service';
+
 @Controller('usuarios')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsuariosController {
-  constructor(private readonly usuariosService: UsuariosService) {}
+  constructor(
+    private readonly usuariosService: UsuariosService,
+    private readonly cuentasAuthService: CuentasAuthService,
+  ) {}
 
   @Post()
   crear(@Body() dto: CrearUsuarioDto): Promise<Usuario> {
     return this.usuariosService.crear(dto);
+  }
+
+  @Roles('admin_sistema')
+  @Post('admin-crear')
+  async adminCrear(@Body() dto: any): Promise<Usuario> {
+    const usuario = await this.usuariosService.crear({
+      nombre: dto.nombre,
+      apellido: dto.apellido,
+      correo: dto.correo.trim().toLowerCase(),
+      telefono: dto.telefono,
+    });
+    if (dto.password) {
+      await this.cuentasAuthService.asegurarCuenta(usuario.id, dto.password);
+    }
+    return usuario;
   }
 
   @Roles('admin_sistema')

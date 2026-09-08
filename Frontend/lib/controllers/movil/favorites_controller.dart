@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-
 /// Guarda los restaurantes marcados como favoritos.
 ///
 /// Es un `ChangeNotifier` simple expuesto vía [FavoritesScope], de modo que

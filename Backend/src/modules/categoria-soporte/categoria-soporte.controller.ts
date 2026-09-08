@@ -28,6 +28,7 @@ export class CategoriaSoporteController {
     return this.categoriaSoporteService.crear(dto);
   }
 
+  @Roles()
   @Get()
   listarTodas(): Promise<CategoriaSoporte[]> {
     return this.categoriaSoporteService.listarTodas();

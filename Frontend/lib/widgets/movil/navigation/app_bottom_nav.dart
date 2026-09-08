@@ -82,14 +82,33 @@ class _NavItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
-          // La píldora tiene ancho fijo para NO tocar los bordes del menú
-          width: selected ? 56 : 44,
-          height: 44,
+          // La píldora se agranda para acomodar el texto si está seleccionada
+          width: selected ? 68 : 44,
+          height: selected ? 56 : 44,
           decoration: BoxDecoration(
             color: selected ? accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(selected ? 20 : 22),
           ),
-          child: Icon(tab.icon, size: 22, color: iconColor),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(tab.icon, size: selected ? 20 : 22, color: iconColor),
+              if (selected) ...[
+                const SizedBox(height: 2),
+                Text(
+                  tab.label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor,
+                    height: 1.0,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ]
+            ],
+          ),
         ),
       ),
     );

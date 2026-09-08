@@ -10,6 +10,7 @@ class RestauranteController extends ChangeNotifier {
   
   bool _isLoading = true;
   List<Restaurant> _restaurants = [];
+  List<Restaurant> _ranking = [];
   String? _errorMessage;
 
   RestauranteController(String? token) : _service = token != null ? RestauranteClienteService(token) : null {
@@ -18,6 +19,7 @@ class RestauranteController extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   List<Restaurant> get restaurants => _restaurants;
+  List<Restaurant> get ranking => _ranking;
   String? get errorMessage => _errorMessage;
 
   // Mock data quitada. Por ahora devolvemos listas vacías.
@@ -32,6 +34,7 @@ class RestauranteController extends ChangeNotifier {
 
     if (_service == null) {
       _restaurants = [];
+      _ranking = [];
       _errorMessage = 'No hay sesión activa para cargar restaurantes.';
       _isLoading = false;
       notifyListeners();
@@ -40,10 +43,12 @@ class RestauranteController extends ChangeNotifier {
 
     try {
       _restaurants = await _service!.obtenerRestaurantes();
+      _ranking = await _service!.obtenerRanking();
     } catch (e) {
       debugPrint('Error en backend: $e');
       _errorMessage = 'Error al cargar restaurantes desde el servidor.';
       _restaurants = [];
+      _ranking = [];
     } finally {
       _isLoading = false;
       notifyListeners();

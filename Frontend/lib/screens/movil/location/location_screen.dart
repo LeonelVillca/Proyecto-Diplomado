@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'dart:ui' as ui;
+import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -21,12 +23,65 @@ class LocationScreen extends StatefulWidget {
 class _LocationScreenState extends State<LocationScreen> {
   GoogleMapController? _mapCtrl;
   String _searchQuery = '';
+  BitmapDescriptor? _customIcon;
 
   // El mapa solo funciona en Web, Android e iOS.
   bool get _mapsSupported =>
       kIsWeb ||
       defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS;
+
+  @override
+  void initState() {
+    super.initState();
+    _initMarker();
+  }
+
+  Future<void> _initMarker() async {
+    final int size = 96; 
+    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
+    final Canvas canvas = Canvas(pictureRecorder);
+    
+    // Sombra
+    final Paint shadowPaint = Paint()
+      ..color = Colors.black.withAlpha(60)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawCircle(Offset(size / 2, size / 2 + 4), size / 2.3, shadowPaint);
+
+    // Fondo oscuro (Vino)
+    final Paint paint = Paint()..color = const Color(0xFF6B1A35);
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2.3, paint);
+    
+    // Círculo interno blanco
+    final Paint innerPaint = Paint()..color = Colors.white;
+    canvas.drawCircle(Offset(size / 2, size / 2), size / 2.9, innerPaint);
+    
+    // Ícono central
+    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
+    textPainter.text = TextSpan(
+      text: String.fromCharCode(Icons.restaurant_rounded.codePoint),
+      style: TextStyle(
+        fontSize: size / 2.5,
+        fontFamily: Icons.restaurant_rounded.fontFamily,
+        package: Icons.restaurant_rounded.fontPackage,
+        color: const Color(0xFF6B1A35),
+      ),
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(size / 2 - textPainter.width / 2, size / 2 - textPainter.height / 2),
+    );
+
+    final ui.Image image = await pictureRecorder.endRecording().toImage(size, size);
+    final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    
+    if (mounted && byteData != null) {
+      setState(() {
+        _customIcon = BitmapDescriptor.fromBytes(byteData.buffer.asUint8List());
+      });
+    }
+  }
 
   void _onMarkerTap(Restaurant r) {
     if (r.lat != null && r.lng != null) {
@@ -90,7 +145,7 @@ class _LocationScreenState extends State<LocationScreen> {
         markers.add(Marker(
           markerId: MarkerId(r.id),
           position: LatLng(r.lat!, r.lng!),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+          icon: _customIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
           infoWindow: InfoWindow(title: r.name, snippet: r.cuisine.label),
           onTap: () => _onMarkerTap(r),
         ));

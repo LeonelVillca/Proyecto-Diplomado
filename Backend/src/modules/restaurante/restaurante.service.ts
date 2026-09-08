@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurante } from './restaurante.entity';
@@ -88,6 +88,12 @@ export class RestauranteService {
       })
     );
     return restaurantesCompletos;
+  }
+
+  async obtenerRanking(): Promise<any[]> {
+    // Reutilizamos la lógica de listarTodos pero lo ordenamos y limitamos a 10.
+    const todos = await this.listarTodos();
+    return todos.sort((a, b) => b.rating - a.rating).slice(0, 10);
   }
 
   async listarPorUsuario(idUsuario: number): Promise<Restaurante[]> {

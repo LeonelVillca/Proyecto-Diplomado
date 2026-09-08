@@ -72,38 +72,85 @@ class AdminShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _C.bgBody,
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _BentoSidebar(
-            selectedIndex: selectedIndex,
-            sections: sections,
-            onItemSelected: onItemSelected,
-            onLogout: onLogout,
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16, left: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _BentoNavbar(
-                    nombreUsuario: nombreUsuario,
-                    correoUsuario: correoUsuario,
-                    rolLabel: rolLabel,
-                    onLogout: onLogout,
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(child: body),
-                ],
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+    
+    final sidebar = _BentoSidebar(
+      selectedIndex: selectedIndex,
+      sections: sections,
+      isMobile: !isDesktop,
+      onItemSelected: (i) {
+        onItemSelected(i);
+        if (!isDesktop) {
+          Navigator.of(context).pop(); // Close drawer on selection
+        }
+      },
+      onLogout: onLogout,
+    );
+
+    if (isDesktop) {
+      return Scaffold(
+        backgroundColor: _C.bgBody,
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            sidebar,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16, left: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _BentoNavbar(
+                      nombreUsuario: nombreUsuario,
+                      correoUsuario: correoUsuario,
+                      rolLabel: rolLabel,
+                      onLogout: onLogout,
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(child: body),
+                  ],
+                ),
               ),
             ),
+          ],
+        ),
+      );
+    } else {
+      return Scaffold(
+        backgroundColor: _C.bgBody,
+        appBar: AppBar(
+          backgroundColor: _C.surface,
+          elevation: 0,
+          scrolledUnderElevation: 0, // Prevent color change on scroll in M3
+          iconTheme: const IconThemeData(color: _C.textDark),
+          title: Text(
+            'Mesa Chapaca',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF2D0A14),
+            ),
           ),
-        ],
-      ),
-    );
+          actions: [
+            _ProfileCapsule(
+              nombreUsuario: nombreUsuario,
+              correoUsuario: correoUsuario,
+              rolLabel: rolLabel,
+              onLogout: onLogout,
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+        drawer: Drawer(
+          backgroundColor: _C.surface,
+          child: sidebar,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(12),
+          child: body,
+        ),
+      );
+    }
   }
 }
 
@@ -112,23 +159,25 @@ class _BentoSidebar extends StatelessWidget {
   final List<SidebarSection> sections;
   final ValueChanged<int> onItemSelected;
   final VoidCallback onLogout;
+  final bool isMobile;
 
   const _BentoSidebar({
     required this.selectedIndex,
     required this.sections,
     required this.onItemSelected,
     required this.onLogout,
+    this.isMobile = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 238,
-      margin: const EdgeInsets.only(left: 16, top: 16, bottom: 16),
+      margin: isMobile ? EdgeInsets.zero : const EdgeInsets.only(left: 16, top: 16, bottom: 16),
       decoration: BoxDecoration(
         color: _C.surface,
-        borderRadius: BorderRadius.circular(_C.radiusCard),
-        boxShadow: _C.shadowFloat,
+        borderRadius: isMobile ? BorderRadius.zero : BorderRadius.circular(_C.radiusCard),
+        boxShadow: isMobile ? null : _C.shadowFloat,
       ),
       padding: const EdgeInsets.only(top: 22, bottom: 16),
       child: Column(

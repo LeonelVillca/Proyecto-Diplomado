@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AdminModal extends StatelessWidget {
   final String title;
@@ -94,11 +95,10 @@ class AdminModal extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        fontFamily: 'BodoniModa',
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E1B1A),
+                      style: GoogleFonts.poppins(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E1B1A),
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -145,7 +145,7 @@ class AdminModal extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                         foregroundColor: const Color(0xFF6B635E),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                        textStyle: const TextStyle(fontFamily: 'Karla', fontWeight: FontWeight.w700, fontSize: 15),
+                        textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
                       ),
                       child: Text(cancelText!),
                     ),
@@ -155,13 +155,12 @@ class AdminModal extends StatelessWidget {
                     ElevatedButton(
                       onPressed: onConfirm,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: confirmColor ?? const Color(0xFF6E1E39), // Wine tinto por defecto
-                        foregroundColor: Colors.white,
+                        backgroundColor: confirmColor ?? const Color(0xFF28C76F), // Verde pastel por defecto como en el ejemplo
+                        foregroundColor: confirmColor == null ? const Color(0xFF0F5132) : Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                        elevation: 4,
-                        shadowColor: (confirmColor ?? const Color(0xFF6E1E39)).withOpacity(0.4),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                        textStyle: const TextStyle(fontFamily: 'Karla', fontWeight: FontWeight.w800, fontSize: 15),
+                        textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                       child: Text(confirmText!),
                     ),

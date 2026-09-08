@@ -80,6 +80,39 @@ export class ResenasService {
       })));
   }
 
+  async listarPorUsuario(idUsuario: number): Promise<any[]> {
+    return this.resenasRepo.createQueryBuilder('resena')
+      .leftJoinAndSelect('resena.restaurante', 'restaurante')
+      .leftJoinAndSelect('respuesta_resena', 'respuesta', 'respuesta.id_resena = resena.id_resena')
+      .where('resena.id_usuario = :idUsuario', { idUsuario })
+      .orderBy('resena.fecha', 'DESC')
+      .select([
+        'resena.id',
+        'resena.comentario',
+        'resena.calificacion',
+        'resena.fecha',
+        'restaurante.id',
+        'restaurante.nombre',
+        'respuesta.texto',
+        'respuesta.fechaRespuesta'
+      ])
+      .getRawMany()
+      .then(rows => rows.map(r => ({
+        id: r.resena_id_resena,
+        comentario: r.resena_comentario,
+        calificacion: r.resena_calificacion,
+        fecha: r.resena_fecha,
+        restaurante: {
+          id: r.restaurante_id_restaurante,
+          nombre: r.restaurante_nombre,
+        },
+        respuesta: r.respuesta_texto ? {
+          texto: r.respuesta_texto,
+          fechaRespuesta: r.respuesta_fecha_respuesta
+        } : null
+      })));
+  }
+
   async actualizar(id: number, dto: ActualizarResenaDto): Promise<Resena> {
     const resena = await this.buscarPorId(id);
 

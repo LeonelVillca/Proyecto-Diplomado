@@ -2,9 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/movil/login/login_screen.dart';
+import 'package:frontend/screens/movil/profile/user_reviews_screen.dart';
+import 'package:frontend/screens/movil/profile/user_support_screen.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:frontend/core/utils/network/api_endpoints.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  int _reservasCount = 0;
+  int _resenasCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarEstadisticas();
+    });
+  }
+
+  Future<void> _cargarEstadisticas() async {
+    final auth = AuthScope.of(context, listen: false);
+    final idUsuario = auth.idUsuario;
+    final token = auth.token;
+
+    if (idUsuario == null) return;
+
+    try {
+      final urlResenas = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/resenas/usuario/$idUsuario');
+      final resResenas = await http.get(urlResenas, headers: {'Authorization': 'Bearer $token'});
+
+      if (resResenas.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(resResenas.bodyBytes));
+        if (mounted) setState(() => _resenasCount = data.length);
+      }
+      
+      // TODO: Cargar reservas (cuando el endpoint get by usuario este disponible)
+      // Por ahora se queda en 0 o el backend se implementa luego.
+    } catch (e) {
+      debugPrint('Error cargando estadisticas: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +138,14 @@ class ProfileScreen extends StatelessWidget {
                               // Badges (Píldoras)
                               Row(
                                 children: [
-                                  _buildBadge(context, Icons.calendar_month_rounded, '0 Reservas'),
+                                  _buildBadge(context, Icons.calendar_month_rounded, '$_reservasCount Reservas'),
                                   const SizedBox(width: 8),
-                                  _buildBadge(context, Icons.star_rounded, '0 Reseñas'),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (_) => const UserReviewsScreen()));
+                                    },
+                                    child: _buildBadge(context, Icons.star_rounded, '$_resenasCount Reseñas'),
+                                  ),
                                 ],
                               ),
                             ],
@@ -115,8 +164,15 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   _buildSettingRow(context, Icons.person_rounded, 'Editar perfil'),
+                  _buildSettingRow(
+                    context, 
+                    Icons.star_rounded, 
+                    'Mis Reseñas',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const UserReviewsScreen()));
+                    }
+                  ),
                   _buildSettingRow(context, Icons.notifications_rounded, 'Notificaciones'),
-                  _buildSettingRow(context, Icons.payment_rounded, 'Métodos de pago'),
 
                   const SizedBox(height: 24),
 
@@ -126,7 +182,14 @@ class ProfileScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 14),
                   ),
                   const SizedBox(height: 12),
-                  _buildSettingRow(context, Icons.support_agent_rounded, 'Centro de ayuda'),
+                  _buildSettingRow(
+                    context, 
+                    Icons.support_agent_rounded, 
+                    'Centro de ayuda',
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const UserSupportScreen()));
+                    }
+                  ),
                   _buildSettingRow(context, Icons.info_outline_rounded, 'Términos y condiciones'),
 
                   const SizedBox(height: 32),

@@ -6,6 +6,7 @@ import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
+import 'package:frontend/widgets/movil/restaurant/explore_card.dart';
 import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 
 // ── Aliases de la paleta oficial Mesa Chapaca ────────────────────────
@@ -47,11 +48,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return result;
   }
 
-  List<Restaurant> _getRecommended(List<Restaurant> all) {
-    final sorted = [...all]..sort((a, b) => b.rating.compareTo(a.rating));
-    return sorted.take(8).toList();
-  }
-
   void _navToDetail(BuildContext context, Restaurant r) {
     Navigator.push(
       context,
@@ -71,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    final recommended = _getRecommended(allRestaurants);
+    final recommended = restauranteCtrl.ranking;
     final filtered = _getFiltered(allRestaurants);
     final isFiltering = _selected != null || _searchQuery.isNotEmpty;
 
@@ -111,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
-                      (context, i) => _ExploreCard(
+                      (context, i) => ExploreCard(
                         restaurant: filtered[i],
                         onTap: () => _navToDetail(context, filtered[i]),
                       ),
@@ -121,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 14,
                       mainAxisSpacing: 14,
-                      childAspectRatio: 0.75,
+                      childAspectRatio: 0.68,
                     ),
                   ),
                 ),
@@ -191,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverGrid(
                   delegate: SliverChildBuilderDelegate(
-                    (context, i) => _ExploreCard(
+                    (context, i) => ExploreCard(
                       restaurant: allRestaurants[i],
                       onTap: () => _navToDetail(context, allRestaurants[i]),
                     ),
@@ -201,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisCount: 2,
                     crossAxisSpacing: 14,
                     mainAxisSpacing: 14,
-                    childAspectRatio: 0.75,
+                    childAspectRatio: 0.68,
                   ),
                 ),
               ),
@@ -594,145 +590,8 @@ class _RecommendedCard extends StatelessWidget {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────
-// Tarjeta de la grilla "Explora"  (2 columnas)
-// ──────────────────────────────────────────────────────────────────────
-class _ExploreCard extends StatelessWidget {
-  final Restaurant restaurant;
-  final VoidCallback onTap;
-  const _ExploreCard({required this.restaurant, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: _C.surface,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(60),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen
-            Stack(
-              children: [
-                Container(
-                  height: 120,
-                  width: double.infinity,
-                  color: _C.surface2,
-                  child: restaurant.photoUrl != null
-                      ? Image.network(restaurant.photoUrl!, fit: BoxFit.cover)
-                      : const Icon(Icons.restaurant_rounded, color: _C.textSoft, size: 40),
-                ),
-                // Corazón
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(100),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: FavoriteHeart(restaurantId: restaurant.id, onDark: true, size: 16),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            // Información
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nombre + favorito
-                    Text(
-                      restaurant.name,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: _C.text,
-                        height: 1.2,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      restaurant.cuisine.label,
-                      style: GoogleFonts.poppins(fontSize: 11, color: _C.textSoft),
-                    ),
-                    const Spacer(),
-                    // Rating + capacidad
-                    Row(
-                      children: [
-                        const Icon(Icons.star_rounded, color: _C.accent, size: 13),
-                        const SizedBox(width: 3),
-                        Text(
-                          '${restaurant.rating.toStringAsFixed(1)}(${restaurant.reviewCount})',
-                          style: GoogleFonts.poppins(fontSize: 11, color: _C.textMid),
-                        ),
-                        const Spacer(),
-                        const Icon(Icons.access_time_rounded, color: _C.textSoft, size: 13),
-                        const SizedBox(width: 3),
-                        Text(
-                          '~${restaurant.waitMinutes}min',
-                          style: GoogleFonts.poppins(fontSize: 11, color: _C.textSoft),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Botón Reservar
-                    SizedBox(
-                      width: double.infinity,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: _C.accent,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 7),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.calendar_today_rounded, color: Colors.black, size: 12),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Reservar',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// El _ExploreCard fue extraído a lib/widgets/movil/restaurant/explore_card.dart
+// El ExploreCard fue extraído a lib/widgets/movil/restaurant/explore_card.dart
 
 // ──────────────────────────────────────────────────────────────────────
 // Sin resultados

@@ -774,4 +774,3 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
     );
   }
 }
-

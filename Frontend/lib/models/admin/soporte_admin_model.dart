@@ -7,6 +7,7 @@ class SoporteAdminModel {
   final String fechaCreacion;
   final String? fechaRespuesta;
   final Map<String, dynamic>? categoriaSoporte;
+  final Map<String, dynamic>? usuario;
 
   SoporteAdminModel({
     required this.id,
@@ -17,6 +18,7 @@ class SoporteAdminModel {
     required this.fechaCreacion,
     this.fechaRespuesta,
     this.categoriaSoporte,
+    this.usuario,
   });
 
   factory SoporteAdminModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class SoporteAdminModel {
       fechaCreacion: json['fechaCreacion'] ?? json['fecha_creacion'] ?? '',
       fechaRespuesta: json['fechaRespuesta'] ?? json['fecha_respuesta'],
       categoriaSoporte: json['categoriaSoporte'] ?? json['categoria_soporte'],
+      usuario: json['usuario'],
     );
   }
 }

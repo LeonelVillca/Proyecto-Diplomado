@@ -35,6 +35,12 @@ export class ResenasController {
   listarPorRestaurante(@Param('idRestaurante', ParseIntPipe) idRestaurante: number) {
     return this.resenasService.listarPorRestaurante(idRestaurante);
   }
+
+  @CheckClientOwnership('resena')
+  @Get('usuario/:idUsuario')
+  listarPorUsuario(@Param('idUsuario', ParseIntPipe) idUsuario: number) {
+    return this.resenasService.listarPorUsuario(idUsuario);
+  }
   
   @Roles('admin_sistema')
   @Get()

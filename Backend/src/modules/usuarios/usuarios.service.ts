@@ -17,8 +17,30 @@ export class UsuariosService {
     return this.usuarioRepository.save(usuario);
   }
 
-  listarTodos(): Promise<Usuario[]> {
-    return this.usuarioRepository.find();
+  async listarTodos(): Promise<any[]> {
+    const usuarios = await this.usuarioRepository.query(`
+      SELECT u.*, 
+             CASE WHEN ca.id_cuenta IS NOT NULL THEN true ELSE false END as es_local,
+             CASE WHEN oa.id_oauth IS NOT NULL THEN true ELSE false END as es_externo
+      FROM usuarios u
+      LEFT JOIN cuentas_auth ca ON u.id_usuario = ca.id_usuario
+      LEFT JOIN oauth_cuenta oa ON u.id_usuario = oa.id_usuario
+      ORDER BY u.id_usuario ASC
+    `);
+    return usuarios.map((u: any) => ({
+      id: u.id_usuario,
+      nombre: u.nombre,
+      apellido: u.apellido,
+      correo: u.correo,
+      ci: u.ci,
+      fechaNacimiento: u.fecha_nacimiento,
+      foto: u.foto,
+      telefono: u.telefono,
+      estado: u.estado,
+      fechaRegistro: u.fecha_registro,
+      esLocal: u.es_local,
+      esExterno: u.es_externo,
+    }));
   }
 
   async buscarPorId(id: number): Promise<Usuario> {
