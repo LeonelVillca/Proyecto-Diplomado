@@ -34,18 +34,18 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
     SidebarSection(
       title: 'MENÚ',
       items: [
-        SidebarItem(icon: Icons.assignment_ind_outlined, label: 'Solicitudes', index: 0),
-        SidebarItem(icon: Icons.people_outline, label: 'Usuarios', index: 1),
-        SidebarItem(icon: Icons.shield_outlined, label: 'Roles', index: 2),
-        SidebarItem(icon: Icons.manage_accounts_outlined, label: 'Asignar Roles', index: 3),
-        SidebarItem(icon: Icons.vpn_key_outlined, label: 'Permisos', index: 4),
+        SidebarItem(icon: Icons.assignment_ind_outlined, label: 'Solicitudes', codigo: 'menu_solicitudes', index: 0),
+        SidebarItem(icon: Icons.people_outline, label: 'Usuarios', codigo: 'menu_usuarios', index: 1),
+        SidebarItem(icon: Icons.shield_outlined, label: 'Roles', codigo: 'menu_roles', index: 2),
+        SidebarItem(icon: Icons.manage_accounts_outlined, label: 'Asignar Roles', codigo: 'menu_asignar_roles', index: 3),
+        SidebarItem(icon: Icons.vpn_key_outlined, label: 'Permisos', codigo: 'menu_permisos', index: 4),
       ],
     ),
     SidebarSection(
       title: 'GENERAL',
       items: [
-        SidebarItem(icon: Icons.support_agent_outlined, label: 'Soporte', index: 5),
-        SidebarItem(icon: Icons.reviews_outlined, label: 'Moderación', index: 6),
+        SidebarItem(icon: Icons.support_agent_outlined, label: 'Soporte', codigo: 'menu_soporte', index: 5),
+        SidebarItem(icon: Icons.reviews_outlined, label: 'Moderación', codigo: 'menu_moderacion', index: 6),
       ],
     ),
   ];
@@ -55,6 +55,12 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
     final auth = AuthScope.of(context);
     final nombre = auth.displayName ?? 'Administrador';
     final correo = auth.email ?? 'admin@mesachapaca.com';
+
+    // Filtrar menús según los permisos del usuario
+    final filteredSections = _sections.map((section) {
+      final allowedItems = section.items.where((item) => auth.hasPermiso(item.codigo)).toList();
+      return SidebarSection(title: section.title, items: allowedItems);
+    }).where((section) => section.items.isNotEmpty).toList();
 
     return AdminShell(
       selectedIndex: _selectedIndex,
@@ -69,7 +75,7 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
           );
         }
       },
-      sections: _sections,
+      sections: filteredSections,
       nombreUsuario: nombre,
       correoUsuario: correo,
       rolLabel: 'Admin Sistema',

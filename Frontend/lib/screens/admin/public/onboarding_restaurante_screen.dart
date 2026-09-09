@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -351,7 +351,7 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Bienvenido a Mesa Chapaca', style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A))),
+                          Text('Bienvenido a Mesa Chapaca', style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A))),
                           Text('Completa el perfil de tu restaurante para comenzar.', style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14)),
                         ],
                       ),
@@ -669,7 +669,7 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
             children: [
               const Icon(Icons.info_outline, color: Color(0xFF6E1E39), size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text('📸 Muestra lo mejor de tu ambiente y platillos: Sube al menos 5 fotografías de alta calidad para publicar tu restaurante ante los comensales.', style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF6E1E39)))),
+              Expanded(child: Text('ðŸ“¸ Muestra lo mejor de tu ambiente y platillos: Sube al menos 5 fotografías de alta calidad para publicar tu restaurante ante los comensales.', style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF6E1E39)))),
             ],
           ),
         ),
@@ -738,3 +738,6 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
     );
   }
 }
+
+
+

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -206,7 +206,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(valor, style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A))),
+                Text(valor, style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A))),
                 Text(titulo, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF6B635E))),
               ],
             )
@@ -244,7 +244,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Reservas en Tiempo Real', style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF2D0A14))),
+                Text('Reservas en Tiempo Real', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF2D0A14))),
                 const SizedBox(height: 6),
                 Text('Administra las reservas entrantes. Actualización en vivo activada.', style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF6B635E))),
               ],
@@ -342,7 +342,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Mesa ${reserva.idMesa} • $fechaFormat',
+                                        'Mesa ${reserva.idMesa} â€¢ $fechaFormat',
                                         style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF1E1B1A)),
                                       ),
                                       const SizedBox(height: 6),
@@ -416,3 +416,6 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
     );
   }
 }
+
+
+

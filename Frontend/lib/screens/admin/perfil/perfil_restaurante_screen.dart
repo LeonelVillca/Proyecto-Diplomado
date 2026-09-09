@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:file_picker/file_picker.dart';
@@ -364,7 +364,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
           children: [
             Text(
               'Perfil del Restaurante',
-              style: GoogleFonts.playfairDisplay(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A)),
+              style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A)),
             ),
             const SizedBox(height: 8),
             Text(
@@ -664,7 +664,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
             children: [
               const Icon(Icons.info_outline, color: Color(0xFF6E1E39), size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text('📸 Muestra lo mejor de tu ambiente y platillos: Sube al menos 5 fotografías de alta calidad para publicar tu restaurante ante los comensales.', style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF6E1E39)))),
+              Expanded(child: Text('ðŸ“¸ Muestra lo mejor de tu ambiente y platillos: Sube al menos 5 fotografías de alta calidad para publicar tu restaurante ante los comensales.', style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF6E1E39)))),
             ],
           ),
         ),
@@ -767,3 +767,6 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
     );
   }
 }
+
+
+

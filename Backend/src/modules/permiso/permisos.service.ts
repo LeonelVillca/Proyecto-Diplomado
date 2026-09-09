@@ -13,28 +13,36 @@ export class PermisosService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    const count = await this.permisoRepository.count();
-    if (count === 0) {
-      const defaultPermisos = [
-        { nombre: 'Menú Dashboard', codigo: 'menu_dashboard', descripcion: 'Acceso al Dashboard general' },
-        { nombre: 'Menú Usuarios', codigo: 'menu_usuarios', descripcion: 'Gestión de usuarios' },
-        { nombre: 'Menú Roles', codigo: 'menu_roles', descripcion: 'Gestión y listado de roles' },
-        { nombre: 'Menú Asignar Roles', codigo: 'menu_asignar_roles', descripcion: 'Asignar roles a usuarios' },
-        { nombre: 'Menú Permisos', codigo: 'menu_permisos', descripcion: 'Configuración de permisos por rol' },
-        { nombre: 'Menú Solicitudes', codigo: 'menu_solicitudes', descripcion: 'Aprobar o rechazar solicitudes' },
-        { nombre: 'Menú Reseñas', codigo: 'menu_resenas', descripcion: 'Ver y moderar reseñas' },
-        { nombre: 'Menú Soporte', codigo: 'menu_soporte', descripcion: 'Centro de ayuda y tickets' },
-        { nombre: 'Menú Reportes', codigo: 'menu_reportes', descripcion: 'Generación de reportes' },
-        { nombre: 'Menú Perfil Restaurante', codigo: 'menu_perfil_restaurante', descripcion: 'Configurar datos del restaurante' },
-        { nombre: 'Menú Mesas y Horarios', codigo: 'menu_mesas', descripcion: 'Gestión de mesas y horarios' },
-        { nombre: 'Menú Gestión de Menús', codigo: 'menu_menus', descripcion: 'Gestión de platillos y menú' },
-        { nombre: 'Menú Reservas', codigo: 'menu_reservas', descripcion: 'Gestión de reservas entrantes' },
-      ];
-      for (const p of defaultPermisos) {
-        await this.permisoRepository.save(this.permisoRepository.create(p));
+    const defaultPermisos = [
+      { nombre: 'Menú Solicitudes', codigo: 'menu_solicitudes', descripcion: 'Aprobar o rechazar solicitudes' },
+      { nombre: 'Menú Usuarios', codigo: 'menu_usuarios', descripcion: 'Gestión de usuarios' },
+      { nombre: 'Menú Roles', codigo: 'menu_roles', descripcion: 'Gestión y listado de roles' },
+      { nombre: 'Menú Asignar Roles', codigo: 'menu_asignar_roles', descripcion: 'Asignar roles a usuarios' },
+      { nombre: 'Menú Permisos', codigo: 'menu_permisos', descripcion: 'Configuración de permisos por rol' },
+      { nombre: 'Menú Soporte', codigo: 'menu_soporte', descripcion: 'Centro de ayuda y tickets' },
+      { nombre: 'Menú Moderación', codigo: 'menu_moderacion', descripcion: 'Ver y moderar contenido' },
+      
+      { nombre: 'Menú Dashboard', codigo: 'menu_dashboard', descripcion: 'Acceso al Dashboard general' },
+      { nombre: 'Menú Perfil Restaurante', codigo: 'menu_perfil_restaurante', descripcion: 'Configurar datos del restaurante' },
+      { nombre: 'Menú Mesas y Horarios', codigo: 'menu_mesas', descripcion: 'Gestión de mesas y horarios' },
+      { nombre: 'Menú Gestión de Menús', codigo: 'menu_menus', descripcion: 'Gestión de platillos y menú' },
+      { nombre: 'Menú Reservas', codigo: 'menu_reservas', descripcion: 'Gestión de reservas entrantes' },
+      { nombre: 'Menú Reseñas', codigo: 'menu_resenas', descripcion: 'Ver y responder reseñas' },
+    ];
+
+    for (const p of defaultPermisos) {
+      let permiso = await this.permisoRepository.findOneBy({ codigo: p.codigo });
+      if (!permiso) {
+        permiso = this.permisoRepository.create(p);
+        await this.permisoRepository.save(permiso);
       }
-      console.log('Seeded permisos de menús por defecto.');
     }
+    
+    // Opcional: Borrar menu_reportes si existe
+    const reporte = await this.permisoRepository.findOneBy({ codigo: 'menu_reportes' });
+    if (reporte) await this.permisoRepository.remove(reporte);
+
+    console.log('Permisos sincronizados correctamente.');
   }
 
   crear(dto: CrearPermisoDto): Promise<Permiso> {

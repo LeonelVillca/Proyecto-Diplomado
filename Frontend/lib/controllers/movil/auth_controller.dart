@@ -76,6 +76,7 @@ class AuthController extends ChangeNotifier {
   String? _backendEmail;
   int? _backendId;
   List<String> _roles = [];
+  List<String> _permisos = [];
 
   AuthStatus get status => _status;
   User? get user => _user;
@@ -83,15 +84,28 @@ class AuthController extends ChangeNotifier {
   bool get isLoading => _status == AuthStatus.loading;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   List<String> get roles => _roles;
+  List<String> get permisos => _permisos;
   int? get idUsuario => _backendId;
 
   bool hasRole(String role) => _roles.contains(role);
+  bool hasPermiso(String permiso) => _permisos.contains(permiso);
 
   /// `true` cuando se está navegando con el perfil de demostración.
   bool get isDemo => _demoMode;
 
   /// Token JWT emitido por el backend para la sesión activa.
   String? get token => _token;
+
+  Map<String, dynamic> _decodeJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return {};
+      final payload = base64Url.normalize(parts[1]);
+      return jsonDecode(utf8.decode(base64Url.decode(payload)));
+    } catch (_) {
+      return {};
+    }
+  }
 
   // Los getters de perfil usan primero el usuario del backend y luego el
   // perfil de Firebase o el simulado, así la UI no necesita saber de dónde
@@ -160,6 +174,10 @@ class AuthController extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<String, dynamic>;
+        
+        final jwtData = _decodeJwt(token);
+        _permisos = (jwtData['permisos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+
         _token = token;
         _backendNombre = (data['nombre'] as String?)?.trim();
         _backendApellido = data['apellido'] as String?;
@@ -269,6 +287,8 @@ class AuthController extends ChangeNotifier {
         _backendEmail = usuario['correo'] as String?;
         _backendId = usuario['id'] as int? ?? usuario['idUsuario'] as int? ?? usuario['id_usuario'] as int?;
         if (_token != null) {
+          final jwtData = _decodeJwt(_token!);
+          _permisos = (jwtData['permisos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
           await _session.guardarToken(_token!);
         }
         return true;

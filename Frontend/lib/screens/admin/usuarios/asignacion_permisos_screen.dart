@@ -11,13 +11,15 @@ class PermisoModel {
   final int id;
   final String nombre;
   final String? descripcion;
+  final String codigo;
   
-  PermisoModel({required this.id, required this.nombre, this.descripcion});
+  PermisoModel({required this.id, required this.nombre, this.descripcion, required this.codigo});
   
   factory PermisoModel.fromJson(Map<String, dynamic> json) {
     return PermisoModel(
       id: json['id'] ?? 0,
-      nombre: json['nombre'] ?? '',
+      codigo: json['codigo'] ?? '',
+      nombre: json['descripcion'] ?? json['nombre'] ?? json['codigo'] ?? '',
       descripcion: json['descripcion'],
     );
   }
@@ -186,24 +188,27 @@ class _AsignacionPermisosScreenState extends State<AsignacionPermisosScreen> {
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? AdminTheme.primaryColor.withOpacity(0.06) : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
                                   border: isSelected ? Border.all(color: AdminTheme.primaryColor.withOpacity(0.2)) : Border.all(color: Colors.transparent),
                                 ),
-                                child: ListTile(
-                                  onTap: () => _seleccionarRol(rol),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                  leading: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? AdminTheme.primaryColor : AdminTheme.surfaceMuted,
-                                      borderRadius: BorderRadius.circular(10),
+                                child: Material(
+                                  color: isSelected ? AdminTheme.primaryColor.withOpacity(0.06) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: ListTile(
+                                    onTap: () => _seleccionarRol(rol),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? AdminTheme.primaryColor : AdminTheme.surfaceMuted,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(Icons.shield_rounded, size: 20, color: isSelected ? Colors.white : AdminTheme.textMuted),
                                     ),
-                                    child: Icon(Icons.shield_rounded, size: 20, color: isSelected ? Colors.white : AdminTheme.textMuted),
+                                    title: Text(rol.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: isSelected ? AdminTheme.primaryDark : AdminTheme.textDark)),
+                                    trailing: isSelected ? const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AdminTheme.primaryColor) : null,
                                   ),
-                                  title: Text(rol.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: isSelected ? AdminTheme.primaryDark : AdminTheme.textDark)),
-                                  trailing: isSelected ? const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AdminTheme.primaryColor) : null,
                                 ),
                               );
                             },
@@ -280,8 +285,10 @@ class _AsignacionPermisosScreenState extends State<AsignacionPermisosScreen> {
                                       ),
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(vertical: 4),
-                                        child: SwitchListTile(
-                                          activeColor: Colors.white,
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: SwitchListTile(
+                                            activeColor: Colors.white,
                                           activeTrackColor: Colors.green,
                                           inactiveTrackColor: AdminTheme.surfaceMuted,
                                           inactiveThumbColor: AdminTheme.textMuted,
@@ -304,6 +311,7 @@ class _AsignacionPermisosScreenState extends State<AsignacionPermisosScreen> {
                                               color: hasPerm ? Colors.green : AdminTheme.textMuted,
                                               size: 20,
                                             ),
+                                          ),
                                           ),
                                         ),
                                       ),

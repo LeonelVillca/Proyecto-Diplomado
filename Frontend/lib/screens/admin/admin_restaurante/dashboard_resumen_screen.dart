@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class DashboardResumenScreen extends StatelessWidget {
@@ -76,7 +76,7 @@ class _BannerCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'SINCRONIZACIÓN EN TIEMPO REAL',
+                      'SINCRONIZACIÃ“N EN TIEMPO REAL',
                       style: GoogleFonts.manrope(
                         color: Colors.white,
                         fontSize: 10,
@@ -90,7 +90,7 @@ class _BannerCard extends StatelessWidget {
               const SizedBox(height: 16),
               RichText(
                 text: TextSpan(
-                  style: GoogleFonts.playfairDisplay(
+                  style: GoogleFonts.inter(
                     fontSize: 34,
                     color: Colors.white,
                     height: 1.2,
@@ -99,7 +99,7 @@ class _BannerCard extends StatelessWidget {
                     const TextSpan(text: 'Servicio de la '),
                     TextSpan(
                       text: 'Noche',
-                      style: GoogleFonts.playfairDisplay(
+                      style: GoogleFonts.inter(
                         fontStyle: FontStyle.italic,
                         color: const Color(0xFFC9974F),
                       ),
@@ -299,7 +299,7 @@ class _TableCard extends StatelessWidget {
               children: [
                 Expanded(flex: 2, child: _HeaderTitle('CLIENTE')),
                 Expanded(flex: 1, child: _HeaderTitle('LLEGADA')),
-                Expanded(flex: 2, child: _HeaderTitle('ASIGNACIÓN')),
+                Expanded(flex: 2, child: _HeaderTitle('ASIGNACIÃ“N')),
                 Expanded(flex: 1, child: _HeaderTitle('ESTADO')),
                 SizedBox(width: 40),
               ],
@@ -562,3 +562,5 @@ class _ThinRingsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+

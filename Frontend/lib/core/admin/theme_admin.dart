@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AdminTheme {
@@ -22,7 +22,7 @@ class AdminTheme {
   static const Color border = Color(0xFFE2E8F0);
 
   // Estilos de texto comunes
-  static TextStyle titleStyle = GoogleFonts.playfairDisplay(
+  static TextStyle titleStyle = GoogleFonts.inter(
     fontSize: 28,
     fontWeight: FontWeight.bold,
     color: textDark,
@@ -39,3 +39,5 @@ class AdminTheme {
     color: textMuted,
   );
 }
+
+

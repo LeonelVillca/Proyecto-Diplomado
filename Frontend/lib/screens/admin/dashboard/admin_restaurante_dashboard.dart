@@ -70,16 +70,9 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
     const PerfilRestauranteScreen(),
     const GestionMesasScreen(),
     const GestionMenusScreen(),
-    const Center(
-      child: Text(
-        'Promociones (F4)',
-        style: TextStyle(fontSize: 24, fontFamily: 'Karla'),
-      ),
-    ),
     const GestionReservasScreen(),
     const GestionResenasScreen(),
     const SoporteRestauranteScreen(),
-    const ReportesRestauranteScreen(),
   ];
 
   static const _sections = [
@@ -89,27 +82,26 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
         SidebarItem(
           icon: Icons.dashboard_outlined,
           label: 'Dashboard',
+          codigo: 'menu_dashboard',
           index: 0,
         ),
         SidebarItem(
           icon: Icons.restaurant_outlined,
           label: 'Perfil',
+          codigo: 'menu_perfil_restaurante',
           index: 1,
         ),
         SidebarItem(
           icon: Icons.table_restaurant_outlined,
           label: 'Mesas',
+          codigo: 'menu_mesas',
           index: 2,
         ),
         SidebarItem(
           icon: Icons.menu_book_outlined,
           label: 'Menús',
+          codigo: 'menu_menus',
           index: 3,
-        ),
-        SidebarItem(
-          icon: Icons.local_offer_outlined,
-          label: 'Promociones',
-          index: 4,
         ),
       ],
     ),
@@ -119,22 +111,20 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
         SidebarItem(
           icon: Icons.calendar_month_outlined,
           label: 'Reservas',
-          index: 5,
+          codigo: 'menu_reservas',
+          index: 4,
         ),
         SidebarItem(
           icon: Icons.star_outline,
           label: 'Reseñas',
-          index: 6,
+          codigo: 'menu_resenas',
+          index: 5,
         ),
         SidebarItem(
           icon: Icons.support_agent_outlined,
           label: 'Soporte',
-          index: 7,
-        ),
-        SidebarItem(
-          icon: Icons.bar_chart_outlined,
-          label: 'Reportes',
-          index: 8,
+          codigo: 'menu_soporte',
+          index: 6,
         ),
       ],
     ),
@@ -160,6 +150,11 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
     final nombre = auth.displayName ?? 'Restaurantero';
     final correo = auth.email ?? 'restaurante@mesachapaca.com';
 
+    final filteredSections = _sections.map((section) {
+      final allowedItems = section.items.where((item) => auth.hasPermiso(item.codigo)).toList();
+      return SidebarSection(title: section.title, items: allowedItems);
+    }).where((section) => section.items.isNotEmpty).toList();
+
     return AdminShell(
       selectedIndex: _selectedIndex,
       onItemSelected: (i) => setState(() => _selectedIndex = i),
@@ -173,7 +168,7 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
           );
         }
       },
-      sections: _sections,
+      sections: filteredSections,
       nombreUsuario: nombre,
       correoUsuario: correo,
       rolLabel: 'Admin Restaurante',

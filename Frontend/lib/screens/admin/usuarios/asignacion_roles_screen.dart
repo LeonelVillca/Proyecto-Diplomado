@@ -134,8 +134,10 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: SwitchListTile(
-                    activeColor: const Color(0xFF6E1E39),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: SwitchListTile(
+                      activeColor: const Color(0xFF6E1E39),
                     title: Text(rol.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF1E1B1A))),
                     subtitle: Text(rol.descripcion ?? 'Sin descripción', style: GoogleFonts.inter(color: const Color(0xFFA39C98), fontSize: 13)),
                     value: hasRole,
@@ -145,6 +147,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
                         else rolesModificados.remove(rol.id);
                       });
                     },
+                  ),
                   ),
                 );
               }).toList(),
@@ -216,7 +219,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
               children: [
                 Text(
                   'Asignación de Roles',
-                  style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A)),
+                  style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A)),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -339,7 +342,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Mostrando ${startIndex + 1}–$endIndex de $totalItems',
+                          'Mostrando ${startIndex + 1}â€“$endIndex de $totalItems',
                           style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 13),
                         ),
                         Row(
@@ -546,3 +549,6 @@ class _ActionIconState extends State<_ActionIcon> {
     );
   }
 }
+
+
+

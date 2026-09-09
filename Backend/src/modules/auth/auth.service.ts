@@ -1,7 +1,8 @@
 import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
+import { RolPermiso } from '../rol-permiso/rol-permiso.entity';
 import { Usuario } from '../usuarios/usuario.entity';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { CuentasAuthService } from '../cuentas-auth/cuentas-auth.service';
@@ -48,14 +49,30 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
-  private emitirToken(usuario: Usuario): {
+  private async emitirTokenAsync(usuario: Usuario): Promise<{
     token: string;
     usuario: UsuarioPublico;
-  } {
+  }> {
+    const usuarioRoles = await this.dataSource.getRepository(UsuarioRol).find({
+      where: { idUsuario: usuario.id },
+    });
+
+    let permisos: string[] = [];
+    if (usuarioRoles.length > 0) {
+      const rolIds = usuarioRoles.map((ur) => ur.idRol);
+      const rolPermisos = await this.dataSource.getRepository(RolPermiso).find({
+        where: { rol: { id: In(rolIds) } },
+        relations: { permiso: true },
+      });
+      permisos = Array.from(new Set(rolPermisos.map((rp) => rp.permiso.codigo)));
+    }
+
     const token = this.jwtService.sign({
       sub: usuario.id,
       correo: usuario.correo,
+      permisos,
     });
+    
     return {
       token,
       usuario: {
@@ -83,7 +100,7 @@ export class AuthService {
 
     await this.cuentasAuthService.asegurarCuenta(usuario.id, dto.password);
     await this.cuentasAuthService.registrarUltimoIngreso(usuario.id);
-    return this.emitirToken(usuario);
+    return await this.emitirTokenAsync(usuario);
   }
 
   async login(dto: import('./dto/login.dto').LoginDto): Promise<{ token: string; usuario: UsuarioPublico }> {
@@ -110,7 +127,7 @@ export class AuthService {
     }
 
     await this.cuentasAuthService.registrarUltimoIngreso(usuario.id);
-    return this.emitirToken(usuario);
+    return await this.emitirTokenAsync(usuario);
   }
 
   /// Inicio de sesión con cuenta de Google.
@@ -165,7 +182,7 @@ export class AuthService {
       emailVerificado: verificado.emailVerificado,
     });
     await this.cuentasAuthService.registrarUltimoIngreso(usuario.id);
-    return this.emitirToken(usuario);
+    return await this.emitirTokenAsync(usuario);
   }
 
   async perfil(id: number): Promise<UsuarioPublico> {

@@ -46,9 +46,11 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
 
       if (resUsuarios.statusCode == 200) {
         final List<dynamic> usersData = jsonDecode(utf8.decode(resUsuarios.bodyBytes));
-        setState(() {
-          _usuarios = usersData.map((e) => UsuarioAdminModel.fromJson(e)).toList();
-        });
+        if (mounted) {
+          setState(() {
+            _usuarios = usersData.map((e) => UsuarioAdminModel.fromJson(e)).toList();
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error cargando usuarios: $e');
