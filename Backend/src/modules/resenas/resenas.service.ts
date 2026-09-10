@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Resena } from './resena.entity';
@@ -24,6 +24,17 @@ export class ResenasService {
 
     const restaurante = await this.restaurantesRepo.findOne({ where: { id: dto.idRestaurante } });
     if (!restaurante) throw new NotFoundException('Restaurante no encontrado');
+
+    const resenaExistente = await this.resenasRepo.findOne({
+      where: {
+        usuario: { id: dto.idUsuario },
+        restaurante: { id: dto.idRestaurante }
+      }
+    });
+
+    if (resenaExistente) {
+      throw new BadRequestException('El usuario ya ha creado una reseña para este restaurante');
+    }
 
     const resena = this.resenasRepo.create({
       ...dto,

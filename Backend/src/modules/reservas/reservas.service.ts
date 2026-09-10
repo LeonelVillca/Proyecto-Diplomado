@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Reserva } from './reserva.entity';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
@@ -29,6 +29,19 @@ export class ReservasService {
       relations: { restaurante: true } 
     });
     if (!mesa) throw new NotFoundException('Mesa no encontrada');
+
+    const reservaExistente = await this.reservasRepo.findOne({
+      where: {
+        mesa: { id: dto.idMesa },
+        fecha: dto.fecha,
+        hora: dto.hora,
+        estado: In(['pendiente', 'aprobada', 'confirmada']),
+      },
+    });
+
+    if (reservaExistente) {
+      throw new BadRequestException('La mesa no está disponible en la fecha y hora seleccionadas');
+    }
 
     const reserva = this.reservasRepo.create({
       ...dto,

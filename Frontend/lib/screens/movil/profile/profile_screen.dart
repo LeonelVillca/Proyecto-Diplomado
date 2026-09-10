@@ -42,9 +42,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final List<dynamic> data = jsonDecode(utf8.decode(resResenas.bodyBytes));
         if (mounted) setState(() => _resenasCount = data.length);
       }
-      
-      // TODO: Cargar reservas (cuando el endpoint get by usuario este disponible)
-      // Por ahora se queda en 0 o el backend se implementa luego.
+      final urlReservas = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/reservas/usuario/$idUsuario');
+      final resReservas = await http.get(urlReservas, headers: {'Authorization': 'Bearer $token'});
+
+      if (resReservas.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(resReservas.bodyBytes));
+        if (mounted) setState(() => _reservasCount = data.length);
+      }
     } catch (e) {
       debugPrint('Error cargando estadisticas: $e');
     }

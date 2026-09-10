@@ -9,6 +9,7 @@ import 'package:frontend/widgets/movil/restaurant/detail_menu_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_info_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_reviews_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
+import 'package:frontend/screens/movil/restaurantes/galeria_screen.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   const RestaurantDetailScreen({super.key, required this.restaurant});
@@ -241,16 +242,25 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 }
 
-class _HeroSection extends StatelessWidget {
+class _HeroSection extends StatefulWidget {
   final Restaurant restaurant;
   const _HeroSection({required this.restaurant});
 
   @override
+  State<_HeroSection> createState() => _HeroSectionState();
+}
+
+class _HeroSectionState extends State<_HeroSection> {
+  int _selectedIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
-    final images = restaurant.gallery.isNotEmpty 
-        ? restaurant.gallery 
-        : (restaurant.photoUrl != null ? [restaurant.photoUrl!] : []);
-    final cover = images.isNotEmpty ? images.first : null;
+    final images = widget.restaurant.gallery.isNotEmpty 
+        ? widget.restaurant.gallery 
+        : (widget.restaurant.photoUrl != null ? [widget.restaurant.photoUrl!] : <String>[]);
+    final cover = images.isNotEmpty && _selectedIndex < images.length 
+        ? images[_selectedIndex] 
+        : (images.isNotEmpty ? images.first : null);
 
     return Container(
       height: 300, // un poco mas de 260px para el overlap
@@ -280,7 +290,7 @@ class _HeroSection extends StatelessWidget {
                     children: [
                       _RoundBtn(icon: Icons.share_rounded, onTap: () {}),
                       const SizedBox(width: 8),
-                      FavoriteHeart(restaurantId: restaurant.id, onDark: true, size: 24),
+                      FavoriteHeart(restaurantId: widget.restaurant.id, onDark: true, size: 24),
                     ],
                   ),
                 ],
@@ -295,22 +305,41 @@ class _HeroSection extends StatelessWidget {
               left: 22,
               child: Row(
                 children: List.generate(images.length > 4 ? 4 : images.length, (idx) {
-                  return Container(
-                    width: 40,
-                    height: 40,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white, width: 2),
-                      image: DecorationImage(image: NetworkImage(images[idx]), fit: BoxFit.cover),
+                  final isLastAndMore = idx == 3 && images.length > 4;
+                  final isSelected = _selectedIndex == idx && !isLastAndMore;
+                  return GestureDetector(
+                    onTap: () {
+                      if (isLastAndMore) {
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (_) => GaleriaScreen(images: images, initialIndex: 3))
+                        );
+                      } else {
+                        setState(() {
+                          _selectedIndex = idx;
+                        });
+                      }
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected ? AppColors.wine : Colors.white, 
+                          width: 2
+                        ),
+                        image: DecorationImage(image: NetworkImage(images[idx]), fit: BoxFit.cover),
+                      ),
+                      child: isLastAndMore
+                          ? Container(
+                              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                              alignment: Alignment.center,
+                              child: Text('+${images.length - 4}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            )
+                          : null,
                     ),
-                    child: idx == 3 && images.length > 4
-                        ? Container(
-                            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
-                            alignment: Alignment.center,
-                            child: Text('+${images.length - 4}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          )
-                        : null,
                   );
                 }),
               ),

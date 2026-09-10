@@ -1,5 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:frontend/controllers/movil/auth_controller.dart';
+import 'package:frontend/core/utils/network/api_endpoints.dart';
 
 class DashboardResumenScreen extends StatelessWidget {
   const DashboardResumenScreen({super.key});
@@ -222,8 +226,70 @@ class _ChartCard extends StatelessWidget {
   }
 }
 
-class _TableCard extends StatelessWidget {
+class _TableCard extends StatefulWidget {
   const _TableCard();
+
+  @override
+  State<_TableCard> createState() => _TableCardState();
+}
+
+class _TableCardState extends State<_TableCard> {
+  bool _isLoading = true;
+  List<dynamic> _reservas = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarReservas();
+    });
+  }
+
+  Future<void> _cargarReservas() async {
+    try {
+      final auth = AuthScope.of(context, listen: false);
+      final token = auth.token;
+      
+      final resRestaurante = await http.get(
+        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/mis-restaurantes'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (resRestaurante.statusCode == 200) {
+        final List<dynamic> restaurantes = jsonDecode(utf8.decode(resRestaurante.bodyBytes));
+        if (restaurantes.isNotEmpty) {
+          final idRestaurante = restaurantes.first['id'];
+          final resReservas = await http.get(
+            Uri.parse('${ApiEndpoints.baseUrl}/api/v1/reservas/restaurante/$idRestaurante'),
+            headers: {'Authorization': 'Bearer $token'},
+          );
+          
+          if (resReservas.statusCode == 200) {
+             final List<dynamic> todasReservas = jsonDecode(utf8.decode(resReservas.bodyBytes));
+             final proximas = todasReservas.where((r) => 
+               r['estado'] == 'pendiente' || 
+               r['estado'] == 'aprobada' || 
+               r['estado'] == 'confirmada'
+             ).toList();
+             
+             if (mounted) {
+               setState(() {
+                 _reservas = proximas.take(10).toList();
+                 _isLoading = false;
+               });
+             }
+             return;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading reservas: $e');
+    }
+    
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -267,17 +333,17 @@ class _TableCard extends StatelessWidget {
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(50),
                   child: InkWell(
-                    onTap: () {},
+                    onTap: () => _cargarReservas(),
                     borderRadius: BorderRadius.circular(50),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.add, size: 16, color: Colors.white),
+                          const Icon(Icons.refresh, size: 16, color: Colors.white),
                           const SizedBox(width: 8),
                           Text(
-                            'Reserva Manual',
+                            'Actualizar',
                             style: GoogleFonts.manrope(
                               color: Colors.white,
                               fontWeight: FontWeight.w700,
@@ -306,39 +372,61 @@ class _TableCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFEAEDF2)),
-          const _ReservaRow(
-            iniciales: 'CR',
-            nombre: 'Carlos Rodríguez',
-            telefono: '+591 71234567',
-            hora: '20:30',
-            mesa: 'Mesa 4 (Terraza)',
-            comensales: '4 Comensales',
-            estadoTexto: 'Confirmada',
-            estadoColor: Color(0xFF1F8B4C),
-            estadoBg: Color(0xFFE6F6EE),
-          ),
-          const _ReservaRow(
-            iniciales: 'MV',
-            nombre: 'Mariana Vargas',
-            telefono: '+591 76543210',
-            hora: '21:00',
-            mesa: 'Mesa 8 (Interior)',
-            comensales: '2 Comensales',
-            estadoTexto: 'En Mesa',
-            estadoColor: Color(0xFF1D72B8),
-            estadoBg: Color(0xFFEAF3FC),
-          ),
-          const _ReservaRow(
-            iniciales: 'JP',
-            nombre: 'Jorge Paz',
-            telefono: '+591 78901234',
-            hora: '21:30',
-            mesa: 'Mesa 2 (Jardín)',
-            comensales: '6 Comensales',
-            estadoTexto: 'Pendiente',
-            estadoColor: Color(0xFFC9974F),
-            estadoBg: Color(0xFFFDF3E7),
-          ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39))),
+            )
+          else if (_reservas.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Center(
+                child: Text(
+                  'No hay próximas llegadas programadas',
+                  style: GoogleFonts.manrope(
+                    color: const Color(0xFF6B635E),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            )
+          else
+            ..._reservas.map((r) {
+              final usuario = r['usuario'] ?? {};
+              final nombre = '${usuario['nombre'] ?? ''} ${usuario['apellido'] ?? ''}'.trim();
+              final iniciales = nombre.isNotEmpty ? nombre.substring(0, 1).toUpperCase() : 'C';
+              final telefono = r['comentarios']?.toString() ?? 'Sin comentarios';
+              final hora = r['hora']?.toString().substring(0, 5) ?? '--:--';
+              final mesa = r['mesa']?['numero_mesa'] != null ? 'Mesa ${r['mesa']['numero_mesa']}' : 'No asignada';
+              final comensales = '${r['numeroPersonas'] ?? 1} Comensales';
+              final estado = r['estado']?.toString() ?? '';
+              
+              String estadoTexto = 'Pendiente';
+              Color estadoColor = const Color(0xFFC9974F);
+              Color estadoBg = const Color(0xFFFDF3E7);
+              
+              if (estado == 'confirmada') {
+                estadoTexto = 'Confirmada';
+                estadoColor = const Color(0xFF1F8B4C);
+                estadoBg = const Color(0xFFE6F6EE);
+              } else if (estado == 'aprobada') {
+                estadoTexto = 'Aprobada';
+                estadoColor = const Color(0xFF1D72B8);
+                estadoBg = const Color(0xFFEAF3FC);
+              }
+              
+              return _ReservaRow(
+                iniciales: iniciales,
+                nombre: nombre.isEmpty ? 'Cliente Anónimo' : nombre,
+                telefono: telefono,
+                hora: hora,
+                mesa: mesa,
+                comensales: comensales,
+                estadoTexto: estadoTexto,
+                estadoColor: estadoColor,
+                estadoBg: estadoBg,
+              );
+            }),
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
@@ -68,23 +69,26 @@ class _CrearContrasenaScreenState extends State<CrearContrasenaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: const Color(0xFFF5EEE0), // paper color
       body: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 450),
-          padding: const EdgeInsets.all(40),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 480),
+            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 56),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6B1A35).withOpacity(0.05),
+                  blurRadius: 40,
+                  offset: const Offset(0, 20),
+                ),
+              ],
+            ),
+            child: _isSuccess ? _buildSuccess(context) : _buildForm(context),
           ),
-          child: _isSuccess ? _buildSuccess(context) : _buildForm(context),
         ),
       ),
     );
@@ -97,71 +101,107 @@ class _CrearContrasenaScreenState extends State<CrearContrasenaScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.lock_reset, size: 48, color: Color(0xFF6B1A35)),
-          const SizedBox(height: 16),
-          const Text(
-            'Crear Contraseña',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Colors.black87),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Establece tu contraseña para acceder al panel de administración.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, fontFamily: 'Karla', color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 32),
-          TextFormField(
-            controller: _passwordCtrl,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Nueva contraseña',
-              labelStyle: TextStyle(color: Colors.grey.shade600, fontFamily: 'Karla'),
-              prefixIcon: const Icon(Icons.lock_outline, color: Colors.black54),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFF6B1A35), width: 2),
-              ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFDF3E7),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.lock_reset_rounded, size: 48, color: Color(0xFF6B1233)),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Crea tu contraseña',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.piazzolla(
+              fontSize: 32,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF241512),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Establece tu nueva contraseña segura para acceder al panel de administración de Mesa Chapaca.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.manrope(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF7A6A5C),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 40),
+          _buildTextField(
+            controller: _passwordCtrl,
+            label: 'Nueva contraseña',
+            icon: Icons.lock_outline_rounded,
             validator: (value) => value == null || value.length < 6 ? 'Mínimo 6 caracteres' : null,
           ),
-          const SizedBox(height: 20),
-          TextFormField(
+          const SizedBox(height: 24),
+          _buildTextField(
             controller: _confirmCtrl,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Confirmar contraseña',
-              labelStyle: TextStyle(color: Colors.grey.shade600, fontFamily: 'Karla'),
-              prefixIcon: const Icon(Icons.lock_outline, color: Colors.black54),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Color(0xFF6B1A35), width: 2),
-              ),
-            ),
+            label: 'Confirmar contraseña',
+            icon: Icons.lock_outline_rounded,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Por favor confirma la contraseña';
+              if (value == null || value.isEmpty) return 'Confirma la contraseña';
               if (value != _passwordCtrl.text) return 'Las contraseñas no coinciden';
               return null;
             },
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
           ElevatedButton(
             onPressed: _isLoading ? null : _crearContrasena,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6B1A35),
+              backgroundColor: const Color(0xFF6B1233), // wine
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
             ),
             child: _isLoading
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Guardar Contraseña', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Karla')),
+                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Text('Guardar Contraseña', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String? Function(String?) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: true,
+      style: GoogleFonts.manrope(fontSize: 16, color: const Color(0xFF241512), fontWeight: FontWeight.w600),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.manrope(color: const Color(0xFF7A6A5C), fontWeight: FontWeight.w600),
+        prefixIcon: Icon(icon, color: const Color(0xFF8C7A6B), size: 22),
+        filled: true,
+        fillColor: const Color(0xFFFAFAFA),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFFDCD6CC), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF6B1233), width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        ),
+      ),
+      validator: validator,
     );
   }
 
@@ -170,20 +210,36 @@ class _CrearContrasenaScreenState extends State<CrearContrasenaScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
-        const SizedBox(height: 16),
-        const Text(
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEAF5EE),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_circle_rounded, size: 64, color: Color(0xFF1F8B4C)),
+        ),
+        const SizedBox(height: 24),
+        Text(
           '¡Contraseña creada!',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Colors.black87),
+          style: GoogleFonts.piazzolla(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF241512),
+          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Text(
-          'Tu cuenta ya está segura. Ahora puedes iniciar sesión en el panel de administración.',
+          'Tu cuenta ya está segura. Ahora puedes iniciar sesión para acceder al panel de administración.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, fontFamily: 'Karla', color: Colors.grey.shade600, height: 1.5),
+          style: GoogleFonts.manrope(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF7A6A5C),
+            height: 1.5,
+          ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
         ElevatedButton(
           onPressed: () {
             Navigator.of(context).pushReplacement(
@@ -191,13 +247,13 @@ class _CrearContrasenaScreenState extends State<CrearContrasenaScreen> {
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
+            backgroundColor: const Color(0xFF241512), // ink
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             elevation: 0,
           ),
-          child: const Text('Ir al Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Karla')),
+          child: Text('Ir al Login', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
         ),
       ],
     );

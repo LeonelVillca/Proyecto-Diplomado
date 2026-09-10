@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/widgets/admin/landing_navbar.dart';
@@ -64,6 +65,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
             'documentoNit',
             nitBytes!,
             filename: _nitFile!.name,
+            contentType: MediaType('application', 'pdf'),
           ),
         );
       }
@@ -74,6 +76,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
             'documentoCi',
             ciBytes!,
             filename: _ciFile!.name,
+            contentType: MediaType('application', 'pdf'),
           ),
         );
       }
