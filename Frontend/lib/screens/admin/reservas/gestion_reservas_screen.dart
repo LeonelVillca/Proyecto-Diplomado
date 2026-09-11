@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -342,7 +342,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Mesa ${reserva.idMesa} â€¢ $fechaFormat',
+                                        'Mesa ${reserva.idMesa} • $fechaFormat',
                                         style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF1E1B1A)),
                                       ),
                                       const SizedBox(height: 6),
