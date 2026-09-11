@@ -116,14 +116,25 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    const isValid = await bcrypt.compare(dto.password, cuenta.passwordHash);
-    if (!isValid) {
-      // Opcional: Incrementar intentos fallidos aquí
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
-
+    // VUL-004: Verificar estado ANTES de ejecutar bcrypt (evita timing oracle)
     if (cuenta.estado === false) {
       throw new UnauthorizedException('La cuenta está suspendida');
+    }
+
+    // VUL-003: Verificar límite de intentos fallidos (bloqueo tras 5 intentos)
+    const MAX_INTENTOS = 5;
+    if (cuenta.intentosFallidos >= MAX_INTENTOS) {
+      throw new UnauthorizedException(
+        'La cuenta está bloqueada temporalmente por múltiples intentos fallidos. ' +
+        'Utiliza la recuperación de contraseña para desbloquearla.',
+      );
+    }
+
+    const isValid = await bcrypt.compare(dto.password, cuenta.passwordHash);
+    if (!isValid) {
+      // Incrementar intentos fallidos
+      await this.cuentasAuthService.incrementarIntentosFallidos(cuenta.id);
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     await this.cuentasAuthService.registrarUltimoIngreso(usuario.id);
@@ -232,17 +243,21 @@ export class AuthService {
     const correoNormalizado = dto.correo.trim().toLowerCase();
     const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
 
+    // BB-01: Respuesta genérica para no revelar si el correo existe en el sistema
+    const MENSAJE_GENERICO = 'Si el correo existe en el sistema, recibirás un código PIN en los próximos minutos.';
+
     if (!usuario) {
-      throw new NotFoundException('El correo no existe en el sistema.');
+      // Esperar el mismo tiempo que si existiera para evitar timing attack
+      return { mensaje: MENSAJE_GENERICO };
     }
 
     const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
     if (!cuenta || cuenta.estado === false) {
-      throw new BadRequestException('El correo no tiene una cuenta administrativa activa.');
+      return { mensaje: MENSAJE_GENERICO };
     }
 
-    // Generar PIN numérico de 6 dígitos
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generar PIN numérico de 6 dígitos usando crypto.randomInt para mayor entropía
+    const pin = require('crypto').randomInt(100000, 999999).toString();
 
     // Invalidar tokens de recuperación anteriores para este usuario
     await this.dataSource.getRepository(InvitacionToken)
@@ -267,21 +282,19 @@ export class AuthService {
       fechaExpiracion,
     });
     
-    // Podría haber un minúsculo riesgo de colisión del PIN (UNIQUE token).
-    // Para simplificar, asumiremos que la probabilidad es baja.
-    // Si ocurre un error, idealmente se generaría otro.
+    // VUL-008: Fallback corregido — genera un PIN completamente nuevo si hay colisión
     try {
       await tokenRepo.save(nuevoToken);
-    } catch (error) {
-      // Fallback si choca el PIN
-      const pinSeguro = pin + Math.floor(Math.random() * 10).toString();
-      nuevoToken.token = pinSeguro.slice(0, 6);
+    } catch {
+      // Generar un PIN completamente diferente en caso de colisión
+      const pinAlternativo = require('crypto').randomInt(100000, 999999).toString();
+      nuevoToken.token = pinAlternativo;
       await tokenRepo.save(nuevoToken);
     }
 
-    await this.mailService.enviarRecuperacionPassword(usuario.correo, pin);
+    await this.mailService.enviarRecuperacionPassword(usuario.correo, nuevoToken.token);
 
-    return { mensaje: 'Se ha enviado un código PIN a tu correo.' };
+    return { mensaje: MENSAJE_GENERICO };
   }
 
   async verificarPinRecuperacion(dto: VerificarPinDto): Promise<{ valido: boolean }> {

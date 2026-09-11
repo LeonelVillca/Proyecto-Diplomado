@@ -27,6 +27,8 @@ export class UsuariosController {
     private readonly cuentasAuthService: CuentasAuthService,
   ) {}
 
+  // VUL-016: Proteger creación directa de usuarios — solo admin_sistema
+  @Roles('admin_sistema')
   @Post()
   crear(@Body() dto: CrearUsuarioDto): Promise<Usuario> {
     return this.usuariosService.crear(dto);
@@ -53,6 +55,8 @@ export class UsuariosController {
     return this.usuariosService.listarTodos();
   }
 
+  // VUL-005: IDOR corregido — solo admin_sistema puede ver datos de cualquier usuario
+  @Roles('admin_sistema')
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Usuario> {
     return this.usuariosService.buscarPorId(id);

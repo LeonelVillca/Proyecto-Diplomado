@@ -56,18 +56,19 @@ export class ReservasController {
   @Get(':id')
   async buscarPorId(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const reserva = await this.reservasService.buscarPorId(id);
-    
-    // Solo puede verla si es dueño de la reserva, o si es un admin_sistema,
-    // o si es admin_restaurante (la validación del restaurante se haría mejor
-    // en OwnershipGuard, pero para simplificar validamos aquí si es cliente).
-    // Si no somos cliente, lo permitimos por ahora (roles admin lo gestionan).
-    if (!req.user.roles || req.user.roles.length === 0) {
-       // Asumiremos que el frontend validará roles. Pero para ser seguros:
-       if (reserva.usuario.id !== req.user.id) {
-           // Aquí podríamos lanzar error si no tiene roles.
-       }
+
+    // VUL-010: Verificar acceso correctamente
+    // Los admins (admin_sistema, admin_restaurante) pueden ver cualquier reserva.
+    // Los clientes regulares solo pueden ver sus propias reservas.
+    const userRoles: string[] = req.user.roles ?? [];
+    const esAdmin = userRoles.some((r: string) =>
+      ['admin_sistema', 'admin_restaurante'].includes(r),
+    );
+
+    if (!esAdmin && reserva.usuario.id !== req.user.id) {
+      throw new ForbiddenException('No tienes permisos para ver esta reserva');
     }
-    
+
     return reserva;
   }
 

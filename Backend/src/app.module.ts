@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 import databaseConfig from './core/config/database.config';
 import { AppController } from './app.controller';
@@ -40,6 +42,14 @@ import { FavoritosModule } from './modules/favoritos/favoritos.module';
       isGlobal: true,
       load: [databaseConfig],
     }),
+    // VUL-019: Rate limiting global — 100 peticiones por minuto por IP
+    ThrottlerModule.forRoot([
+      {
+        name: 'global',
+        ttl: 60000,  // 60 segundos
+        limit: 100,
+      },
+    ]),
     UsuariosModule,
     RolesModule,
     PermisosModule,
@@ -75,6 +85,13 @@ import { FavoritosModule } from './modules/favoritos/favoritos.module';
     MailModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Aplicar ThrottlerGuard globalmente a todos los endpoints
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

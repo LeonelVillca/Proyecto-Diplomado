@@ -99,10 +99,12 @@ export class OwnershipGuard implements CanActivate {
       else if (params && params.idRestaurante) targetRestauranteId = Number(params.idRestaurante);
     }
 
-    // Si no logramos determinar el restaurante objetivo, lo dejamos pasar por ahora
-    // (en una implementación más estricta, cada rama debería resolver su targetRestauranteId buscando en BD)
+    // VUL-013: Política fail-closed — si no se puede verificar ownership, denegar acceso
+    // (antes era fail-open: return true, lo que permitía operaciones sin verificar)
     if (!targetRestauranteId) {
-      return true;
+      throw new ForbiddenException(
+        'No se pudo verificar la propiedad del recurso. Acceso denegado.',
+      );
     }
 
     // 3. Verificar si el restaurante objetivo está en la lista de mis restaurantes

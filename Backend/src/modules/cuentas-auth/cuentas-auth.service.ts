@@ -61,7 +61,15 @@ export class CuentasAuthService {
     const cuenta = await this.buscarPorUsuario(idUsuario);
     if (cuenta) {
       cuenta.ultimoIngreso = new Date();
-      cuenta.intentosFallidos = 0;
+      cuenta.intentosFallidos = 0; // Resetear contador al login exitoso
+      await this.cuentaAuthRepository.save(cuenta);
+    }
+  }
+
+  async incrementarIntentosFallidos(idCuenta: number): Promise<void> {
+    const cuenta = await this.cuentaAuthRepository.findOne({ where: { id: idCuenta } });
+    if (cuenta) {
+      cuenta.intentosFallidos = (cuenta.intentosFallidos ?? 0) + 1;
       await this.cuentaAuthRepository.save(cuenta);
     }
   }
