@@ -7,7 +7,6 @@ import { Usuario } from '../usuarios/usuario.entity';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { CuentasAuthService } from '../cuentas-auth/cuentas-auth.service';
 import { OauthCuentasService } from '../oauth-cuenta/oauth-cuentas.service';
-import { RegistroDto } from './dto/registro.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { ActualizarUsuarioDto } from '../usuarios/dto/actualizar-usuario.dto';
 import { FirebaseAdminService } from './firebase-admin.service';
@@ -47,7 +46,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   private async emitirTokenAsync(usuario: Usuario): Promise<{
     token: string;
@@ -72,7 +71,7 @@ export class AuthService {
       correo: usuario.correo,
       permisos,
     });
-    
+
     return {
       token,
       usuario: {
@@ -82,25 +81,6 @@ export class AuthService {
         correo: usuario.correo,
       },
     };
-  }
-
-  async registro(
-    dto: RegistroDto,
-  ): Promise<{ token: string; usuario: UsuarioPublico }> {
-    const correoNormalizado = dto.correo.trim().toLowerCase();
-    let usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
-
-    if (!usuario) {
-      usuario = await this.usuariosService.crear({
-        nombre: dto.nombre,
-        apellido: dto.apellido,
-        correo: correoNormalizado,
-      });
-    }
-
-    await this.cuentasAuthService.asegurarCuenta(usuario.id, dto.password);
-    await this.cuentasAuthService.registrarUltimoIngreso(usuario.id);
-    return await this.emitirTokenAsync(usuario);
   }
 
   async login(dto: import('./dto/login.dto').LoginDto): Promise<{ token: string; usuario: UsuarioPublico }> {
@@ -163,19 +143,33 @@ export class AuthService {
     }
 
     const correoNormalizado = verificado.correo.trim().toLowerCase();
+
+    let nombreFinal = nombreDesdeCorreo(correoNormalizado);
+    let apellidoFinal: string | undefined = undefined;
+
+    if (verificado.nombre) {
+      const partes = verificado.nombre.trim().split(' ');
+      nombreFinal = partes[0];
+      if (partes.length > 1) {
+        apellidoFinal = partes.slice(1).join(' ');
+      }
+    }
+
     let usuario: Usuario | null =
       await this.usuariosService.buscarPorCorreo(correoNormalizado);
 
     if (!usuario) {
       usuario = await this.usuariosService.crear({
-        nombre: verificado.nombre ?? nombreDesdeCorreo(correoNormalizado),
+        nombre: nombreFinal,
+        apellido: apellidoFinal,
         correo: correoNormalizado,
         foto: verificado.foto ?? undefined,
       });
     } else {
       const patch: ActualizarUsuarioDto = {};
       if (verificado.nombre) {
-        patch.nombre = verificado.nombre;
+        patch.nombre = nombreFinal;
+        patch.apellido = apellidoFinal;
       }
       if (verificado.foto !== null) {
         patch.foto = verificado.foto;
@@ -203,7 +197,7 @@ export class AuthService {
       relations: { rol: true },
     });
     const roles = usuarioRoles.map((ur) => ur.rol.nombre);
-    
+
     return {
       id: usuario.id,
       nombre: usuario.nombre,
@@ -232,7 +226,7 @@ export class AuthService {
     }
 
     await this.cuentasAuthService.asegurarCuenta(invitacion.usuario.id, dto.password);
-    
+
     invitacion.usado = true;
     await this.dataSource.manager.save(invitacion);
 
@@ -264,9 +258,9 @@ export class AuthService {
       .createQueryBuilder()
       .update(InvitacionToken)
       .set({ usado: true })
-      .where('id_usuario = :idUsuario AND tipo = :tipo AND usado = false', { 
-        idUsuario: usuario.id, 
-        tipo: 'recuperacion' 
+      .where('id_usuario = :idUsuario AND tipo = :tipo AND usado = false', {
+        idUsuario: usuario.id,
+        tipo: 'recuperacion'
       })
       .execute();
 
@@ -281,7 +275,7 @@ export class AuthService {
       tipo: 'recuperacion',
       fechaExpiracion,
     });
-    
+
     // VUL-008: Fallback corregido — genera un PIN completamente nuevo si hay colisión
     try {
       await tokenRepo.save(nuevoToken);
@@ -356,7 +350,7 @@ export class AuthService {
       throw new BadRequestException('La cuenta administrativa no existe.');
     }
     await this.cuentasAuthService.actualizar(cuenta.id, { password: dto.nuevaContrasena });
-    
+
     // Marcar PIN como usado
     tokenRecord.usado = true;
     await tokenRepo.save(tokenRecord);

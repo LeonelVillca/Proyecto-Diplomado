@@ -7,6 +7,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class AsignacionRolesScreen extends StatefulWidget {
   const AsignacionRolesScreen({super.key});
@@ -182,7 +183,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Roles actualizados correctamente')));
+        AdminNotificationModal.success(context, 'Roles actualizados correctamente');
       }
     } catch (e) {
       debugPrint('Error actualizando roles: $e');

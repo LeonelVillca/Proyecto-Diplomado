@@ -8,6 +8,7 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/perfil_restaurante_model.dart';
 import 'package:frontend/repositories/admin/restaurante_repository.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class PerfilRestauranteScreen extends StatefulWidget {
   const PerfilRestauranteScreen({super.key});
@@ -281,17 +282,17 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
     if (!_formKey.currentState!.validate() || _restaurante == null) return;
 
     if (_horarios.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes configurar al menos un horario de atención.')));
+      if (mounted) AdminNotificationModal.info(context, 'Debes configurar al menos un horario de atención.');
       return;
     }
 
     if (_mesasTotalCtrl.text.isEmpty || _capacidadTotalCtrl.text.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configura la capacidad de tu salón (mesas y comensales).')));
+      if (mounted) AdminNotificationModal.info(context, 'Configura la capacidad de tu salón (mesas y comensales).');
       return;
     }
 
     if ((_existingGalleryUrls.length + _selectedGallery.length) < 5) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sube al menos 5 fotografías en la galería.')));
+      if (mounted) AdminNotificationModal.info(context, 'Sube al menos 5 fotografías en la galería.');
       return;
     }
 
@@ -327,19 +328,14 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
 
       if (exito) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('¡Perfil actualizado con éxito!'),
-            backgroundColor: const Color(0xFF6E1E39),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
+          AdminNotificationModal.success(context, '¡Perfil actualizado con éxito!');
         }
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al actualizar')));
+        AdminNotificationModal.error(context, 'No pudimos actualizar el perfil.');
       }
     } catch (e) {
       debugPrint('Error guardando perfil: $e');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error inesperado')));
+      if (mounted) AdminNotificationModal.error(context, 'Ocurrió un error inesperado.');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }

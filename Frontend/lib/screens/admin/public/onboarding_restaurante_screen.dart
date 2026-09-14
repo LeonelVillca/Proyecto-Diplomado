@@ -11,6 +11,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/perfil_restaurante_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class OnboardingRestauranteScreen extends StatefulWidget {
   final PerfilRestauranteModel restaurante;
@@ -214,23 +215,23 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
 
   Future<void> _finalizar() async {
     if (_selectedImage == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La foto de portada es obligatoria')));
+      if (mounted) AdminNotificationModal.info(context, 'La foto de portada es obligatoria.');
       return;
     }
     if (_selectedLogoBytes == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El logo del restaurante es obligatorio')));
+      if (mounted) AdminNotificationModal.info(context, 'El logo del restaurante es obligatorio.');
       return;
     }
     if (_horarios.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debes configurar al menos un horario de atención.')));
+      if (mounted) AdminNotificationModal.info(context, 'Debes configurar al menos un horario de atención.');
       return;
     }
     if (_mesasTotalCtrl.text.isEmpty || _capacidadTotalCtrl.text.isEmpty) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Configura la capacidad de tu salón (mesas y comensales).')));
+      if (mounted) AdminNotificationModal.info(context, 'Configura la capacidad de tu salón (mesas y comensales).');
       return;
     }
     if (_selectedGallery.length < 5) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sube al menos 5 fotografías en la galería.')));
+      if (mounted) AdminNotificationModal.info(context, 'Sube al menos 5 fotografías en la galería.');
       return;
     }
 
@@ -292,20 +293,13 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('¡Perfil completado exitosamente!'),
-            backgroundColor: const Color(0xFF6E1E39),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
+        AdminNotificationModal.success(context, '¡Perfil completado exitosamente!');
         widget.onCompleted();
       }
     } catch (e) {
       debugPrint('Error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ocurrió un error al guardar el perfil')));
+        AdminNotificationModal.error(context, 'Ocurrió un error al guardar el perfil.');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);

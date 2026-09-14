@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class CrearContrasenaScreen extends StatefulWidget {
   final String? token;
@@ -57,13 +58,11 @@ class _CrearContrasenaScreenState extends State<CrearContrasenaScreen> {
 
   void _mostrarMensaje(String msg, bool isError) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        duration: const Duration(seconds: 4),
-      ),
-    );
+    if (isError) {
+      AdminNotificationModal.error(context, msg);
+    } else {
+      AdminNotificationModal.success(context, msg);
+    }
   }
 
   @override

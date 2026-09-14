@@ -10,6 +10,7 @@ import 'package:frontend/widgets/admin/solicitud_hero.dart';
 import 'package:frontend/widgets/admin/landing_footer.dart';
 import 'package:frontend/screens/admin/public/landing_screen.dart';
 import 'package:frontend/screens/admin/auth/widgets/auth_components.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class SolicitudRegistroScreen extends StatefulWidget {
   const SolicitudRegistroScreen({super.key});
@@ -120,10 +121,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
 
   void _mostrarError(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: Colors.red,
-    ));
+    AdminNotificationModal.error(context, msg);
   }
 
   @override

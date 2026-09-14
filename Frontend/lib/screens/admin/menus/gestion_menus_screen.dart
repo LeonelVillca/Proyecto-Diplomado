@@ -5,6 +5,7 @@ import 'package:frontend/models/admin/menu_admin_model.dart';
 import 'package:frontend/services/admin/menu_admin_service.dart';
 import 'formulario_menu_screen.dart';
 import 'detalles_menu_screen.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 const Color kBurgundy900 = Color(0xFF42101F);
 const Color kBurgundy700 = Color(0xFF6E1E39);
@@ -62,7 +63,7 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
       }
     } catch (e) {
       debugPrint('Error: $e');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error cargando menús')));
+      if (mounted) AdminNotificationModal.error(context, 'No pudimos cargar los menús. Intenta nuevamente.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -90,7 +91,7 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
     } catch (e) {
       debugPrint('Error: $e');
       setState(() => _menus = original);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al cambiar disponibilidad')));
+      if (mounted) AdminNotificationModal.error(context, 'No pudimos cambiar la disponibilidad.');
     }
   }
 

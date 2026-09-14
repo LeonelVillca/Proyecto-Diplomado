@@ -30,7 +30,6 @@ class ApiEndpoints {
     }
   }
 
-  static String get authRegister => '$baseUrl/api/v1/auth/register';
   static String get authGoogle => '$baseUrl/api/v1/auth/google';
   static String get authPerfil => '$baseUrl/api/v1/auth/perfil';
   static String get authSolicitarRecuperacion => '$baseUrl/api/v1/auth/solicitar-recuperacion';

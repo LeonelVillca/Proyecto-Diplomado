@@ -7,6 +7,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 import 'package:frontend/core/admin/theme_admin.dart';
 
 class UsuariosScreen extends StatefulWidget {
@@ -142,12 +143,12 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
             if (res.statusCode == 201) {
               Navigator.pop(context);
               _cargarDatosIniciales();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Usuario creado correctamente')));
+              AdminNotificationModal.success(context, 'Usuario creado correctamente');
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${res.body}')));
+              AdminNotificationModal.error(context, 'No pudimos crear el usuario.');
             }
           } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión')));
+            AdminNotificationModal.error(context, 'Error de conexión. Verifica tu conexión e inténtalo nuevamente.');
           }
         }
       },
@@ -439,4 +440,3 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
     );
   }
 }
-

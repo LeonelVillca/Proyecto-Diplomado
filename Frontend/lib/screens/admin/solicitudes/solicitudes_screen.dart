@@ -10,6 +10,7 @@ import 'package:frontend/core/utils/web_helpers/platform_view_registry.dart' as 
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class SolicitudesScreen extends StatefulWidget {
   const SolicitudesScreen({super.key});
@@ -82,23 +83,17 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
       if (res.statusCode == 200) {
         _cargarSolicitudes();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Solicitud marcada como $nuevoEstado')),
-          );
+          AdminNotificationModal.success(context, 'Solicitud marcada como $nuevoEstado');
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error del servidor: ${res.statusCode}. Verifica los logs.'), backgroundColor: Colors.red),
-          );
+          AdminNotificationModal.error(context, 'Error del servidor (${res.statusCode}). Intenta nuevamente.');
         }
       }
     } catch (e) {
       debugPrint('Error actualizando estado: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error de red: $e'), backgroundColor: Colors.red),
-        );
+        AdminNotificationModal.error(context, 'Error de red. Verifica tu conexión e inténtalo nuevamente.');
       }
     }
   }
@@ -345,7 +340,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           newWindow.close();
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al cargar el documento (${res.statusCode})'), backgroundColor: Colors.red));
+          AdminNotificationModal.error(context, 'Error al cargar el documento (${res.statusCode}).');
         }
       }
     } catch (e) {
@@ -353,7 +348,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         newWindow.close();
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión de red al cargar el documento'), backgroundColor: Colors.red));
+        AdminNotificationModal.error(context, 'Error de conexión al cargar el documento.');
       }
     }
   }

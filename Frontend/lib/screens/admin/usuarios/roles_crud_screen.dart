@@ -6,6 +6,7 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 import 'package:frontend/core/admin/theme_admin.dart';
 
 class RolesCrudScreen extends StatefulWidget {
@@ -77,12 +78,12 @@ class _RolesCrudScreenState extends State<RolesCrudScreen> {
             if (res.statusCode == 200 || res.statusCode == 201) {
               Navigator.pop(context);
               _cargarRoles();
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(isEditing ? 'Rol actualizado' : 'Rol creado')));
+              AdminNotificationModal.success(context, isEditing ? 'Rol actualizado' : 'Rol creado');
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${res.body}')));
+              AdminNotificationModal.error(context, 'No pudimos guardar el rol.');
             }
           } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión')));
+            AdminNotificationModal.error(context, 'Error de conexión. Inténtalo nuevamente.');
           }
         }
       },
@@ -135,12 +136,12 @@ class _RolesCrudScreenState extends State<RolesCrudScreen> {
           if (res.statusCode == 200 || res.statusCode == 204) {
             Navigator.pop(context);
             _cargarRoles();
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Rol eliminado')));
+            AdminNotificationModal.success(context, 'Rol eliminado correctamente');
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${res.body}')));
+            AdminNotificationModal.error(context, 'No pudimos eliminar el rol.');
           }
         } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error de conexión')));
+          AdminNotificationModal.error(context, 'Error de conexión. Inténtalo nuevamente.');
         }
       },
       content: Text(

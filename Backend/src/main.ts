@@ -31,8 +31,8 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir peticiones sin origen (apps móviles, Postman en desarrollo)
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Permitir peticiones sin origen (apps móviles, Postman en desarrollo) o desde cualquier localhost (Flutter Web)
+      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
         callback(null, true);
       } else {
         callback(new Error(`Origen no permitido por política CORS: ${origin}`));

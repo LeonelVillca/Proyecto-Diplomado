@@ -6,6 +6,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/reserva_admin_model.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class GestionReservasScreen extends StatefulWidget {
   const GestionReservasScreen({super.key});
@@ -55,14 +56,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
     _socket!.on('nueva_reserva', (data) {
       if (data['idRestaurante'] == _idRestaurante) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('¡Nueva reserva entrante!'), 
-              backgroundColor: const Color(0xFF2ECC71),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
+          AdminNotificationModal.success(context, '¡Nueva reserva entrante!');
           _cargarDatos();
         }
       }

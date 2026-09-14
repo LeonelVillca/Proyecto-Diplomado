@@ -6,6 +6,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class PermisoModel {
   final int id;
@@ -135,7 +136,7 @@ class _AsignacionPermisosScreenState extends State<AsignacionPermisosScreen> {
         if (value) _permisosAsignados.remove(permiso.id);
         else _permisosAsignados.add(permiso.id);
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al guardar permiso.')));
+      AdminNotificationModal.error(context, 'No pudimos guardar el permiso.');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -331,4 +332,3 @@ class _AsignacionPermisosScreenState extends State<AsignacionPermisosScreen> {
     );
   }
 }
-

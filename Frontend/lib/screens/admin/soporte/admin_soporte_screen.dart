@@ -6,6 +6,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/soporte_admin_model.dart';
 import 'package:frontend/core/movil/theme.dart'; // Usaremos algunos colores del theme principal
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class AdminSoporteScreen extends StatefulWidget {
   const AdminSoporteScreen({super.key});
@@ -60,7 +61,7 @@ class _AdminSoporteScreenState extends State<AdminSoporteScreen> {
 
       if (res.statusCode == 200) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ticket respondido exitosamente')));
+          AdminNotificationModal.success(context, 'Ticket respondido exitosamente');
           _cargarTickets();
         }
       }

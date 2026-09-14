@@ -6,6 +6,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/mesa_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class GestionMesasScreen extends StatefulWidget {
   const GestionMesasScreen({super.key});
@@ -92,13 +93,13 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     } catch (e) {
       debugPrint('Error: $e');
       setState(() => _mesas = originalMesas);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al cambiar el estado')));
+      if (mounted) AdminNotificationModal.error(context, 'No pudimos cambiar el estado de la mesa.');
     }
   }
 
   void _abrirModalMesa({MesaAdminModel? mesa}) {
     if (_idRestaurante == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No tienes un restaurante asociado.')));
+      AdminNotificationModal.info(context, 'No tienes un restaurante asociado.');
       return;
     }
 
@@ -185,18 +186,13 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
       if (res.statusCode == 200 || res.statusCode == 201) {
         await _cargarDatos();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: const Text('âœ… Mesa guardada exitosamente'),
-            backgroundColor: const Color(0xFF6E1E39),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ));
+          AdminNotificationModal.success(context, 'Mesa guardada exitosamente');
         }
       } else {
         throw Exception();
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al guardar mesa')));
+      if (mounted) AdminNotificationModal.error(context, 'No pudimos guardar la mesa.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

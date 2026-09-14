@@ -6,6 +6,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/services/admin/menu_admin_service.dart';
 import 'package:universal_html/html.dart' as html;
 import 'dart:typed_data';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 const Color kBurgundy900 = Color(0xFF42101F);
 const Color kBurgundy700 = Color(0xFF6E1E39);
@@ -145,12 +146,12 @@ class _FormularioMenuScreenState extends State<FormularioMenuScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Menú guardado exitosamente')));
+        AdminNotificationModal.success(context, 'Menú guardado exitosamente');
         widget.onSaved();
       }
     } catch (e) {
       debugPrint('Error al guardar menú: $e');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al guardar: $e')));
+      if (mounted) AdminNotificationModal.error(context, 'Error al guardar el menú. Intenta nuevamente.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

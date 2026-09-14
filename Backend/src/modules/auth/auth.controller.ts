@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService, UsuarioPublico } from './auth.service';
-import { RegistroDto } from './dto/registro.dto';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
@@ -24,14 +23,6 @@ interface RequestConUsuario {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  // BB-06: Rate limiting en registro — 5 registros por minuto
-  @Throttle({ default: { ttl: 60000, limit: 5 } })
-  @Post('register')
-  @HttpCode(HttpStatus.CREATED)
-  registro(@Body() dto: RegistroDto) {
-    return this.authService.registro(dto);
-  }
 
   @Post('google')
   @HttpCode(HttpStatus.CREATED)

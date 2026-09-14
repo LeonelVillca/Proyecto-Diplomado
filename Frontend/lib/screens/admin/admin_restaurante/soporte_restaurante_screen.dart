@@ -6,6 +6,7 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/soporte_admin_model.dart';
 import 'package:frontend/models/admin/categoria_soporte_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class SoporteRestauranteScreen extends StatefulWidget {
   const SoporteRestauranteScreen({super.key});
@@ -129,7 +130,7 @@ class _SoporteRestauranteScreenState extends State<SoporteRestauranteScreen> {
         }),
       );
       await _cargarDatos();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ticket enviado')));
+      if (mounted) AdminNotificationModal.success(context, 'Ticket enviado correctamente');
     } catch (e) {
       debugPrint('Error creando ticket: $e');
     } finally {

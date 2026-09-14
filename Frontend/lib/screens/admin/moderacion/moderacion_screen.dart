@@ -5,6 +5,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/resena_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class ModeracionScreen extends StatefulWidget {
   const ModeracionScreen({super.key});
@@ -71,7 +72,7 @@ class _ModeracionScreenState extends State<ModeracionScreen> {
           _resenas.removeWhere((r) => r.id == id);
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Reseña eliminada')));
+          AdminNotificationModal.success(context, 'Reseña eliminada correctamente');
         }
       }
     } catch (e) {

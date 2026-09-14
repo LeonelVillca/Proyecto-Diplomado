@@ -6,6 +6,7 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/resena_admin_model.dart';
 import 'package:frontend/models/admin/respuesta_resena_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class GestionResenasScreen extends StatefulWidget {
   const GestionResenasScreen({super.key});
@@ -183,7 +184,7 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
         );
       }
       await _cargarDatos();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Respuesta publicada con éxito')));
+      if (mounted) AdminNotificationModal.success(context, 'Respuesta publicada con éxito');
     } catch (e) {
       debugPrint('Error guardando respuesta: $e');
     } finally {

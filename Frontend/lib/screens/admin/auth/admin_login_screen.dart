@@ -7,7 +7,6 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/admin/dashboard/admin_sistema_dashboard.dart';
 import 'package:frontend/screens/admin/dashboard/admin_restaurante_dashboard.dart';
-import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/screens/admin/public/solicitud_registro_screen.dart';
 import 'package:frontend/screens/admin/auth/widgets/auth_components.dart';
@@ -47,6 +46,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   bool _obscureText = true;
   bool _obscureRecoveryText = true;
   bool _rememberMe = false;
+  String? _inlineMessage;
+  bool _inlineMessageIsError = true;
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeIn;
@@ -86,14 +87,61 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
 
   void _mostrarMensaje(String msg, {bool isError = true}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(fontFamily: 'Karla')),
-        backgroundColor: isError ? authWine : authSage,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      ),
+    setState(() {
+      _inlineMessage = msg;
+      _inlineMessageIsError = isError;
+    });
+  }
+
+  Widget _buildInlineMessage() {
+    final isError = _inlineMessageIsError;
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      child: _inlineMessage == null
+          ? const SizedBox.shrink()
+          : Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: (isError ? const Color(0xFFD95C5C) : authSage).withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: (isError ? const Color(0xFFD95C5C) : authSage).withValues(alpha: 0.24),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+                    color: isError ? const Color(0xFFD95C5C) : authSage,
+                    size: 19,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _inlineMessage!,
+                      style: GoogleFonts.manrope(
+                        color: isError ? const Color(0xFF9C3F3F) : const Color(0xFF47703F),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _inlineMessage = null),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: isError ? const Color(0xFFD95C5C) : authSage,
+                      size: 17,
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -122,17 +170,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             } else {
               auth.signOut();
               if (!mounted) return;
-              AdminModal.show(
-                context: context,
-                title: 'Acceso Denegado',
-                confirmText: 'Entendido',
-                cancelText: null,
-                confirmColor: authGoldAccent,
-                onConfirm: () => Navigator.pop(context),
-                content: const Text(
-                  'Tu cuenta no tiene permisos para acceder al Panel Administrativo.\n\nContacta a soporte si crees que es un error.',
-                  style: TextStyle(fontFamily: 'Karla', color: authInk, fontSize: 15),
-                ),
+              _mostrarMensaje(
+                'Tu cuenta no tiene permisos para acceder al Panel Administrativo. Contacta a soporte si crees que es un error.',
               );
             }
           }
@@ -404,6 +443,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             ],
           ),
         ),
+        _buildInlineMessage(),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -566,6 +606,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             keyboardType: TextInputType.emailAddress,
             validator: (v) => v == null || !v.contains('@') ? 'Correo inválido' : null,
           ),
+          _buildInlineMessage(),
           const SizedBox(height: 32),
           AuthSubmitButton(label: 'Enviar código', loading: _isLoading, onPressed: _solicitarRecuperacion),
         ],
@@ -629,6 +670,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             );
           }),
         ),
+        _buildInlineMessage(),
         const SizedBox(height: 16),
         Text(
           'El código vence en 15:00 minutos',
@@ -719,6 +761,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
           _buildChecklistItem('Al menos 8 caracteres', _hasMinLength),
           _buildChecklistItem('Incluye mayúscula, minúscula y un número o símbolo', _hasRegex),
           _buildChecklistItem('Las contraseñas coinciden', _hasMatch),
+          _buildInlineMessage(),
           const SizedBox(height: 24),
           AuthSubmitButton(
             label: 'Guardar contraseña',
