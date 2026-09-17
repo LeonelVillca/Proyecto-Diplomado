@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/widgets/movil/ui/rating_label.dart';
-import 'favorite_heart.dart';
 
 /// Tarjeta compacta para carruseles horizontales.
 class RestaurantCardCompact extends StatelessWidget {
@@ -60,13 +59,7 @@ class RestaurantCardCompact extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap ??
-              () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${restaurant.name} — próximamente.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  ),
+          onTap: onTap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -84,11 +77,6 @@ class RestaurantCardCompact extends StatelessWidget {
                       )
                     else
                       _buildFallbackCover(),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: FavoriteHeart(restaurantId: restaurant.id, size: 16),
-                    ),
                   ],
                 ),
               ),

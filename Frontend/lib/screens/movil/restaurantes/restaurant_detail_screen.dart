@@ -8,7 +8,6 @@ import 'package:frontend/widgets/movil/restaurant/reservation_modal.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_menu_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_info_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_reviews_tab.dart';
-import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 import 'package:frontend/screens/movil/restaurantes/galeria_screen.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
@@ -91,12 +90,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           ),
                         ),
                         
-                        // Badges (Ribbon + Abierto)
+                        // Badges dinámicos del restaurante
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 22),
                           child: Row(
                             children: [
-                              _buildRibbon(),
+                              _buildCuisineBadge(),
                               const SizedBox(width: 8),
                               _buildOpenBadge(),
                             ],
@@ -190,18 +189,18 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
   
-  Widget _buildRibbon() {
+  Widget _buildCuisineBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: const BoxDecoration(
-        color: AppColors.terracotta,
-        borderRadius: BorderRadius.only(topRight: Radius.circular(8), bottomRight: Radius.circular(8)),
+      decoration: BoxDecoration(
+        color: AppColors.wine.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Container(width: 6, height: 6, decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), shape: BoxShape.circle)),
+          const Icon(Icons.restaurant_menu_rounded, size: 13, color: AppColors.wine),
           const SizedBox(width: 6),
-          Text('15% OFF', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, fontSize: 11)),
+          Text(widget.restaurant.cuisine.label, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.wine, fontSize: 11)),
         ],
       ),
     );
@@ -289,8 +288,6 @@ class _HeroSectionState extends State<_HeroSection> {
                   Row(
                     children: [
                       _RoundBtn(icon: Icons.share_rounded, onTap: () {}),
-                      const SizedBox(width: 8),
-                      FavoriteHeart(restaurantId: widget.restaurant.id, onDark: true, size: 24),
                     ],
                   ),
                 ],

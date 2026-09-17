@@ -14,6 +14,7 @@ import { HorarioAtencion } from '../horario-atencion/horario-atencion.entity';
 import { Mesa } from '../mesa/mesa.entity';
 import { Imagen } from '../imagen/imagen.entity';
 import { Resena } from '../resenas/resena.entity';
+import { Visita } from '../visita/visita.entity';
 
 @Injectable()
 export class RestauranteService {
@@ -32,6 +33,8 @@ export class RestauranteService {
     private readonly imagenRepository: Repository<Imagen>,
     @InjectRepository(Resena)
     private readonly resenaRepository: Repository<Resena>,
+    @InjectRepository(Visita)
+    private readonly visitaRepository: Repository<Visita>,
   ) {}
 
   async crear(dto: CrearRestauranteDto): Promise<Restaurante> {
@@ -67,6 +70,7 @@ export class RestauranteService {
         
         // Calcular reseñas
         const resenas = await this.resenaRepository.find({ where: { restaurante: { id: rest.id } } });
+        const visitas = await this.visitaRepository.count({ where: { restaurante: { id: rest.id } } });
         let rating = 0;
         let reviewCount = resenas.length;
         if (reviewCount > 0) {
@@ -84,16 +88,26 @@ export class RestauranteService {
           imagenes,
           rating,
           reviewCount,
+          visitas,
         };
       })
     );
     return restaurantesCompletos;
   }
 
-  async obtenerRanking(): Promise<any[]> {
+  async obtenerRanking(
+    orden: 'calificacion' | 'visitas' = 'calificacion',
+    limite = 10,
+  ): Promise<any[]> {
     // Reutilizamos la lógica de listarTodos pero lo ordenamos y limitamos a 10.
     const todos = await this.listarTodos();
-    return todos.sort((a, b) => b.rating - a.rating).slice(0, 10);
+    const limiteSeguro = Number.isFinite(limite)
+      ? Math.min(Math.max(Math.trunc(limite), 1), 50)
+      : 10;
+    const clave = orden === 'visitas' ? 'visitas' : 'rating';
+    return todos
+      .sort((a, b) => Number(b[clave] ?? 0) - Number(a[clave] ?? 0))
+      .slice(0, limiteSeguro);
   }
 
   async listarPorUsuario(idUsuario: number): Promise<Restaurante[]> {
@@ -141,6 +155,7 @@ export class RestauranteService {
         
         // Calcular reseñas
         const resenas = await this.resenaRepository.find({ where: { restaurante: { id: rest.id } } });
+        const visitas = await this.visitaRepository.count({ where: { restaurante: { id: rest.id } } });
         let rating = 0;
         let reviewCount = resenas.length;
         if (reviewCount > 0) {
@@ -158,6 +173,7 @@ export class RestauranteService {
           imagenes,
           rating,
           reviewCount,
+          visitas,
         };
       })
     );

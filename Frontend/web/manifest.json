@@ -1,12 +1,13 @@
 {
-    "name": "frontend",
-    "short_name": "frontend",
+    "name": "Mesa Chapaca",
+    "short_name": "Mesa Chapaca",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#F7F1E7",
+    "theme_color": "#6B1233",
+    "description": "Reservas, mesas y menú digital para restaurantes de Tarija.",
+    "lang": "es-BO",
+    "dir": "ltr",
     "prefer_related_applications": false,
     "icons": [
         {

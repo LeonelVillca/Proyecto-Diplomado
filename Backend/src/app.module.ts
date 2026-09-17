@@ -34,7 +34,6 @@ import { OauthCuentasModule } from './modules/oauth-cuenta/oauth-cuentas.module'
 import { AuthModule } from './modules/auth/auth.module';
 import { InvitacionTokenModule } from './modules/invitacion-token/invitacion-token.module';
 import { MailModule } from './modules/mail/mail.module';
-import { FavoritosModule } from './modules/favoritos/favoritos.module';
 
 @Module({
   imports: [
@@ -75,7 +74,6 @@ import { FavoritosModule } from './modules/favoritos/favoritos.module';
     CuentasAuthModule,
     OauthCuentasModule,
     AuthModule,
-    FavoritosModule,
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) =>

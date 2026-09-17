@@ -126,33 +126,27 @@ class RestauranteClienteService {
     }
   }
 
-  Future<void> toggleFavorito(String restauranteId, int idUsuario, bool isFavorite) async {
-    final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/favoritos/usuario/$idUsuario/restaurante/$restauranteId');
-    http.Response response;
-    
-    if (isFavorite) {
-      response = await http.post(url, headers: {'Authorization': 'Bearer $token'});
-    } else {
-      response = await http.delete(url, headers: {'Authorization': 'Bearer $token'});
-    }
-    
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to toggle favorite: \${response.body}');
+  Future<void> actualizarResena(String resenaId, int calificacion, String comentario) async {
+    final response = await http.patch(
+      Uri.parse('${ApiConfig.baseUrl}/api/v1/resenas/$resenaId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'calificacion': calificacion, 'comentario': comentario}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('No se pudo actualizar la reseña');
     }
   }
 
-  Future<List<String>> obtenerFavoritosUsuario(int idUsuario) async {
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/api/v1/favoritos/usuario/$idUsuario'),
+  Future<void> eliminarResena(String resenaId) async {
+    final response = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}/api/v1/resenas/$resenaId'),
       headers: {'Authorization': 'Bearer $token'},
     );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-      // Extract the restaurant IDs
-      return data.map((fav) => fav['restaurante']['id'].toString()).toList();
-    } else {
-      throw Exception('Failed to load favorites');
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('No se pudo eliminar la reseña');
     }
   }
 

@@ -120,15 +120,6 @@ class _HighlightCard extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned(
-                  top: 6,
-                  left: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                    child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 12),
-                  ),
-                ),
-                Positioned(
                   bottom: 0,
                   right: 0,
                   child: Container(
@@ -170,15 +161,6 @@ class _GridDishCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                Positioned(
-                  top: 6,
-                  left: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                    child: const Icon(Icons.favorite_border_rounded, color: Colors.white, size: 14),
-                  ),
-                ),
                 if (!dish.available)
                   Positioned.fill(
                     child: Container(

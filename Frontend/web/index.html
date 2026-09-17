@@ -1,50 +1,91 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="es-BO">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F7F1E7">
+  <meta name="description" content="Gestiona reservas, mesas y menú digital con Mesa Chapaca, la plataforma creada para restaurantes de Tarija, Bolivia.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="frontend">
+  <title>Mesa Chapaca | Reservas para restaurantes de Tarija</title>
+  <link rel="canonical" href="https://resttarija.web.app/">
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png" />
-
-  <title>frontend</title>
   <link rel="manifest" href="manifest.json">
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSHqJxW4ny4W2-NeZoj1s5kj79X5L-3gE&loading=async"></script>
+
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_BO">
+  <meta property="og:site_name" content="Mesa Chapaca">
+  <meta property="og:title" content="Mesa Chapaca | Reservas para restaurantes de Tarija">
+  <meta property="og:description" content="Centraliza reservas, mesas y menú digital en una plataforma creada para la gastronomía tarijeña.">
+  <meta property="og:url" content="https://resttarija.web.app/">
+  <meta property="og:image" content="https://resttarija.web.app/assets/assets/restaurant_hero_optimized.jpg">
+  <meta property="og:image:alt" content="Mesa preparada en un restaurante de ambiente cálido">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Mesa Chapaca">
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Mesa Chapaca",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "url": "https://resttarija.web.app/",
+      "description": "Plataforma de gestión de reservas, mesas y menú digital para restaurantes de Tarija, Bolivia.",
+      "areaServed": {
+        "@type": "City",
+        "name": "Tarija"
+      },
+      "offers": {
+        "@type": "Offer",
+        "availability": "https://schema.org/OnlineOnly"
+      }
+    }
+  </script>
+
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; background: #f7f1e7; color: #2a1020; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f7f1e7; }
+    .skip-link { position: fixed; left: 12px; top: 12px; z-index: 10; padding: 12px 16px; color: #fff; background: #6b1233; border-radius: 10px; transform: translateY(-140%); }
+    .skip-link:focus { transform: translateY(0); outline: 3px solid #b98324; outline-offset: 3px; }
+    .shell-nav { height: 80px; display: flex; align-items: center; padding: 0 clamp(20px, 5vw, 56px); border-bottom: 1px solid #d4c6b4; font-weight: 700; }
+    .shell-main { min-height: calc(100vh - 80px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 520px); gap: clamp(32px, 6vw, 72px); align-items: center; max-width: 1292px; margin: auto; padding: clamp(48px, 9vw, 112px) clamp(20px, 5vw, 56px); }
+    .shell-main h1 { max-width: 700px; margin: 0 0 24px; font: 600 clamp(42px, 6vw, 72px)/1.05 Georgia, serif; letter-spacing: -.02em; text-wrap: balance; }
+    .shell-main p { max-width: 620px; margin: 0 0 32px; color: #6e5f55; font-size: clamp(17px, 2vw, 20px); line-height: 1.55; }
+    .shell-cta { display: inline-block; min-height: 48px; padding: 14px 22px; border-radius: 14px; color: #fff; background: #6b1233; font-weight: 700; text-decoration: none; }
+    .shell-visual { aspect-ratio: 1; border: 1px solid #b98324; border-radius: 88px 24px; background: #310916 url('assets/assets/restaurant_hero_optimized.jpg') center/cover; }
+    @media (max-width: 800px) { .shell-main { grid-template-columns: 1fr; padding-top: 56px; } .shell-visual { max-width: 560px; width: 100%; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+  </style>
 </head>
-
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
-
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
+  <span id="contenido" tabindex="-1"></span>
+  <div id="app-shell">
+    <header class="shell-nav" aria-label="Navegación principal">Mesa Chapaca</header>
+    <main class="shell-main">
+      <section>
+        <h1>Tu restaurante, listo para recibir más comensales.</h1>
+        <p>Centraliza reservas, mesas y menú digital en una plataforma creada para restaurantes de Tarija.</p>
+        <a class="shell-cta" href="#" aria-label="Cargando la aplicación para registrar mi restaurante">Registrar mi restaurante</a>
+      </section>
+      <div class="shell-visual" role="img" aria-label="Mesa preparada en un restaurante de ambiente cálido"></div>
+    </main>
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var shell = document.getElementById('app-shell');
+      if (shell) shell.remove();
+    }, { once: true });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCSHqJxW4ny4W2-NeZoj1s5kj79X5L-3gE&loading=async" async defer></script>
 </body>
-
 </html>

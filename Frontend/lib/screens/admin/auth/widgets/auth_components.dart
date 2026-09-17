@@ -105,6 +105,49 @@ class AuthLeftVisual extends StatelessWidget {
               ),
             ),
           ),
+          Positioned(
+            left: 40,
+            right: 40,
+            bottom: 42,
+            child: FadeTransition(
+              opacity: quoteFade,
+              child: SlideTransition(
+                position: quoteSlide,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: authGold,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Sabores que cuentan historias.',
+                      style: GoogleFonts.piazzolla(
+                        color: Colors.white,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      'Haz que tu restaurante sea parte de la experiencia.',
+                      style: GoogleFonts.manrope(
+                        color: Colors.white.withValues(alpha: 0.72),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -165,11 +208,26 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: GoogleFonts.manrope(color: authInkFaint, fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 0.8),
+        Row(
+          children: [
+            Icon(
+              widget.icon,
+              size: 15,
+              color: _active ? authGoldAccent : authInkFaint,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              widget.label,
+              style: GoogleFonts.manrope(
+                color: _active ? authWine : authInkSoft,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.15,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 9),
         MouseRegion(
           cursor: SystemMouseCursors.text,
           onEnter: (_) => setState(() => _hovered = true),
@@ -178,14 +236,18 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOut,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
+              color: authCard,
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _active ? authGoldAccent : _hovered ? authWine.withValues(alpha: 0.35) : Colors.transparent,
+                color: _active ? authGoldAccent : _hovered ? authWine.withValues(alpha: 0.35) : const Color(0xFFE9E0D1),
                 width: _active ? 1.6 : 1,
               ),
               boxShadow: [
-                BoxShadow(color: authWineDeep.withValues(alpha: _active ? 0.08 : 0.03), blurRadius: _active ? 14 : 8, offset: const Offset(0, 3))
+                BoxShadow(
+                  color: authWineDeep.withValues(alpha: _active ? 0.10 : 0.045),
+                  blurRadius: _active ? 18 : 10,
+                  offset: const Offset(0, 5),
+                ),
               ],
             ),
             child: TextFormField(
@@ -194,19 +256,44 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
               obscureText: widget.obscureText,
               keyboardType: widget.keyboardType,
               maxLines: widget.maxLines,
-              style: GoogleFonts.manrope(color: authInk, fontWeight: FontWeight.w600, fontSize: 15),
+              cursorColor: authWine,
+              style: GoogleFonts.manrope(
+                color: authInk,
+                fontWeight: FontWeight.w700,
+                fontSize: 15.5,
+                letterSpacing: 0.1,
+              ),
               decoration: InputDecoration(
                 hintText: widget.hintText,
-                hintStyle: GoogleFonts.manrope(color: const Color(0xFFB5A89D), fontWeight: FontWeight.w500, fontSize: 15),
-                prefixIcon: Icon(widget.icon, color: _active ? authGoldAccent : authInkFaint, size: 20),
+                hintStyle: GoogleFonts.manrope(
+                  color: const Color(0xFFAD9F94),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
+                ),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(left: 14, right: 10),
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: (_active ? authGoldAccent : authWine).withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      color: _active ? authGoldAccent : authWine,
+                      size: 17,
+                    ),
+                  ),
+                ),
                 suffixIcon: widget.suffixIcon,
                 filled: true,
                 fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 19),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                 errorStyle: GoogleFonts.manrope(fontWeight: FontWeight.w600),
               ),
               validator: widget.validator,
@@ -264,7 +351,7 @@ class _AuthSubmitButtonState extends State<AuthSubmitButton> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: widget.disabled
                 ? []
                 : [

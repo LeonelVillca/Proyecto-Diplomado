@@ -19,8 +19,6 @@ class DetailInfoCard extends StatelessWidget {
           // Fila de badges superiores
           Row(
             children: [
-              _PromoChip(label: '15% OFF en Vinos'),
-              const SizedBox(width: 8),
               _RatingChip(rating: restaurant.rating, count: restaurant.reviewCount),
             ],
           ),
@@ -62,27 +60,6 @@ class DetailInfoCard extends StatelessWidget {
 
           const SizedBox(height: 20),
         ],
-      ),
-    );
-  }
-}
-
-class _PromoChip extends StatelessWidget {
-  const _PromoChip({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.wine.withAlpha(14),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.wine.withAlpha(40)),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.wine),
       ),
     );
   }

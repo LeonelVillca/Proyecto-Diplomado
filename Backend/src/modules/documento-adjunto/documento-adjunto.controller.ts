@@ -9,9 +9,7 @@ import {
   Post,
   Res,
   UseGuards,
-  NotFoundException,
 } from '@nestjs/common';
-import type { Response } from 'express';
 import * as path from 'path';
 import * as fs from 'fs';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -23,6 +21,8 @@ import { ActualizarDocumentoAdjuntoDto } from './dto/actualizar-documento-adjunt
 import { DocumentoAdjunto } from './documento-adjunto.entity';
 
 @Controller('documento-adjunto')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin_sistema')
 export class DocumentoAdjuntoController {
   constructor(private readonly documentoAdjuntoService: DocumentoAdjuntoService) {}
 
@@ -43,8 +43,6 @@ export class DocumentoAdjuntoController {
     return this.documentoAdjuntoService.listarPorSolicitud(idSolicitud);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin_sistema')
   @Get('privado/:idSolicitud/:filename')
   servirDocumentoPrivado(
     @Param('idSolicitud', ParseIntPipe) idSolicitud: number,
@@ -52,7 +50,12 @@ export class DocumentoAdjuntoController {
     @Res() res: any,
   ) {
     console.log(`[DocumentoAdjunto] Solicitud de archivo: ${filename} para solicitud ${idSolicitud}`);
-    const filePath = path.join(process.cwd(), 'storage', 'privado', 'solicitudes', idSolicitud.toString(), filename);
+    const solicitudDir = path.resolve(process.cwd(), 'storage', 'privado', 'solicitudes', idSolicitud.toString());
+    const safeFilename = path.basename(filename);
+    const filePath = path.resolve(solicitudDir, safeFilename);
+    if (safeFilename !== filename || !filePath.startsWith(`${solicitudDir}${path.sep}`)) {
+      return res.status(400).json({ message: 'Nombre de archivo no válido' });
+    }
     if (!fs.existsSync(filePath)) {
       console.log(`[DocumentoAdjunto] Archivo no encontrado en disco: ${filePath}`);
       return res.status(404).json({ message: 'El documento solicitado no existe' });

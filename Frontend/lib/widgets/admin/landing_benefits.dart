@@ -1,360 +1,169 @@
-import 'package:frontend/widgets/admin/landing_footer.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/widgets/admin/landing_footer.dart';
+import 'package:frontend/widgets/admin/landing_tokens.dart';
 
 class LandingBenefits extends StatelessWidget {
-  const LandingBenefits({super.key});
+  const LandingBenefits({
+    required this.howKey,
+    required this.benefitsKey,
+    required this.restaurantsKey,
+    required this.contactKey,
+    required this.onRegister,
+    super.key,
+  });
+
+  final Key howKey;
+  final Key benefitsKey;
+  final Key restaurantsKey;
+  final Key contactKey;
+  final VoidCallback onRegister;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _SectionHowItWorks(),
-        _SectionBenefits(),
-        _SectionTestimonios(),
-        _SectionStats(),
-        LandingFooter(),
+        _HowItWorks(key: howKey),
+        _Benefits(key: benefitsKey, onRegister: onRegister),
+        _RestaurantStories(key: restaurantsKey),
+        const _ProofStrip(),
+        LandingFooter(key: contactKey, onRegister: onRegister),
       ],
     );
   }
 }
 
-// ─── CÓMO FUNCIONA ────────────────────────────────────────────────────────────
-class _SectionHowItWorks extends StatelessWidget {
+class _HowItWorks extends StatelessWidget {
+  const _HowItWorks({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFEAE0C9), // paper-deep
-      padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 60),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: Column(
+    return _SectionShell(
+      color: LandingPalette.paperDeep,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final columns = width >= 900 ? 3 : (width >= 580 ? 2 : 1);
+          final gap = 20.0;
+          final cardWidth = (width - gap * (columns - 1)) / columns;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SectionLabel('CÓMO FUNCIONA'),
+              const SectionMarker('Cómo funciona'),
               const SizedBox(height: 16),
-              Text(
-                'Tres pasos para empezar',
-                style: GoogleFonts.piazzolla(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF241512), // ink
-                  height: 1.2,
+              Semantics(
+                header: true,
+                child: Text(
+                  'De la solicitud a tu primera reserva.',
+                  style: LandingType.heading(size: width < 600 ? 34 : 46),
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 64),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 18),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 660),
+                child: Text(
+                  'Un proceso claro, acompañado por nuestro equipo y sin cambiar la forma en que atiendes a tus clientes.',
+                  style: LandingType.bodyText(size: 17),
+                ),
+              ),
+              const SizedBox(height: 44),
+              Wrap(
+                spacing: gap,
+                runSpacing: gap,
                 children: [
                   _StepCard(
+                    width: cardWidth,
                     number: '01',
                     icon: Icons.description_outlined,
                     title: 'Envía tu solicitud',
                     description:
-                        'Completa el formulario con los datos de tu restaurante. Revisamos tu solicitud en menos de 24 horas.',
+                        'Cuéntanos sobre tu restaurante. Revisamos la información en menos de 24 horas.',
                   ),
-                  const SizedBox(width: 24),
                   _StepCard(
+                    width: cardWidth,
                     number: '02',
                     icon: Icons.verified_outlined,
-                    title: 'Aprobación y acceso',
+                    title: 'Prepara tu espacio',
                     description:
-                        'Una vez aprobado, recibirás tus credenciales para acceder al panel de administración exclusivo.',
+                        'Configura mesas, horarios, fotografías y menú con acompañamiento inicial.',
                   ),
-                  const SizedBox(width: 24),
                   _StepCard(
+                    width: cardWidth,
                     number: '03',
-                    icon: Icons.rocket_launch_outlined,
-                    title: 'Gestiona y crece',
+                    icon: Icons.table_restaurant_outlined,
+                    title: 'Recibe reservas',
                     description:
-                        'Configura tu menú, mesas y horarios. Empieza a recibir reservas en tiempo real desde el primer día.',
+                        'Confirma solicitudes en tiempo real y mantén a tu equipo coordinado.',
                   ),
                 ],
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
 class _StepCard extends StatelessWidget {
-  final String number;
-  final IconData icon;
-  final String title;
-  final String description;
-
   const _StepCard({
+    required this.width,
     required this.number,
     required this.icon,
     required this.title,
     required this.description,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(36),
-        decoration: BoxDecoration(
-          color: Colors.transparent, // Uses background of section
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: const BoxDecoration(
-                color: Color(0xFF6B1233), // wine
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  number,
-                  style: GoogleFonts.manrope(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              title,
-              style: GoogleFonts.manrope(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF241512), // ink
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              description,
-              style: GoogleFonts.manrope(
-                fontSize: 15,
-                color: const Color(0xFF7A6A5C), // ink-soft
-                height: 1.6,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── BENEFICIOS ───────────────────────────────────────────────────────────────
-class _SectionBenefits extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF5EEE0), // paper
-      padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 60),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Container(
-            padding: const EdgeInsets.all(64),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6B1233), Color(0xFF3A0A1B)], // wine -> wine-dark
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color.fromRGBO(107, 18, 51, 0.20),
-                  blurRadius: 40,
-                  offset: Offset(0, 20),
-                )
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Text Column
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SectionLabelDark('PARA RESTAURANTES'),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Todo lo que necesitas\npara crecer',
-                        style: GoogleFonts.piazzolla(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          height: 1.15,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Diseñado exclusivamente para la gastronomía tarijeña. Herramientas simples, resultados poderosos.',
-                        style: GoogleFonts.manrope(
-                          fontSize: 16,
-                          color: Colors.white.withValues(alpha: 0.8),
-                          height: 1.6,
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      const _BenefitRow(title: 'Reservas en tiempo real', description: 'Recibe y gestiona reservas al instante.'),
-                      const SizedBox(height: 20),
-                      const _BenefitRow(title: 'Menú digital interactivo', description: 'Presenta tus platillos con fotos y precios actualizados.'),
-                      const SizedBox(height: 20),
-                      const _BenefitRow(title: 'Mayor visibilidad', description: 'Atrae nuevos clientes locales y turistas.'),
-                      const SizedBox(height: 40),
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF6B1233), // wine
-                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'Registra tu restaurante',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 80),
-                // Visual Column
-                Expanded(
-                  flex: 5,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Base image
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Opacity(
-                          opacity: 0.8,
-                          child: Image.asset(
-                            'assets/tarija_food.png',
-                            height: 400,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              height: 400,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Floating stat 1
-                      Positioned(
-                        top: 20,
-                        right: -10,
-                        child: _GlassStat(title: '+40%', subtitle: 'más reservas'),
-                      ),
-                      // Floating stat 2
-                      Positioned(
-                        bottom: 40,
-                        left: -20,
-                        child: _GlassStat(title: '120+', subtitle: 'restaurantes activos'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BenefitRow extends StatelessWidget {
+  final double width;
+  final String number;
+  final IconData icon;
   final String title;
   final String description;
 
-  const _BenefitRow({
-    required this.title,
-    required this.description,
-  });
-
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 2),
-          child: const Icon(Icons.check_circle, color: Color(0xFFC08A1E), size: 20), // gold
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
+    return Semantics(
+      label: 'Paso $number: $title. $description',
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: width,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: LandingPalette.card,
+              border: Border.all(color: LandingPalette.line),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        number,
+                        style: LandingType.heading(
+                          size: 28,
+                          color: LandingPalette.wine,
+                        ),
+                      ),
+                      Icon(icon, color: LandingPalette.gold, size: 28),
+                    ],
+                  ),
+                  const SizedBox(height: 26),
+                  Text(
+                    title,
+                    style: LandingType.bodyText(
+                      size: 18,
+                      color: LandingPalette.ink,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(description, style: LandingType.bodyText()),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.7),
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GlassStat extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  const _GlassStat({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: GoogleFonts.piazzolla(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w700)),
-              Text(subtitle, style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w600)),
-            ],
+            ),
           ),
         ),
       ),
@@ -362,186 +171,325 @@ class _GlassStat extends StatelessWidget {
   }
 }
 
-// ─── TESTIMONIOS ──────────────────────────────────────────────────────────────
-class _SectionTestimonios extends StatelessWidget {
+class _Benefits extends StatelessWidget {
+  const _Benefits({required this.onRegister, super.key});
+  final VoidCallback onRegister;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF5EEE0), // paper
-      padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 60),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Column(
+    return _SectionShell(
+      color: LandingPalette.paper,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final desktop = width >= 860;
+          final copy = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SectionLabel('TESTIMONIOS'),
+              const SectionMarker('Una operación más tranquila', onDark: true),
               const SizedBox(height: 16),
-              Text(
-                'Lo que dicen nuestros\nrestaurantes',
-                style: GoogleFonts.piazzolla(
-                  fontSize: 42,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF241512), // ink
-                  height: 1.15,
+              Semantics(
+                header: true,
+                child: Text(
+                  'Todo tu salón en una sola vista.',
+                  style: LandingType.heading(
+                    size: width < 600 ? 36 : 48,
+                    color: Colors.white,
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 64),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  _TestimonioCard(
-                    nombre: 'Carlos Montaño',
-                    restaurante: 'La Casona Tarijeña',
-                    texto:
-                        '"Desde que usamos Mesa Chapaca, las reservas duplicaron. Nuestros clientes llegan con todo coordinado y la experiencia mejoró muchísimo."',
-                    stars: 5,
+              const SizedBox(height: 20),
+              Text(
+                'Menos llamadas cruzadas. Más claridad para decidir qué mesa está disponible y qué necesita cada reserva.',
+                style: LandingType.bodyText(
+                  size: 17,
+                  color: const Color(0xFFE9DDE2),
+                ),
+              ),
+              const SizedBox(height: 28),
+              const _BenefitItem(
+                icon: Icons.event_available_outlined,
+                title: 'Reservas en tiempo real',
+                description:
+                    'Consulta, confirma y organiza cada llegada desde el panel.',
+              ),
+              const _BenefitItem(
+                icon: Icons.menu_book_outlined,
+                title: 'Menú siempre actualizado',
+                description:
+                    'Publica platos, precios y fotografías sin depender de impresiones.',
+              ),
+              const _BenefitItem(
+                icon: Icons.travel_explore_outlined,
+                title: 'Más fácil de descubrir',
+                description:
+                    'Presenta tu propuesta a comensales locales y visitantes.',
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: onRegister,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: LandingPalette.wine,
+                  minimumSize: const Size(48, 52),
+                  textStyle: LandingType.bodyText(
+                    size: 16,
+                    weight: FontWeight.w700,
                   ),
-                  SizedBox(width: 24),
-                  _TestimonioCard(
-                    nombre: 'María Flores',
-                    restaurante: 'El Viñedo del Sur',
-                    texto:
-                        '"El panel de administración es muy intuitivo. Gestionar mesas y menús ahora me toma minutos, antes era un caos de llamadas."',
-                    stars: 5,
+                ),
+                child: const Text('Solicitar acceso para mi restaurante'),
+              ),
+            ],
+          );
+          const visual = _FoodVisual();
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: LandingPalette.wineDeep,
+              borderRadius: BorderRadius.circular(width < 600 ? 24 : 36),
+              border: Border.all(color: const Color(0x55B98324)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(width < 600 ? 24 : 48),
+              child: desktop
+                  ? Row(
+                      children: [
+                        Expanded(child: copy),
+                        const SizedBox(width: 52),
+                        const Expanded(child: visual),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [copy, const SizedBox(height: 40), visual],
+                    ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BenefitItem extends StatelessWidget {
+  const _BenefitItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: LandingPalette.gold, size: 24),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: LandingType.bodyText(
+                    color: Colors.white,
+                    weight: FontWeight.w700,
                   ),
-                  SizedBox(width: 24),
-                  _TestimonioCard(
-                    nombre: 'Roberto Vega',
-                    restaurante: 'Rincón Criollo',
-                    texto:
-                        '"Las reseñas nos ayudaron a mejorar nuestro servicio. Podemos responder directamente y los clientes lo valoran mucho."',
-                    stars: 5,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: LandingType.bodyText(
+                    size: 15,
+                    color: const Color(0xFFD7C8CE),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FoodVisual extends StatelessWidget {
+  const _FoodVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      image: true,
+      label: 'Selección de platos inspirados en la gastronomía boliviana',
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(80),
+            topRight: Radius.circular(24),
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(80),
+          ),
+          child: Image.asset(
+            'assets/tarija_food_optimized.jpg',
+            fit: BoxFit.cover,
+            width: 640,
+            height: 640,
+            cacheWidth: 900,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, _, _) =>
+                const ColoredBox(color: LandingPalette.wine),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RestaurantStories extends StatelessWidget {
+  const _RestaurantStories({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionShell(
+      color: LandingPalette.card,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final columns = width >= 900 ? 3 : (width >= 600 ? 2 : 1);
+          final gap = 20.0;
+          final cardWidth = (width - gap * (columns - 1)) / columns;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SectionMarker('Restaurantes que avanzan'),
+              const SizedBox(height: 16),
+              Semantics(
+                header: true,
+                child: Text(
+                  'Más tiempo para recibir. Menos tiempo coordinando.',
+                  style: LandingType.heading(size: width < 600 ? 34 : 46),
+                ),
+              ),
+              const SizedBox(height: 44),
+              Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  _QuoteCard(
+                    width: cardWidth,
+                    quote:
+                        'Las reservas llegan ordenadas y el equipo sabe qué preparar antes de cada servicio.',
+                    name: 'Carlos Montaño',
+                    restaurant: 'La Casona Tarijeña',
+                  ),
+                  _QuoteCard(
+                    width: cardWidth,
+                    quote:
+                        'Actualizar el menú y organizar las mesas ahora toma minutos, incluso desde el teléfono.',
+                    name: 'María Flores',
+                    restaurant: 'El Viñedo del Sur',
+                  ),
+                  _QuoteCard(
+                    width: cardWidth,
+                    quote:
+                        'Podemos responder reseñas y entender mejor lo que nuestros clientes valoran.',
+                    name: 'Roberto Vega',
+                    restaurant: 'Rincón Criollo',
                   ),
                 ],
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 }
 
-class _TestimonioCard extends StatelessWidget {
-  final String nombre;
-  final String restaurante;
-  final String texto;
-  final int stars;
-
-  const _TestimonioCard({
-    required this.nombre,
-    required this.restaurante,
-    required this.texto,
-    required this.stars,
+class _QuoteCard extends StatelessWidget {
+  const _QuoteCard({
+    required this.width,
+    required this.quote,
+    required this.name,
+    required this.restaurant,
   });
+  final double width;
+  final String quote;
+  final String name;
+  final String restaurant;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(32),
+    return SizedBox(
+      width: width,
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFFFFFCF6), // card
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color.fromRGBO(36, 21, 18, 0.10)), // line
-          boxShadow: const [
-            BoxShadow(
-              color: Color.fromRGBO(69, 11, 32, 0.10),
-              blurRadius: 50,
-              offset: Offset(0, 20),
-            ),
-          ],
+          color: LandingPalette.paper,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: LandingPalette.line),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: List.generate(
-                stars,
-                (_) => const Icon(Icons.star_rounded, color: Color(0xFFC08A1E), size: 20), // gold
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              texto,
-              style: GoogleFonts.piazzolla(
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-                fontStyle: FontStyle.italic,
-                color: const Color(0xFF241512), // ink
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: const Color(0xFFEAE0C9), // paper-deep
-                  radius: 24,
-                  child: Text(
-                    nombre[0],
-                    style: GoogleFonts.manrope(
-                      color: const Color(0xFF6B1233), // wine
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                label: 'Calificación: cinco de cinco',
+                child: const ExcludeSemantics(
+                  child: Row(
                     children: [
-                      Text(
-                        nombre,
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF241512), // ink
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      Icon(
+                        Icons.star_rounded,
+                        color: LandingPalette.gold,
+                        size: 19,
                       ),
-                      Text(
-                        restaurante,
-                        style: GoogleFonts.manrope(
-                          color: const Color(0xFF7A6A5C), // ink-soft
-                          fontSize: 13,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      Icon(
+                        Icons.star_rounded,
+                        color: LandingPalette.gold,
+                        size: 19,
+                      ),
+                      Icon(
+                        Icons.star_rounded,
+                        color: LandingPalette.gold,
+                        size: 19,
+                      ),
+                      Icon(
+                        Icons.star_rounded,
+                        color: LandingPalette.gold,
+                        size: 19,
+                      ),
+                      Icon(
+                        Icons.star_rounded,
+                        color: LandingPalette.gold,
+                        size: 19,
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── STATS ─────────────────────────────────────────────────────────────────
-class _SectionStats extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF6B1233), // wine
-      padding: const EdgeInsets.symmetric(vertical: 72, horizontal: 60),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1180),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: const [
-              _StatItem('50+', 'Restaurantes afiliados'),
-              _StatDivider(),
-              _StatItem('200+', 'Clientes satisfechos'),
-              _StatDivider(),
-              _StatItem('1,200+', 'Reservas gestionadas'),
-              _StatDivider(),
-              _StatItem('4.9/5', 'Calificación promedio'),
+              ),
+              const SizedBox(height: 22),
+              Text(
+                '“$quote”',
+                style: LandingType.heading(
+                  size: 22,
+                  weight: FontWeight.w500,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                name,
+                style: LandingType.bodyText(
+                  color: LandingPalette.ink,
+                  weight: FontWeight.w700,
+                ),
+              ),
+              Text(restaurant, style: LandingType.bodyText(size: 14)),
             ],
           ),
         ),
@@ -550,31 +498,104 @@ class _SectionStats extends StatelessWidget {
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String value;
-  final String label;
-  const _StatItem(this.value, this.label);
+class _ProofStrip extends StatelessWidget {
+  const _ProofStrip();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(value, style: GoogleFonts.piazzolla(fontSize: 44, fontWeight: FontWeight.w700, color: Colors.white)),
-        const SizedBox(height: 6),
-        Text(label, style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.8))),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return ColoredBox(
+          color: LandingPalette.wine,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: LandingLayout.horizontalPadding(width),
+              vertical: width < 600 ? 48 : 64,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: LandingLayout.maxWidth,
+                ),
+                child: const Wrap(
+                  alignment: WrapAlignment.spaceAround,
+                  runAlignment: WrapAlignment.center,
+                  spacing: 48,
+                  runSpacing: 30,
+                  children: [
+                    _Proof(value: '50+', label: 'restaurantes afiliados'),
+                    _Proof(value: '1.200+', label: 'reservas gestionadas'),
+                    _Proof(value: '4,9/5', label: 'valoración promedio'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-class _StatDivider extends StatelessWidget {
-  const _StatDivider();
+class _Proof extends StatelessWidget {
+  const _Proof({required this.value, required this.label});
+  final String value;
+  final String label;
+
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 60, color: Colors.white.withValues(alpha: 0.2));
+    return SizedBox(
+      width: 220,
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: LandingType.heading(size: 42, color: Colors.white),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: LandingType.bodyText(
+              size: 15,
+              color: const Color(0xFFF3E7EC),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-// ─── FOOTER ───────────────────────────────────────────────────────────────────
+class _SectionShell extends StatelessWidget {
+  const _SectionShell({required this.color, required this.child});
+  final Color color;
+  final Widget child;
 
-
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return ColoredBox(
+          color: color,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: LandingLayout.horizontalPadding(width),
+              vertical: LandingLayout.sectionPadding(width),
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: LandingLayout.maxWidth,
+                ),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

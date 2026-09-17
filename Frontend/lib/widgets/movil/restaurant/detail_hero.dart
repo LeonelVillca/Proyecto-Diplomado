@@ -45,7 +45,7 @@ class _DetailHeroState extends State<DetailHero> {
             ),
           ),
 
-          // Botones flotantes superiores (atras, compartir, favorito)
+          // Botones flotantes superiores (atras y compartir)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -57,7 +57,6 @@ class _DetailHeroState extends State<DetailHero> {
                     children: [
                       _GlassButton(icon: Icons.share_rounded, onTap: () {}),
                       const SizedBox(width: 8),
-                      _GlassButton(icon: Icons.favorite_border_rounded, onTap: () {}),
                     ],
                   ),
                 ],

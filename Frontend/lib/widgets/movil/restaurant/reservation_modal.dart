@@ -71,13 +71,16 @@ class _ReservationModalState extends State<ReservationModal> {
         throw Exception('Este restaurante aún no tiene mesas registradas.');
       }
       
-      // Buscar una mesa con capacidad suficiente (o la primera si no hay)
-      int idMesa = mesas.first['id'];
+      // Solo ofrecer una mesa cuya capacidad cubra el número de personas.
+      int? idMesa;
       for (var mesa in mesas) {
         if (mesa['capacidad'] != null && mesa['capacidad'] >= _guests) {
           idMesa = mesa['id'];
           break;
         }
+      }
+      if (idMesa == null) {
+        throw Exception('No hay una mesa disponible para $_guests personas.');
       }
       
       // 2. Crear reserva

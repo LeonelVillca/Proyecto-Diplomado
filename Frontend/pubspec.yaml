@@ -84,7 +84,9 @@ flutter:
     - assets/google_icon.png
     - assets/icon_app.png
     - assets/restaurant_hero.png
+    - assets/restaurant_hero_optimized.jpg
     - assets/tarija_food.png
+    - assets/tarija_food_optimized.jpg
     - assets/dining_couple.png
     - assets/logo_login.jpg
     - assets/aaa.jpg

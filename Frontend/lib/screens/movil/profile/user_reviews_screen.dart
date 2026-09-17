@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
+import 'package:frontend/controllers/movil/restaurante_controller.dart';
 
 class UserReviewsScreen extends StatefulWidget {
   const UserReviewsScreen({super.key});
@@ -45,6 +45,86 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
     }
   }
 
+  Future<void> _editarResena(Map<String, dynamic> review) async {
+    final comentarioCtrl = TextEditingController(text: review['comentario']?.toString() ?? '');
+    var calificacion = (review['calificacion'] as num?)?.toInt() ?? 1;
+    final guardar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.paper,
+          title: Text('Editar reseña', style: Theme.of(context).textTheme.titleLarge),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) => IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(index < calificacion ? Icons.star_rounded : Icons.star_border_rounded, color: AppColors.gold),
+                  onPressed: () => setDialogState(() => calificacion = index + 1),
+                )),
+              ),
+              TextField(
+                controller: comentarioCtrl,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Cuéntanos tu experiencia',
+                  filled: true,
+                  fillColor: AppColors.card,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                ),
+                onChanged: (_) => setDialogState(() {}),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: comentarioCtrl.text.trim().isEmpty ? null : () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.wine),
+              child: const Text('Guardar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    final comentario = comentarioCtrl.text.trim();
+    comentarioCtrl.dispose();
+    if (guardar != true || !mounted) return;
+    try {
+      await RestauranteScope.of(context, listen: false).actualizarResena(review['id'].toString(), calificacion, comentario);
+      await _cargarResenas();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> _eliminarResena(Map<String, dynamic> review) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Eliminar reseña'),
+        content: const Text('Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true || !mounted) return;
+    try {
+      await RestauranteScope.of(context, listen: false).eliminarResena(review['id'].toString());
+      await _cargarResenas();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,7 +148,7 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
                   physics: const BouncingScrollPhysics(),
                   itemCount: _reviews.length,
                   itemBuilder: (context, index) {
-                    final review = _reviews[index];
+                    final review = Map<String, dynamic>.from(_reviews[index] as Map);
                     return _buildReviewCard(context, review);
                   },
                 ),
@@ -123,6 +203,15 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (respuesta == null)
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  onSelected: (value) => value == 'editar' ? _editarResena(review) : _eliminarResena(review),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'editar', child: Text('Editar')),
+                    PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
+                  ],
+                ),
               Text(fechaStr, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12)),
             ],
           ),

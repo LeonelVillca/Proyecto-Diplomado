@@ -5,10 +5,9 @@ import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
 import 'package:frontend/widgets/movil/ui/rating_label.dart';
-import 'favorite_heart.dart';
 
 /// Tarjeta vertical destacada de restaurante:
-/// portada en degradado, estado de apertura, favoritos, datos y "Reservar".
+/// portada en degradado, estado de apertura, datos y "Reservar".
 class RestaurantCard extends StatelessWidget {
   const RestaurantCard({super.key, required this.restaurant, this.onTap});
 
@@ -151,7 +150,7 @@ class RestaurantCard extends StatelessWidget {
   }
 }
 
-/// Portada del restaurante: degradado, emoji, estado y corazón de favorito.
+/// Portada del restaurante: degradado, emoji y estado.
 class _Cover extends StatelessWidget {
   const _Cover({required this.restaurant});
 
@@ -206,12 +205,6 @@ class _Cover extends StatelessWidget {
             left: 12,
             top: 12,
             child: _OpenBadge(isOpen: restaurant.isOpen),
-          ),
-          // Corazón de favorito.
-          Positioned(
-            right: 12,
-            top: 12,
-            child: FavoriteHeart(restaurantId: restaurant.id),
           ),
         ],
       ),

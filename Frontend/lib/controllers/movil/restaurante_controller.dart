@@ -91,20 +91,18 @@ class RestauranteController extends ChangeNotifier {
     await _cargarRestaurantesSilencioso();
   }
 
-  Future<void> toggleFavorito(String restauranteId, int idUsuario, bool isFavorite) async {
+  Future<void> actualizarResena(String resenaId, int calificacion, String comentario) async {
     if (_service == null) throw Exception('No session');
-    await _service!.toggleFavorito(restauranteId, idUsuario, isFavorite);
+    await _service!.actualizarResena(resenaId, calificacion, comentario);
+    await _cargarRestaurantesSilencioso();
   }
 
-  Future<List<String>> obtenerFavoritos(int idUsuario) async {
-    if (_service == null) return [];
-    try {
-      return await _service!.obtenerFavoritosUsuario(idUsuario);
-    } catch (e) {
-      debugPrint('Error al cargar favoritos: $e');
-      return [];
-    }
+  Future<void> eliminarResena(String resenaId) async {
+    if (_service == null) throw Exception('No session');
+    await _service!.eliminarResena(resenaId);
+    await _cargarRestaurantesSilencioso();
   }
+
 }
 
 class RestauranteScope extends InheritedNotifier<RestauranteController> {

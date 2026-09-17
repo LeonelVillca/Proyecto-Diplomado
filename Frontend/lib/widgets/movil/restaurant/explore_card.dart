@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant.dart';
-import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 
 class _C {
   static const surface = AppColors.card;
@@ -47,21 +46,6 @@ class ExploreCard extends StatelessWidget {
                   child: restaurant.photoUrl != null
                       ? Image.network(restaurant.photoUrl!, fit: BoxFit.cover)
                       : const Icon(Icons.restaurant_rounded, color: Colors.white54, size: 40),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(100),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: FavoriteHeart(restaurantId: restaurant.id, onDark: true, size: 16),
-                    ),
-                  ),
                 ),
               ],
             ),

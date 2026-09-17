@@ -6,12 +6,18 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../core/guards/roles.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
 import { UsuarioRolService } from './usuario-rol.service';
 import { CrearUsuarioRolDto } from './dto/crear-usuario-rol.dto';
 import { UsuarioRol } from './usuario-rol.entity';
 
 @Controller('usuario-rol')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin_sistema')
 export class UsuarioRolController {
   constructor(private readonly usuarioRolService: UsuarioRolService) {}
 

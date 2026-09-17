@@ -44,6 +44,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     _socket = io.io(ApiEndpoints.baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
+      'auth': {'token': token},
       'extraHeaders': {'Authorization': 'Bearer $token'}
     });
 
@@ -55,7 +56,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
     _socket!.on('nueva_reserva', (data) {
        final auth = AuthScope.of(context, listen: false);
-       if (data['usuario'] != null && data['usuario']['id'] == auth.idUsuario) {
+       if (data['idUsuario'] == auth.idUsuario) {
          if (mounted) _cargarDatos();
        }
     });
@@ -106,7 +107,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
             if (scheduleTime.isAfter(now)) {
               notif.scheduleNotification(
                 id: r.id, 
-                title: 'Reserva próxima en \${r.restaurante?.nombre ?? "Restaurante"}', 
+                title: 'Reserva próxima en ${r.restauranteNombre}',
                 body: 'Tu reserva es en 30 minutos. ¡Prepárate!', 
                 scheduledDate: scheduleTime
               );

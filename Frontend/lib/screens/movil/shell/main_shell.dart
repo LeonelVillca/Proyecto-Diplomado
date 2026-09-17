@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/widgets/movil/navigation/app_bottom_nav.dart';
-import 'package:frontend/screens/movil/favorites/favorites_screen.dart';
 import 'package:frontend/screens/movil/home/home_screen.dart';
 import 'package:frontend/screens/movil/home/home_tab.dart';
 import 'package:frontend/screens/movil/location/location_screen.dart';
@@ -25,7 +24,6 @@ class _MainShellState extends State<MainShell> {
   static const _screens = [
     HomeScreen(),
     ReservationsScreen(),
-    FavoritesScreen(),
     LocationScreen(),
     ProfileScreen(),
   ];

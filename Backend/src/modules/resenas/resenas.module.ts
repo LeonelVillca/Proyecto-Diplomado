@@ -5,9 +5,11 @@ import { ResenasController } from './resenas.controller';
 import { Resena } from './resena.entity';
 import { Usuario } from '../usuarios/usuario.entity';
 import { Restaurante } from '../restaurante/restaurante.entity';
+import { RespuestaResena } from '../respuesta-resena/respuesta-resena.entity';
+import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Resena, Usuario, Restaurante])],
+  imports: [TypeOrmModule.forFeature([Resena, Usuario, Restaurante, RespuestaResena, UsuarioRol])],
   controllers: [ResenasController],
   providers: [ResenasService],
   exports: [ResenasService],

@@ -6,7 +6,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
-import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
 import 'package:frontend/screens/movil/location/map_widgets.dart';
 import 'package:frontend/models/movil/restaurant.dart';
@@ -24,6 +23,7 @@ class _LocationScreenState extends State<LocationScreen> {
   GoogleMapController? _mapCtrl;
   String _searchQuery = '';
   BitmapDescriptor? _customIcon;
+  Restaurant? _selectedRestaurant;
 
   // El mapa solo funciona en Web, Android e iOS.
   bool get _mapsSupported =>
@@ -48,23 +48,29 @@ class _LocationScreenState extends State<LocationScreen> {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
     canvas.drawCircle(Offset(size / 2, size / 2 + 4), size / 2.3, shadowPaint);
 
-    // Fondo oscuro (Vino)
-    final Paint paint = Paint()..color = const Color(0xFF6B1A35);
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2.3, paint);
-    
-    // Círculo interno blanco
-    final Paint innerPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(Offset(size / 2, size / 2), size / 2.9, innerPaint);
+    // Pin blanco, más ligero y legible sobre el mapa.
+    final Paint paint = Paint()..color = Colors.white;
+    final Path pin = Path()
+      ..moveTo(size / 2, size * .92)
+      ..cubicTo(size * .72, size * .68, size * .80, size * .57, size * .80, size * .42)
+      ..cubicTo(size * .80, size * .18, size * .66, size * .08, size / 2, size * .08)
+      ..cubicTo(size * .34, size * .08, size * .20, size * .18, size * .20, size * .42)
+      ..cubicTo(size * .20, size * .57, size * .28, size * .68, size / 2, size * .92)
+      ..close();
+    canvas.drawPath(pin, paint);
+
+    final Paint innerPaint = Paint()..color = const Color(0xFF7A2345);
+    canvas.drawCircle(Offset(size / 2, size * .39), size / 4.5, innerPaint);
     
     // Ícono central
     TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
     textPainter.text = TextSpan(
-      text: String.fromCharCode(Icons.restaurant_rounded.codePoint),
+      text: String.fromCharCode(Icons.restaurant_menu_rounded.codePoint),
       style: TextStyle(
         fontSize: size / 2.5,
-        fontFamily: Icons.restaurant_rounded.fontFamily,
-        package: Icons.restaurant_rounded.fontPackage,
-        color: const Color(0xFF6B1A35),
+        fontFamily: Icons.restaurant_menu_rounded.fontFamily,
+        package: Icons.restaurant_menu_rounded.fontPackage,
+        color: Colors.white,
       ),
     );
     textPainter.layout();
@@ -91,14 +97,7 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 
   void _showRestaurantModal(Restaurant r) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => _MapMarkerModal(
-        restaurant: r,
-      ),
-    );
+    setState(() => _selectedRestaurant = r);
   }
 
   static const String _cleanMapStyle = '''
@@ -146,7 +145,6 @@ class _LocationScreenState extends State<LocationScreen> {
           markerId: MarkerId(r.id),
           position: LatLng(r.lat!, r.lng!),
           icon: _customIcon ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
-          infoWindow: InfoWindow(title: r.name, snippet: r.cuisine.label),
           onTap: () => _onMarkerTap(r),
         ));
       }
@@ -203,6 +201,18 @@ class _LocationScreenState extends State<LocationScreen> {
             ),
           ),
         ),
+
+        // Tarjeta de selección integrada: mantiene el mapa visible y evita el scrim oscuro.
+        if (_selectedRestaurant != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: bottomPad - 16,
+            child: _MapMarkerModal(
+              restaurant: _selectedRestaurant!,
+              onClose: () => setState(() => _selectedRestaurant = null),
+            ),
+          ),
       ],
     );
   }
@@ -285,12 +295,13 @@ class _BottomSheet extends StatelessWidget {
 
 // ── Modal de Restaurante al tocar Marcador ──────────────────────────────────
 class _MapMarkerModal extends StatelessWidget {
-  const _MapMarkerModal({required this.restaurant});
+  const _MapMarkerModal({required this.restaurant, required this.onClose});
   
   final Restaurant restaurant;
+  final VoidCallback onClose;
 
   void _goToDetails(BuildContext context) {
-    Navigator.pop(context); // Cierra el modal primero
+    onClose();
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -301,51 +312,48 @@ class _MapMarkerModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return Material(
+      color: Colors.transparent,
       child: Container(
-        margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: const Color(0xFFFFFCF6),
+          borderRadius: BorderRadius.circular(22),
           boxShadow: const [
-            BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10)),
+            BoxShadow(color: Color(0x33000000), blurRadius: 24, offset: Offset(0, 8)),
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _goToDetails(context),
-            child: Column(
-              mainAxisSize: MainAxisSize.min, // Ajusta la altura al contenido
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
               children: [
-                // Foto de portada con boton favorito flotante
-                Stack(
-                  children: [
-                    if (restaurant.photoUrl != null)
-                      Image.network(
-                        restaurant.photoUrl!,
-                        height: 160,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      )
-                    else
-                      Container(
-                        height: 160,
-                        width: double.infinity,
-                        color: Colors.black12,
-                        child: const Icon(Icons.restaurant, size: 48, color: Colors.black26),
-                      ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: FavoriteHeart(restaurantId: restaurant.id),
-                    ),
-                  ],
+                if (restaurant.photoUrl != null)
+                  Image.network(
+                    restaurant.photoUrl!,
+                    height: 148,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _placeholderImage(),
+                  )
+                else
+                  _placeholderImage(),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Row(
+                    children: [
+                      _RoundIconButton(icon: Icons.close_rounded, onTap: onClose),
+                    ],
+                  ),
                 ),
-                // Detalles de la tarjeta
+              ],
+            ),
+            InkWell(
+              onTap: () => _goToDetails(context),
+              child:
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -355,7 +363,7 @@ class _MapMarkerModal extends StatelessWidget {
                           Expanded(
                             child: Text(
                               restaurant.name,
-                              style: GoogleFonts.piazzolla(fontSize: 18, fontWeight: FontWeight.w700, color: const Color(0xFF1A0C12)),
+                              style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: const Color(0xFF241512)),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -366,7 +374,7 @@ class _MapMarkerModal extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 restaurant.rating.toString(),
-                                style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFFD4AF37)),
+                                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: const Color(0xFFC08A1E)),
                               ),
                             ],
                           ),
@@ -375,7 +383,7 @@ class _MapMarkerModal extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${restaurant.cuisine.label} · ${restaurant.price}',
-                        style: GoogleFonts.manrope(fontSize: 13, color: Colors.black54),
+                        style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF7A6A5C)),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -384,23 +392,46 @@ class _MapMarkerModal extends StatelessWidget {
                         child: FilledButton(
                           onPressed: () => _goToDetails(context),
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF6B1A35), // Color Vino
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            backgroundColor: const Color(0xFF7A2345),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
                           ),
                           child: Text(
                             'Ver Restaurante',
-                            style: GoogleFonts.piazzolla(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _placeholderImage() => Container(
+    height: 148,
+    width: double.infinity,
+    color: const Color(0xFFEAE0C9),
+    child: const Icon(Icons.restaurant_menu_rounded, size: 46, color: Color(0xFF7A2345)),
+  );
+}
+
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.white.withAlpha(235),
+    shape: const CircleBorder(),
+    child: InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Padding(padding: const EdgeInsets.all(8), child: Icon(icon, size: 18, color: const Color(0xFF241512))),
+    ),
+  );
 }

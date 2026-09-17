@@ -276,8 +276,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
       quoteSlide: _quoteSlide,
     );
 
-    final rightPanel = Container(
-      color: authPaper,
+    final rightPanel = DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFF9F4EA), Color(0xFFF1E6D7)],
+        ),
+      ),
       child: Stack(
         children: [
           Positioned(
@@ -295,31 +301,58 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
               ),
             ),
           ),
+          Positioned(
+            bottom: -180,
+            left: -150,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: authWine.withValues(alpha: 0.045),
+              ),
+            ),
+          ),
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
               child: FadeTransition(
                 opacity: _fadeIn,
                 child: SlideTransition(
                   position: _slideIn,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-                        return Stack(
-                          alignment: Alignment.center,
-                          children: <Widget>[
-                            ...previousChildren,
-                            if (currentChild != null) currentChild,
-                          ],
-                        );
-                      },
-                      child: KeyedSubtree(
-                        key: ValueKey(_screenState),
-                        child: _buildCurrentState(),
+                    constraints: const BoxConstraints(maxWidth: 500),
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.76),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.9)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: authWineDeep.withValues(alpha: 0.08),
+                            blurRadius: 34,
+                            offset: const Offset(0, 18),
+                          ),
+                        ],
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOutCubic,
+                        switchOutCurve: Curves.easeInCubic,
+                        layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: <Widget>[
+                              ...previousChildren,
+                              if (currentChild != null) currentChild,
+                            ],
+                          );
+                        },
+                        child: KeyedSubtree(
+                          key: ValueKey(_screenState),
+                          child: _buildCurrentState(),
+                        ),
                       ),
                     ),
                   ),
@@ -370,6 +403,26 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Row(
+          children: [
+            Container(
+              width: 9,
+              height: 9,
+              decoration: const BoxDecoration(color: authGoldAccent, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 9),
+            Text(
+              'PANEL DE RESTAURANTES',
+              style: GoogleFonts.manrope(
+                color: authGoldAccent,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.7,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -420,7 +473,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             children: [
               AuthLoginField(
                 controller: _correoCtrl,
-                label: 'CORREO ELECTRÓNICO',
+                label: 'Correo electrónico',
                 hintText: 'tunombre@correo.com',
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
@@ -429,7 +482,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
               const SizedBox(height: 24),
               AuthLoginField(
                 controller: _passwordCtrl,
-                label: 'CONTRASEÑA',
+                label: 'Contraseña',
                 hintText: 'Escribe tu contraseña',
                 icon: Icons.lock_outline,
                 obscureText: _obscureText,
@@ -600,7 +653,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
           ),
           AuthLoginField(
             controller: _recoveryCorreoCtrl,
-            label: 'CORREO ELECTRÓNICO',
+            label: 'Correo electrónico',
             hintText: 'tunombre@correo.com',
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
@@ -740,7 +793,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
           ),
           AuthLoginField(
             controller: _nuevaPasswordCtrl,
-            label: 'NUEVA CONTRASEÑA',
+            label: 'Nueva contraseña',
             hintText: 'Escribe tu nueva contraseña',
             icon: Icons.lock_outline,
             obscureText: _obscureRecoveryText,
@@ -752,7 +805,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
           const SizedBox(height: 24),
           AuthLoginField(
             controller: _confirmPasswordCtrl,
-            label: 'CONFIRMAR CONTRASEÑA',
+            label: 'Confirmar contraseña',
             hintText: 'Vuelve a escribir la contraseña',
             icon: Icons.lock_outline,
             obscureText: _obscureRecoveryText,

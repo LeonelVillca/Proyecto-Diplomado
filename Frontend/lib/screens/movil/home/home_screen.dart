@@ -7,7 +7,6 @@ import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
 import 'package:frontend/widgets/movil/restaurant/explore_card.dart';
-import 'package:frontend/widgets/movil/restaurant/favorite_heart.dart';
 
 // ── Aliases de la paleta oficial Mesa Chapaca ────────────────────────
 class _C {
@@ -455,23 +454,6 @@ class _RecommendedCard extends StatelessWidget {
                     colors: [Colors.transparent, Color(0xE5000000)],
                     stops: [0.35, 1.0],
                   ),
-                ),
-              ),
-            ),
-
-            // Corazón favorito
-            Positioned(
-              top: 14,
-              right: 14,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.black.withAlpha(100),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: FavoriteHeart(restaurantId: restaurant.id, onDark: true, size: 20),
                 ),
               ),
             ),

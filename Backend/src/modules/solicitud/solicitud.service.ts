@@ -38,19 +38,15 @@ export class SolicitudService {
       throw new BadRequestException('Se requieren los documentos NIT y CI');
     }
 
-    const allowedTypes = ['application/pdf'];
-    const nitExt = path.extname(nitFile.originalname).toLowerCase();
-    const ciExt = path.extname(ciFile.originalname).toLowerCase();
-    const allowedExts = ['.pdf'];
-
-    if (!allowedTypes.includes(nitFile.mimetype) || !allowedTypes.includes(ciFile.mimetype) ||
-        !allowedExts.includes(nitExt) || !allowedExts.includes(ciExt)) {
-      throw new BadRequestException('Los documentos NIT y CI deben ser obligatoriamente en formato PDF.');
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(nitFile.mimetype) || !allowedTypes.includes(ciFile.mimetype)) {
+      throw new BadRequestException('Los documentos NIT y CI deben ser PDF, JPG o PNG.');
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    let uploadDir: string | undefined;
 
     try {
       let usuario = await queryRunner.manager.findOne(Usuario, {
@@ -81,11 +77,16 @@ export class SolicitudService {
       });
       solicitud = await queryRunner.manager.save(solicitud);
 
-      const uploadDir = path.join(process.cwd(), 'storage', 'privado', 'solicitudes', solicitud.id.toString());
+      uploadDir = path.join(process.cwd(), 'storage', 'privado', 'solicitudes', solicitud.id.toString());
       await fs.mkdir(uploadDir, { recursive: true });
 
-      const nitExt = '.pdf';
-      const ciExt = '.pdf';
+      const extensionFor = (mimetype: string) => {
+        if (mimetype === 'image/jpeg') return '.jpg';
+        if (mimetype === 'image/png') return '.png';
+        return '.pdf';
+      };
+      const nitExt = extensionFor(nitFile.mimetype);
+      const ciExt = extensionFor(ciFile.mimetype);
 
       const nitFilename = `nit-${crypto.randomUUID()}${nitExt}`;
       const ciFilename = `ci-${crypto.randomUUID()}${ciExt}`;
@@ -110,6 +111,11 @@ export class SolicitudService {
       return solicitud;
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      // Si la transacción falla después de guardar los archivos, evitar
+      // dejar documentos huérfanos en la carpeta privada.
+      if (uploadDir) {
+        await fs.rm(uploadDir, { recursive: true, force: true }).catch(() => undefined);
+      }
       throw error;
     } finally {
       await queryRunner.release();

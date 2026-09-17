@@ -16,7 +16,8 @@ class SolicitudRegistroScreen extends StatefulWidget {
   const SolicitudRegistroScreen({super.key});
 
   @override
-  State<SolicitudRegistroScreen> createState() => _SolicitudRegistroScreenState();
+  State<SolicitudRegistroScreen> createState() =>
+      _SolicitudRegistroScreenState();
 }
 
 class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
@@ -42,7 +43,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
       _mostrarError('Debes adjuntar ambos documentos (NIT y CI).');
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -215,7 +216,13 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: Text('Volver al inicio', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800)),
+            child: Text(
+              'Volver al inicio',
+              style: GoogleFonts.manrope(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ],
       ),
@@ -264,21 +271,29 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
-              
+
               Row(
                 children: [
                   Expanded(
                     flex: 1,
-                    child: Container(height: 4, color: const Color(0xFF6B1233)), // wine
+                    child: Container(
+                      height: 4,
+                      color: const Color(0xFF6B1233),
+                    ), // wine
                   ),
                   Expanded(
                     flex: 1,
-                    child: Container(height: 4, color: _currentStep == 2 ? const Color(0xFF6B1233) : const Color(0xFFEAE0C9)), // wine : paper-deep
+                    child: Container(
+                      height: 4,
+                      color: _currentStep == 2
+                          ? const Color(0xFF6B1233)
+                          : const Color(0xFFEAE0C9),
+                    ), // wine : paper-deep
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               Text(
                 '¡Empecemos!',
                 style: GoogleFonts.piazzolla(
@@ -289,7 +304,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                _currentStep == 1 
+                _currentStep == 1
                     ? 'Cuéntanos un poco sobre ti para que podamos personalizar tu experiencia.'
                     : 'Necesitamos algunos documentos para validar tu restaurante.',
                 style: GoogleFonts.manrope(
@@ -298,7 +313,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               if (_currentStep == 1) ...[
                 AuthLoginField(
                   label: 'NOMBRE DE PILA *',
@@ -322,7 +337,8 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                   icon: Icons.email_outlined,
                   controller: _correoCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  validator: (v) => v!.isEmpty || !v.contains('@') ? 'Correo inválido' : null,
+                  validator: (v) =>
+                      v!.isEmpty || !v.contains('@') ? 'Correo inválido' : null,
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -358,7 +374,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 40),
-                
+
                 Align(
                   alignment: Alignment.centerRight,
                   child: SizedBox(
@@ -383,84 +399,153 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                   validator: (v) => v!.isEmpty ? 'Requerido' : null,
                 ),
                 const SizedBox(height: 32),
-                
+
                 Text(
                   'DOCUMENTO NIT (Solo PDF) *',
-                  style: GoogleFonts.manrope(color: const Color(0xFF8C7A6B), fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                  style: GoogleFonts.manrope(
+                    color: const Color(0xFF8C7A6B),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 InkWell(
                   onTap: () => _seleccionarArchivo(true),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 20,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _nitFile != null ? const Color(0xFF6B1233) : const Color(0xFFDCD6CC), width: _nitFile != null ? 1.6 : 1),
+                      border: Border.all(
+                        color: _nitFile != null
+                            ? const Color(0xFF6B1233)
+                            : const Color(0xFFDCD6CC),
+                        width: _nitFile != null ? 1.6 : 1,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.upload_file_outlined, color: _nitFile != null ? const Color(0xFF6B1233) : const Color(0xFF8C7A6B)),
+                        Icon(
+                          Icons.upload_file_outlined,
+                          color: _nitFile != null
+                              ? const Color(0xFF6B1233)
+                              : const Color(0xFF8C7A6B),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _nitFile != null ? _nitFile!.name : 'Haz clic aquí para seleccionar el archivo',
+                            _nitFile != null
+                                ? _nitFile!.name
+                                : 'Haz clic aquí para seleccionar el archivo',
                             style: GoogleFonts.manrope(
-                              color: _nitFile != null ? const Color(0xFF241512) : const Color(0xFF8C7A6B),
-                              fontWeight: _nitFile != null ? FontWeight.w700 : FontWeight.w500,
+                              color: _nitFile != null
+                                  ? const Color(0xFF241512)
+                                  : const Color(0xFF8C7A6B),
+                              fontWeight: _nitFile != null
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
                           ),
                         ),
-                        if (_nitFile != null) const Icon(Icons.check_circle, color: Color(0xFF5C7A52)),
+                        if (_nitFile != null)
+                          const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF5C7A52),
+                          ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 Text(
                   'CÉDULA DE IDENTIDAD (Solo PDF) *',
-                  style: GoogleFonts.manrope(color: const Color(0xFF8C7A6B), fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                  style: GoogleFonts.manrope(
+                    color: const Color(0xFF8C7A6B),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 InkWell(
                   onTap: () => _seleccionarArchivo(false),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 20,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _ciFile != null ? const Color(0xFF6B1233) : const Color(0xFFDCD6CC), width: _ciFile != null ? 1.6 : 1),
+                      border: Border.all(
+                        color: _ciFile != null
+                            ? const Color(0xFF6B1233)
+                            : const Color(0xFFDCD6CC),
+                        width: _ciFile != null ? 1.6 : 1,
+                      ),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.upload_file_outlined, color: _ciFile != null ? const Color(0xFF6B1233) : const Color(0xFF8C7A6B)),
+                        Icon(
+                          Icons.upload_file_outlined,
+                          color: _ciFile != null
+                              ? const Color(0xFF6B1233)
+                              : const Color(0xFF8C7A6B),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            _ciFile != null ? _ciFile!.name : 'Haz clic aquí para seleccionar el archivo',
+                            _ciFile != null
+                                ? _ciFile!.name
+                                : 'Haz clic aquí para seleccionar el archivo',
                             style: GoogleFonts.manrope(
-                              color: _ciFile != null ? const Color(0xFF241512) : const Color(0xFF8C7A6B),
-                              fontWeight: _ciFile != null ? FontWeight.w700 : FontWeight.w500,
+                              color: _ciFile != null
+                                  ? const Color(0xFF241512)
+                                  : const Color(0xFF8C7A6B),
+                              fontWeight: _ciFile != null
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
                           ),
                         ),
-                        if (_ciFile != null) const Icon(Icons.check_circle, color: Color(0xFF5C7A52)),
+                        if (_ciFile != null)
+                          const Icon(
+                            Icons.check_circle,
+                            color: Color(0xFF5C7A52),
+                          ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 48),
-                
+
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     TextButton.icon(
-                      onPressed: _isLoading ? null : () => setState(() => _currentStep = 1),
-                      icon: const Icon(Icons.arrow_back_ios_new, size: 14, color: Color(0xFF7A6A5C)),
-                      label: Text('Atrás', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF7A6A5C))),
+                      onPressed: _isLoading
+                          ? null
+                          : () => setState(() => _currentStep = 1),
+                      icon: const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 14,
+                        color: Color(0xFF7A6A5C),
+                      ),
+                      label: Text(
+                        'Atrás',
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF7A6A5C),
+                        ),
+                      ),
                     ),
                     SizedBox(
                       width: 220,
@@ -473,7 +558,7 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                   ],
                 ),
               ],
-              
+
               const SizedBox(height: 40),
               Text(
                 'Al hacer clic en «Próximo», acepta nuestra Política de privacidad.\n\nTambién acepta recibir comunicaciones de marketing de Mesa Chapaca sobre noticias, eventos, promociones y boletines mensuales. Puede cancelar su suscripción a los correos electrónicos en cualquier momento.',

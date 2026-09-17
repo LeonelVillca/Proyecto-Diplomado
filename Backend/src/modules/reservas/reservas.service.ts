@@ -52,10 +52,17 @@ export class ReservasService {
 
     const guardada = await this.reservasRepo.save(reserva);
     
-    // Attach idRestaurante for the WebSocket event
+    // Emitir únicamente los datos necesarios para actualizar las interfaces.
+    // No se expone la entidad completa (usuario, correo u otras relaciones).
     const payload = {
-      ...guardada,
-      idRestaurante: mesa.restaurante.id
+      id: guardada.id,
+      idUsuario: dto.idUsuario,
+      idMesa: dto.idMesa,
+      idRestaurante: mesa.restaurante.id,
+      fecha: guardada.fecha,
+      hora: guardada.hora,
+      numeroPersonas: guardada.numeroPersonas,
+      estado: guardada.estado,
     };
     this.reservasGateway.emitNuevaReserva(payload);
     
@@ -93,7 +100,10 @@ export class ReservasService {
     const reserva = await this.buscarPorId(id);
 
     if (dto.idMesa) {
-      const mesa = await this.mesasRepo.findOne({ where: { id: dto.idMesa } });
+      const mesa = await this.mesasRepo.findOne({
+        where: { id: dto.idMesa },
+        relations: { restaurante: true },
+      });
       if (!mesa) throw new NotFoundException('Mesa no encontrada');
       reserva.mesa = mesa;
     }

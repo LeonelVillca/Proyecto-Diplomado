@@ -9,7 +9,6 @@ import {
   ParseIntPipe,
   UseGuards,
   Req,
-  ForbiddenException,
 } from '@nestjs/common';
 import { ResenasService } from './resenas.service';
 import { CrearResenaDto } from './dto/crear-resena.dto';
@@ -58,14 +57,15 @@ export class ResenasController {
   actualizar(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ActualizarResenaDto,
+    @Req() req: any,
   ) {
-    return this.resenasService.actualizar(id, dto);
+    return this.resenasService.actualizar(id, dto, req.user?.id);
   }
 
   // Moderación o borrado por el propio cliente
   @CheckClientOwnership('resena')
   @Delete(':id')
-  eliminar(@Param('id', ParseIntPipe) id: number) {
-    return this.resenasService.eliminar(id);
+  eliminar(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.resenasService.eliminar(id, req.user?.id);
   }
 }

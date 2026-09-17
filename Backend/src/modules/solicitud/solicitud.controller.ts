@@ -30,7 +30,17 @@ export class SolicitudController {
     FileFieldsInterceptor([
       { name: 'documentoNit', maxCount: 1 },
       { name: 'documentoCi', maxCount: 1 },
-    ]),
+    ], {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        const allowed = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (allowed.includes(file.mimetype)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Los documentos deben ser PDF, JPG o PNG.'), false);
+        }
+      },
+    }),
   )
   crear(
     @Body() dto: CrearSolicitudDto,
@@ -47,6 +57,7 @@ export class SolicitudController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin_sistema')
   @Get('usuario/:idUsuario')
   listarPorUsuario(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,

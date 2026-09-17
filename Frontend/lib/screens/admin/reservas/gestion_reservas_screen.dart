@@ -44,6 +44,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
     _socket = io.io(ApiEndpoints.baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
+      'auth': {'token': token},
       'extraHeaders': {'Authorization': 'Bearer $token'}
     });
 

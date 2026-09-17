@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -36,18 +37,17 @@ export class RestauranteController {
   }
 
   @Get('ranking')
-  async obtenerRanking(): Promise<any[]> {
-    return this.restauranteService.obtenerRanking();
+  obtenerRanking(
+    @Query('orden') orden: 'calificacion' | 'visitas' = 'calificacion',
+    @Query('limite') limite?: string,
+  ): Promise<any[]> {
+    const limiteNumero = limite === undefined ? undefined : Number(limite);
+    return this.restauranteService.obtenerRanking(orden, limiteNumero);
   }
 
   @Get()
-  async listarTodos(): Promise<any[]> {
-    try {
-      return await this.restauranteService.listarTodos();
-    } catch (e: any) {
-      console.error('ERROR EN LISTAR TODOS:', e);
-      return [{ error: e.message, stack: e.stack }];
-    }
+  listarTodos(): Promise<any[]> {
+    return this.restauranteService.listarTodos();
   }
 
   @Roles('admin_restaurante')

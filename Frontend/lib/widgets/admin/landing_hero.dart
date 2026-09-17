@@ -1,29 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'landing_navbar.dart';
-import 'package:frontend/screens/admin/public/solicitud_registro_screen.dart';
-import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
+import 'package:frontend/widgets/admin/landing_tokens.dart';
 
 class LandingHero extends StatefulWidget {
-  const LandingHero({super.key});
+  const LandingHero({
+    required this.onRegister,
+    required this.onExplore,
+    super.key,
+  });
+
+  final VoidCallback onRegister;
+  final VoidCallback onExplore;
 
   @override
   State<LandingHero> createState() => _LandingHeroState();
 }
 
-class _LandingHeroState extends State<LandingHero> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeIn;
-  late Animation<Offset> _slideUp;
+class _LandingHeroState extends State<LandingHero>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  bool _motionConfigured = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
-    _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _slideUp = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _controller.forward();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 560),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_motionConfigured) return;
+    _motionConfigured = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
   }
 
   @override
@@ -34,363 +49,300 @@ class _LandingHeroState extends State<LandingHero> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Stack(
-        children: [
-          // Hero content
-          Padding(
-            padding: const EdgeInsets.only(top: 80), // for navbar
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1180),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 60),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Left Column
-                      Expanded(
-                        flex: 55,
-                        child: FadeTransition(
-                          opacity: _fadeIn,
-                          child: SlideTransition(
-                            position: _slideUp,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Eyebrow
-                                Row(
-                                  children: [
-                                    Container(width: 16, height: 2, color: const Color(0xFFC1622E)), // terracotta
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'LA PLATAFORMA DE RESERVAS DE TARIJA',
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w800,
-                                        color: const Color(0xFF6B1233), // wine
-                                        letterSpacing: 1.2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 24),
-                                // H1
-                                RichText(
-                                  text: TextSpan(
-                                    style: GoogleFonts.piazzolla(
-                                      fontSize: 46,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF241512), // ink
-                                      height: 1.08,
-                                      letterSpacing: -0.5,
-                                    ),
-                                    children: [
-                                      const TextSpan(text: 'Lleva tu '),
-                                      TextSpan(
-                                        text: 'Restaurante\n',
-                                        style: GoogleFonts.piazzolla(
-                                          color: const Color(0xFF6B1233), // wine
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                      const TextSpan(text: 'al Siguiente Nivel'),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                // Paragraph
-                                Text(
-                                  'Gestiona reservas en tiempo real, digitaliza tu menú y conecta con miles de clientes en el valle central.',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w400,
-                                    color: const Color(0xFF7A6A5C), // ink-soft
-                                    height: 1.6,
-                                  ),
-                                ),
-                                const SizedBox(height: 40),
-                                // Buttons
-                                Row(
-                                  children: [
-                                    _HeroButtonPrimary(
-                                      label: 'Crear cuenta gratis',
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen()),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    _HeroButtonGhost(
-                                      label: 'Explorar restaurantes',
-                                      onTap: () {},
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 48),
-                                // Stats
-                                Row(
-                                  children: [
-                                    _StatBadge('200+', 'Restaurantes activos'),
-                                    const SizedBox(width: 32),
-                                    _StatBadge('15k+', 'Reservas mensuales'),
-                                    const SizedBox(width: 32),
-                                    _StatBadge('4.9★', 'Calificación prom.'),
-                                  ],
-                                ),
-                              ],
+    return Semantics(
+      container: true,
+      label: 'Presentación de Mesa Chapaca',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final desktop = width >= 920;
+          final horizontal = LandingLayout.horizontalPadding(width);
+          final content = desktop
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: _HeroCopy(widget: widget, width: width),
+                    ),
+                    const SizedBox(width: 56),
+                    const Expanded(child: _HeroVisual()),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _HeroCopy(widget: widget, width: width),
+                    const SizedBox(height: 44),
+                    const _HeroVisual(),
+                  ],
+                );
+
+          return ColoredBox(
+            color: LandingPalette.paper,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontal,
+                desktop ? 156 : 128,
+                horizontal,
+                LandingLayout.sectionPadding(width),
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: LandingLayout.maxWidth,
+                  ),
+                  child: FadeTransition(
+                    opacity: CurvedAnimation(
+                      parent: _controller,
+                      curve: Curves.easeOut,
+                    ),
+                    child: SlideTransition(
+                      position:
+                          Tween<Offset>(
+                            begin: const Offset(0, 0.025),
+                            end: Offset.zero,
+                          ).animate(
+                            CurvedAnimation(
+                              parent: _controller,
+                              curve: Curves.easeOutCubic,
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 40),
-                      // Right Column (Visual)
-                      Expanded(
-                        flex: 45,
-                        child: FadeTransition(
-                          opacity: _fadeIn,
-                          child: SlideTransition(
-                            position: Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(_controller),
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                // Main visual block
-                                Container(
-                                  height: 500,
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF6B1233), Color(0xFF3A0A1B)],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                    borderRadius: BorderRadius.circular(22),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        color: Color.fromRGBO(69, 11, 32, 0.20),
-                                        blurRadius: 70,
-                                        offset: Offset(0, 30),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(22),
-                                    child: Opacity(
-                                      opacity: 0.3,
-                                      child: Image.asset(
-                                        'assets/restaurant_hero.png',
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // Floating card 1
-                                Positioned(
-                                  top: 40,
-                                  left: -30,
-                                  child: _FloatingCard(
-                                    icon: Icons.check_circle,
-                                    iconColor: const Color(0xFF5C7A52), // sage
-                                    title: 'Reserva confirmada',
-                                    subtitle: 'Mesa para 4, 20:00',
-                                  ),
-                                ),
-                                // Floating card 2
-                                Positioned(
-                                  bottom: 60,
-                                  right: -20,
-                                  child: _FloatingCard(
-                                    icon: Icons.local_offer,
-                                    iconColor: const Color(0xFFC1622E), // terracotta
-                                    title: '15% off en vinos',
-                                    subtitle: 'Con tu reserva hoy',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                      child: content,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          
-          // Navbar on top
-          const Positioned(
-            top: 0, left: 0, right: 0,
-            child: LandingNavbar(),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
-class _HeroButtonPrimary extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _HeroButtonPrimary({required this.label, required this.onTap});
-
-  @override
-  State<_HeroButtonPrimary> createState() => _HeroButtonPrimaryState();
-}
-
-class _HeroButtonPrimaryState extends State<_HeroButtonPrimary> {
-  bool _hovered = false;
+class _HeroCopy extends StatelessWidget {
+  const _HeroCopy({required this.widget, required this.width});
+  final LandingHero widget;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          decoration: BoxDecoration(
-            color: _hovered ? const Color(0xFF8C3350) : const Color(0xFF6B1233), // wine-soft : wine
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: _hovered
-                ? const [BoxShadow(color: Color.fromRGBO(107, 18, 51, 0.32), blurRadius: 26, offset: Offset(0, 12))]
-                : [],
-          ),
-          child: Text(
-            widget.label,
-            style: GoogleFonts.manrope(
-              color: Colors.white,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.01,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroButtonGhost extends StatefulWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _HeroButtonGhost({required this.label, required this.onTap});
-
-  @override
-  State<_HeroButtonGhost> createState() => _HeroButtonGhostState();
-}
-
-class _HeroButtonGhostState extends State<_HeroButtonGhost> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _hovered ? const Color(0xFF6B1233) : const Color.fromRGBO(36, 21, 18, 0.10),
-              width: 1.5,
-            ),
-          ),
-          child: Text(
-            widget.label,
-            style: GoogleFonts.manrope(
-              color: _hovered ? const Color(0xFF6B1233) : const Color(0xFF241512),
-              fontSize: 14.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.01,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatBadge extends StatelessWidget {
-  final String value;
-  final String label;
-  const _StatBadge(this.value, this.label);
-
-  @override
-  Widget build(BuildContext context) {
+    final compact = width < LandingLayout.tablet;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value, style: GoogleFonts.piazzolla(color: const Color(0xFF241512), fontSize: 26, fontWeight: FontWeight.w700)), // ink
-        Text(label, style: GoogleFonts.manrope(color: const Color(0xFF7A6A5C), fontSize: 11.5, fontWeight: FontWeight.w700)), // ink-soft
+        const SectionMarker('Reservas y gestión para la mesa tarijeña'),
+        const SizedBox(height: 22),
+        Semantics(
+          header: true,
+          child: Text(
+            'Tu restaurante, listo para recibir más comensales.',
+            style: LandingType.heading(size: compact ? 42 : 58),
+          ),
+        ),
+        const SizedBox(height: 24),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Text(
+            'Centraliza reservas, mesas y menú digital en una plataforma creada para restaurantes de Tarija.',
+            style: LandingType.bodyText(size: compact ? 17 : 19),
+          ),
+        ),
+        const SizedBox(height: 32),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            FilledButton.icon(
+              onPressed: widget.onRegister,
+              style: FilledButton.styleFrom(
+                backgroundColor: LandingPalette.wine,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(48, 52),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                textStyle: LandingType.bodyText(
+                  size: 16,
+                  weight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              icon: const Icon(Icons.storefront_outlined),
+              label: const Text('Registrar mi restaurante'),
+            ),
+            OutlinedButton(
+              onPressed: widget.onExplore,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: LandingPalette.wine,
+                side: const BorderSide(color: LandingPalette.wine),
+                minimumSize: const Size(48, 52),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                textStyle: LandingType.bodyText(
+                  size: 16,
+                  weight: FontWeight.w700,
+                ),
+              ),
+              child: const Text('Conocer la plataforma'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 36),
+        const Wrap(
+          spacing: 24,
+          runSpacing: 12,
+          children: [
+            _TrustPoint(
+              icon: Icons.schedule_rounded,
+              text: 'Reservas en tiempo real',
+            ),
+            _TrustPoint(
+              icon: Icons.phone_android_rounded,
+              text: 'Panel desde cualquier dispositivo',
+            ),
+          ],
+        ),
       ],
     );
   }
 }
 
-class _FloatingCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String subtitle;
-
-  const _FloatingCard({required this.icon, required this.iconColor, required this.title, required this.subtitle});
+class _HeroVisual extends StatelessWidget {
+  const _HeroVisual();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFCF6), // card
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromRGBO(36, 21, 18, 0.10)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color.fromRGBO(69, 11, 32, 0.10),
-            blurRadius: 50,
-            offset: Offset(0, 20),
+    return AspectRatio(
+      aspectRatio: 1.02,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: LandingPalette.wineDeep,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(96),
+                  topRight: Radius.circular(28),
+                  bottomLeft: Radius.circular(28),
+                  bottomRight: Radius.circular(96),
+                ),
+                border: Border.all(color: LandingPalette.gold, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x332A1020),
+                    blurRadius: 40,
+                    offset: Offset(0, 20),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(94),
+                  topRight: Radius.circular(26),
+                  bottomLeft: Radius.circular(26),
+                  bottomRight: Radius.circular(94),
+                ),
+                child: Semantics(
+                  image: true,
+                  label: 'Mesa preparada en un restaurante de ambiente cálido',
+                  child: Image.asset(
+                    'assets/restaurant_hero_optimized.jpg',
+                    fit: BoxFit.cover,
+                    width: 720,
+                    height: 720,
+                    cacheWidth: 960,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (_, _, _) =>
+                        const ColoredBox(color: LandingPalette.wineDeep),
+                  ),
+                ),
+              ),
+            ),
           ),
+          const Positioned(left: -16, bottom: 36, child: _ReservationCard()),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.manrope(color: const Color(0xFF241512), fontSize: 14, fontWeight: FontWeight.w700),
-              ),
-              Text(
-                subtitle,
-                style: GoogleFonts.manrope(color: const Color(0xFF7A6A5C), fontSize: 12, fontWeight: FontWeight.w500),
+    );
+  }
+}
+
+class _ReservationCard extends StatelessWidget {
+  const _ReservationCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label:
+          'Ejemplo: reserva confirmada para cuatro personas hoy a las ocho de la noche',
+      child: ExcludeSemantics(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 270),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: LandingPalette.card,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: LandingPalette.line),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x332A1020),
+                blurRadius: 24,
+                offset: Offset(0, 12),
               ),
             ],
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircleAvatar(
+                backgroundColor: Color(0xFFE4EEE3),
+                foregroundColor: LandingPalette.leaf,
+                child: Icon(Icons.check_rounded),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reserva confirmada',
+                    style: LandingType.bodyText(
+                      color: LandingPalette.ink,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    '4 personas · Hoy, 20:00',
+                    style: LandingType.bodyText(size: 14),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _TrustPoint extends StatelessWidget {
+  const _TrustPoint({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 20, color: LandingPalette.leaf),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: LandingType.bodyText(
+            size: 14,
+            color: LandingPalette.ink,
+            weight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

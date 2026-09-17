@@ -1,234 +1,207 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/widgets/admin/landing_tokens.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class LandingFooter extends StatelessWidget { const LandingFooter({super.key});
+class LandingFooter extends StatelessWidget {
+  const LandingFooter({this.onRegister, super.key});
+  final VoidCallback? onRegister;
+
+  Future<void> _open(Uri uri) async {
+    await launchUrl(uri, mode: LaunchMode.platformDefault);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF3A0A1B), // wine-dark
-      child: Column(
-        children: [
-          // Footer Main
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 60),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1180),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Brand
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 38,
-                                height: 38,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFC08A1E), // gold
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Icon(Icons.restaurant_menu, color: Colors.white, size: 20),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Mesa Chapaca',
-                                style: GoogleFonts.piazzolla(
-                                  fontSize: 20,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'La plataforma de reservas líder\npara restaurantes en Tarija, Bolivia.',
-                            style: GoogleFonts.manrope(
-                              fontSize: 15,
-                              color: Colors.white.withValues(alpha: 0.7),
-                              height: 1.7,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          Row(
-                            children: [
-                              _SocialBtn(Icons.facebook),
-                              const SizedBox(width: 12),
-                              _SocialBtn(Icons.camera_alt_outlined),
-                              const SizedBox(width: 12),
-                              _SocialBtn(Icons.language),
-                            ],
-                          ),
-                        ],
-                      ),
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontal = LandingLayout.horizontalPadding(width);
+    final compact = width < LandingLayout.tablet;
+    final brand = _FooterBrand(onRegister: onRegister);
+    final contact = _FooterContact(onOpen: _open);
+    
+    return ColoredBox(
+      color: LandingPalette.wineDeep,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontal,
+            compact ? 56 : 72,
+            horizontal,
+            28,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: LandingLayout.maxWidth,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (compact)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        brand,
+                        const SizedBox(height: 40),
+                        contact,
+                      ],
+                    )
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 6, child: brand),
+                        const SizedBox(width: 64),
+                        Expanded(flex: 4, child: contact),
+                      ],
                     ),
-                    const SizedBox(width: 48),
-                    // Links
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Plataforma', style: GoogleFonts.manrope(color: const Color(0xFFC08A1E), fontSize: 16, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 20),
-                          ..._footerLinks(['Cómo funciona', 'Beneficios', 'Restaurantes', 'Solicitar acceso']),
-                        ],
+                  const SizedBox(height: 56),
+                  const Divider(color: Color(0x44FFFFFF)),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    runSpacing: 8,
+                    spacing: 24,
+                    children: [
+                      Text(
+                        '© 2026 Mesa Chapaca. Todos los derechos reservados.',
+                        style: LandingType.bodyText(
+                          size: 14,
+                          color: const Color(0xFFCDBDC3),
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Soporte', style: GoogleFonts.manrope(color: const Color(0xFFC08A1E), fontSize: 16, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 20),
-                          ..._footerLinks(['Preguntas frecuentes', 'Contacto', 'Términos de uso', 'Privacidad']),
-                        ],
+                      Text(
+                        'Hecho en Tarija, Bolivia.',
+                        style: LandingType.bodyText(
+                          size: 14,
+                          color: const Color(0xFFCDBDC3),
+                        ),
                       ),
-                    ),
-                    // Contact
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Contacto', style: GoogleFonts.manrope(color: const Color(0xFFC08A1E), fontSize: 16, fontWeight: FontWeight.w800)),
-                          const SizedBox(height: 20),
-                          _ContactItem(Icons.location_on_outlined, 'Tarija, Bolivia'),
-                          const SizedBox(height: 14),
-                          _ContactItem(Icons.email_outlined, 'contacto@mesachapaca.bo'),
-                          const SizedBox(height: 14),
-                          _ContactItem(Icons.phone_outlined, '+591 4 6XX-XXXX'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
-          // Footer Bottom
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 60),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: Color.fromRGBO(255, 255, 255, 0.1))),
+        ),
+      ),
+    );
+  }
+}
+
+class _FooterBrand extends StatelessWidget {
+  const _FooterBrand({required this.onRegister});
+  final VoidCallback? onRegister;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          header: true,
+          child: Text(
+            'Una mejor mesa empieza con una mejor coordinación.',
+            style: LandingType.heading(size: 36, color: Colors.white),
+          ),
+        ),
+        const SizedBox(height: 18),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Text(
+            'Mesa Chapaca conecta restaurantes y comensales con una experiencia de reserva clara, cercana y hecha para Tarija.',
+            style: LandingType.bodyText(
+              size: 17,
+              color: const Color(0xFFD8CAD0),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '© 2026 Mesa Chapaca. Todos los derechos reservados.',
-                  style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
-                ),
-                Text(
-                  'Hecho en el valle de Tarija, Bolivia.',
-                  style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.5), fontSize: 13),
-                ),
-              ],
+          ),
+        ),
+        if (onRegister != null) ...[
+          const SizedBox(height: 28),
+          FilledButton(
+            onPressed: onRegister,
+            style: FilledButton.styleFrom(
+              backgroundColor: LandingPalette.gold,
+              foregroundColor: LandingPalette.ink,
+              minimumSize: const Size(48, 52),
+              textStyle: LandingType.bodyText(
+                size: 16,
+                color: LandingPalette.ink,
+                weight: FontWeight.w700,
+              ),
+            ),
+            child: const Text('Registrar mi restaurante'),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _FooterContact extends StatelessWidget {
+  const _FooterContact({required this.onOpen});
+  final Future<void> Function(Uri uri) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      label: 'Información de contacto',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Hablemos de tu restaurante',
+            style: LandingType.bodyText(
+              size: 18,
+              color: Colors.white,
+              weight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 18),
+          _ContactButton(
+            icon: Icons.email_outlined,
+            label: 'contacto@mesachapaca.bo',
+            onPressed: () =>
+                onOpen(Uri.parse('mailto:contacto@mesachapaca.bo')),
+          ),
+          const SizedBox(height: 8),
+          _ContactButton(
+            icon: Icons.location_on_outlined,
+            label: 'Tarija, Bolivia',
+            onPressed: () => onOpen(
+              Uri.parse('https://maps.google.com/?q=Tarija%2C+Bolivia'),
             ),
           ),
         ],
       ),
     );
   }
-
-  List<Widget> _footerLinks(List<String> links) {
-    return links.map((l) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(l, style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.7), fontSize: 15)),
-        )).toList();
-  }
 }
 
-class _SocialBtn extends StatelessWidget {
+class _ContactButton extends StatelessWidget {
+  const _ContactButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
   final IconData icon;
-  const _SocialBtn(this.icon);
+  final String label;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF3A2010)),
-        borderRadius: BorderRadius.circular(8),
+    return TextButton.icon(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFFF7EEF1),
+        minimumSize: const Size(48, 48),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
+        alignment: Alignment.centerLeft,
+        textStyle: LandingType.bodyText(size: 16, color: Colors.white),
       ),
-      child: Icon(icon, color: const Color(0x88FFFFFF), size: 18),
+      icon: Icon(icon, color: LandingPalette.gold),
+      label: Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
     );
   }
 }
-
-class _ContactItem extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _ContactItem(this.icon, this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color(0xFFC08A1E), size: 18),
-        const SizedBox(width: 12),
-        Text(text, style: GoogleFonts.manrope(color: Colors.white.withValues(alpha: 0.7), fontSize: 15)),
-      ],
-    );
-  }
-}
-
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-class SectionLabel extends StatelessWidget {
-  final String text;
-  const SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 16, height: 2, color: const Color(0xFFC1622E)),
-        const SizedBox(width: 8),
-        Text(
-          text.toUpperCase(),
-          style: GoogleFonts.manrope(
-            color: const Color(0xFF6B1233), // wine
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class SectionLabelDark extends StatelessWidget {
-  final String text;
-  const SectionLabelDark(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 16, height: 2, color: const Color(0xFFC1622E)),
-        const SizedBox(width: 8),
-        Text(
-          text.toUpperCase(),
-          style: GoogleFonts.manrope(
-            color: const Color(0xFFF5EEE0), // light paper
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-

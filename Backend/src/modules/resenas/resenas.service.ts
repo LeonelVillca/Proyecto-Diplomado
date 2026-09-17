@@ -6,6 +6,8 @@ import { CrearResenaDto } from './dto/crear-resena.dto';
 import { ActualizarResenaDto } from './dto/actualizar-resena.dto';
 import { Usuario } from '../usuarios/usuario.entity';
 import { Restaurante } from '../restaurante/restaurante.entity';
+import { RespuestaResena } from '../respuesta-resena/respuesta-resena.entity';
+import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 
 @Injectable()
 export class ResenasService {
@@ -16,6 +18,10 @@ export class ResenasService {
     private readonly usuariosRepo: Repository<Usuario>,
     @InjectRepository(Restaurante)
     private readonly restaurantesRepo: Repository<Restaurante>,
+    @InjectRepository(RespuestaResena)
+    private readonly respuestasRepo: Repository<RespuestaResena>,
+    @InjectRepository(UsuarioRol)
+    private readonly usuarioRolesRepo: Repository<UsuarioRol>,
   ) {}
 
   async crear(dto: CrearResenaDto): Promise<Resena> {
@@ -124,8 +130,15 @@ export class ResenasService {
       })));
   }
 
-  async actualizar(id: number, dto: ActualizarResenaDto): Promise<Resena> {
+  async actualizar(id: number, dto: ActualizarResenaDto, actorId?: number): Promise<Resena> {
     const resena = await this.buscarPorId(id);
+
+    const respuesta = await this.respuestasRepo.findOne({
+      where: { resena: { id } },
+    });
+    if (respuesta && !(await this.esAdminSistema(actorId))) {
+      throw new BadRequestException('No puedes editar una reseña que ya recibió respuesta.');
+    }
 
     if (dto.comentario !== undefined) resena.comentario = dto.comentario;
     if (dto.calificacion !== undefined) resena.calificacion = dto.calificacion;
@@ -133,8 +146,23 @@ export class ResenasService {
     return this.resenasRepo.save(resena);
   }
 
-  async eliminar(id: number): Promise<void> {
+  async eliminar(id: number, actorId?: number): Promise<void> {
     const resena = await this.buscarPorId(id);
+    const respuesta = await this.respuestasRepo.findOne({
+      where: { resena: { id } },
+    });
+    if (respuesta && !(await this.esAdminSistema(actorId))) {
+      throw new BadRequestException('No puedes eliminar una reseña que ya recibió respuesta.');
+    }
     await this.resenasRepo.remove(resena);
+  }
+
+  private async esAdminSistema(actorId?: number): Promise<boolean> {
+    if (!actorId) return false;
+    const asignaciones = await this.usuarioRolesRepo.find({
+      where: { idUsuario: actorId },
+      relations: { rol: true },
+    });
+    return asignaciones.some((asignacion) => asignacion.rol.nombre === 'admin_sistema');
   }
 }
