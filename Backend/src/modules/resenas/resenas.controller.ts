@@ -47,6 +47,7 @@ export class ResenasController {
     return this.resenasService.listarTodas();
   }
 
+  @CheckClientOwnership('resena')
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number) {
     return this.resenasService.buscarPorId(id);

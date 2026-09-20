@@ -1,15 +1,13 @@
 import 'dart:convert';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/widgets/admin/landing_navbar.dart';
-import 'package:frontend/widgets/admin/solicitud_hero.dart';
 import 'package:frontend/widgets/admin/landing_footer.dart';
+import 'package:frontend/widgets/admin/landing_tokens.dart';
 import 'package:frontend/screens/admin/public/landing_screen.dart';
-import 'package:frontend/screens/admin/auth/widgets/auth_components.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class SolicitudRegistroScreen extends StatefulWidget {
@@ -33,9 +31,33 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
   int _currentStep = 1;
   PlatformFile? _nitFile;
   PlatformFile? _ciFile;
-
   bool _isLoading = false;
   bool _isSuccess = false;
+  bool _isResending = false;
+
+  Future<void> _reenviarVerificacion() async {
+    if (_isResending) return;
+    setState(() => _isResending = true);
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud/reenviar-verificacion'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'correo': _correoCtrl.text.trim()}),
+      );
+      if (!mounted) return;
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Si tu solicitud está pendiente, recibirás un enlace. Tras un envío reciente, espera cinco minutos; revisa también spam.'),
+        ));
+      } else {
+        _mostrarError('No se pudo solicitar otro enlace. Intenta más tarde.');
+      }
+    } catch (_) {
+      _mostrarError('No se pudo conectar con el servidor.');
+    } finally {
+      if (mounted) setState(() => _isResending = false);
+    }
+  }
 
   Future<void> _enviarSolicitud() async {
     if (!_formKey.currentState!.validate()) return;
@@ -43,15 +65,10 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
       _mostrarError('Debes adjuntar ambos documentos (NIT y CI).');
       return;
     }
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
       final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud');
       var request = http.MultipartRequest('POST', url);
-
       request.fields['nombreUsuario'] = _nombreCtrl.text.trim();
       request.fields['apellidoUsuario'] = _apellidoCtrl.text.trim();
       request.fields['correoUsuario'] = _correoCtrl.text.trim();
@@ -59,63 +76,53 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
       request.fields['celularContacto'] = _telefonoCtrl.text.trim();
       request.fields['descripcion'] = _descripcionCtrl.text.trim();
       request.fields['nitNegocio'] = _nitCtrl.text.trim();
-
       if (_nitFile != null) {
-        final nitBytes = _nitFile!.bytes;
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'documentoNit',
-            nitBytes!,
-            filename: _nitFile!.name,
-            contentType: MediaType('application', 'pdf'),
-          ),
-        );
+        final ext = _nitFile!.extension?.toLowerCase();
+        request.files.add(http.MultipartFile.fromBytes(
+          'documentoNit', _nitFile!.bytes!,
+          filename: _nitFile!.name,
+          contentType: ext == 'pdf' ? MediaType('application', 'pdf') : MediaType('image', ext == 'jpg' ? 'jpeg' : ext!),
+        ));
       }
       if (_ciFile != null) {
-        final ciBytes = _ciFile!.bytes;
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'documentoCi',
-            ciBytes!,
-            filename: _ciFile!.name,
-            contentType: MediaType('application', 'pdf'),
-          ),
-        );
+        final ext = _ciFile!.extension?.toLowerCase();
+        request.files.add(http.MultipartFile.fromBytes(
+          'documentoCi', _ciFile!.bytes!,
+          filename: _ciFile!.name,
+          contentType: ext == 'pdf' ? MediaType('application', 'pdf') : MediaType('image', ext == 'jpg' ? 'jpeg' : ext!),
+        ));
       }
-
       final streamedResponse = await request.send();
       final res = await http.Response.fromStream(streamedResponse);
-
       if (res.statusCode == 201) {
-        setState(() {
-          _isSuccess = true;
-        });
+        setState(() => _isSuccess = true);
       } else {
         _mostrarError('Error al enviar la solicitud. Intenta nuevamente.');
       }
     } catch (e) {
-      _mostrarError('Error de red. Verifica tu conexión.');
+      _mostrarError('Error de red. Verifica tu conexion.');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   Future<void> _seleccionarArchivo(bool esNit) async {
     FilePickerResult? result = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
       withData: true,
     );
-
     if (result != null && result.files.isNotEmpty) {
+      final picked = result.files.first;
+      if (picked.size > 5 * 1024 * 1024 ||
+          picked.bytes == null ||
+          !['pdf', 'jpg', 'jpeg', 'png'].contains(picked.extension?.toLowerCase())) {
+        _mostrarError('El documento debe ser PDF, JPG o PNG y no superar 5 MB.');
+        return;
+      }
       setState(() {
-        if (esNit) {
-          _nitFile = result.files.first;
-        } else {
-          _ciFile = result.files.first;
-        }
+        if (esNit) { _nitFile = picked; }
+        else { _ciFile = picked; }
       });
     }
   }
@@ -140,438 +147,434 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5EEE0), // paper
-      body: CustomScrollView(
-        slivers: [
-          const SliverToBoxAdapter(child: LandingNavbar(showLinks: false)),
-          const SliverToBoxAdapter(child: SolicitudHero()),
-          SliverToBoxAdapter(
-            child: Center(
-              child: _isSuccess ? _buildSuccess() : _buildForm(),
-            ),
-          ),
-          const SliverFillRemaining(
-            hasScrollBody: false,
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: LandingFooter(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSuccess() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      margin: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      backgroundColor: LandingPalette.paper,
+      body: Stack(
         children: [
-          const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
-          const SizedBox(height: 24),
-          const SizedBox(height: 24),
-          Text(
-            'Solicitud enviada con éxito',
-            style: GoogleFonts.piazzolla(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF6B1233), // wine
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Hemos recibido tus datos. Nuestro equipo se pondrá en contacto contigo pronto.',
-            style: GoogleFonts.manrope(
-              fontSize: 16,
-              color: const Color(0xFF7A6A5C),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminLandingScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6B1233),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+          CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 100),
               ),
-            ),
-            child: Text(
-              'Volver al inicio',
-              style: GoogleFonts.manrope(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
+              SliverToBoxAdapter(
+                child: Center(child: _isSuccess ? _buildSuccess() : _buildFormSection()),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForm() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 800),
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(50),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Comience hoy mismo.',
-                style: GoogleFonts.piazzolla(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF241512), // ink
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Un miembro de nuestro equipo se pondrá en contacto con usted en breve para hablar sobre sus necesidades.',
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  color: const Color(0xFF7A6A5C), // ink-soft
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-
-              Row(
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      height: 4,
-                      color: const Color(0xFF6B1233),
-                    ), // wine
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      height: 4,
-                      color: _currentStep == 2
-                          ? const Color(0xFF6B1233)
-                          : const Color(0xFFEAE0C9),
-                    ), // wine : paper-deep
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              Text(
-                '¡Empecemos!',
-                style: GoogleFonts.piazzolla(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF241512), // ink
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _currentStep == 1
-                    ? 'Cuéntanos un poco sobre ti para que podamos personalizar tu experiencia.'
-                    : 'Necesitamos algunos documentos para validar tu restaurante.',
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  color: const Color(0xFF7A6A5C), // ink-soft
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              if (_currentStep == 1) ...[
-                AuthLoginField(
-                  label: 'NOMBRE DE PILA *',
-                  hintText: 'Tu nombre',
-                  icon: Icons.person_outline,
-                  controller: _nombreCtrl,
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 24),
-                AuthLoginField(
-                  label: 'APELLIDO *',
-                  hintText: 'Tu apellido',
-                  icon: Icons.person_outline,
-                  controller: _apellidoCtrl,
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 24),
-                AuthLoginField(
-                  label: 'CORREO ELECTRÓNICO *',
-                  hintText: 'tunombre@correo.com',
-                  icon: Icons.email_outlined,
-                  controller: _correoCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) =>
-                      v!.isEmpty || !v.contains('@') ? 'Correo inválido' : null,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AuthLoginField(
-                        label: 'RESTAURANTE *',
-                        hintText: 'Nombre de tu negocio',
-                        icon: Icons.storefront_outlined,
-                        controller: _restauranteCtrl,
-                        validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: AuthLoginField(
-                        label: 'TELÉFONO *',
-                        hintText: 'Número de celular',
-                        icon: Icons.phone_outlined,
-                        controller: _telefonoCtrl,
-                        keyboardType: TextInputType.phone,
-                        validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                AuthLoginField(
-                  label: 'MENSAJE O DESCRIPCIÓN (Opcional)',
-                  hintText: 'Cuéntanos un poco sobre tu restaurante...',
-                  icon: Icons.description_outlined,
-                  controller: _descripcionCtrl,
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 40),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: SizedBox(
-                    width: 200,
-                    child: AuthSubmitButton(
-                      label: 'Siguiente',
-                      loading: false,
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          setState(() => _currentStep = 2);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              ] else ...[
-                AuthLoginField(
-                  label: 'NIT DEL NEGOCIO *',
-                  hintText: 'Ingresa tu NIT',
-                  icon: Icons.badge_outlined,
-                  controller: _nitCtrl,
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                const SizedBox(height: 32),
-
-                Text(
-                  'DOCUMENTO NIT (Solo PDF) *',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF8C7A6B),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: () => _seleccionarArchivo(true),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _nitFile != null
-                            ? const Color(0xFF6B1233)
-                            : const Color(0xFFDCD6CC),
-                        width: _nitFile != null ? 1.6 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.upload_file_outlined,
-                          color: _nitFile != null
-                              ? const Color(0xFF6B1233)
-                              : const Color(0xFF8C7A6B),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _nitFile != null
-                                ? _nitFile!.name
-                                : 'Haz clic aquí para seleccionar el archivo',
-                            style: GoogleFonts.manrope(
-                              color: _nitFile != null
-                                  ? const Color(0xFF241512)
-                                  : const Color(0xFF8C7A6B),
-                              fontWeight: _nitFile != null
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        if (_nitFile != null)
-                          const Icon(
-                            Icons.check_circle,
-                            color: Color(0xFF5C7A52),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                Text(
-                  'CÉDULA DE IDENTIDAD (Solo PDF) *',
-                  style: GoogleFonts.manrope(
-                    color: const Color(0xFF8C7A6B),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                InkWell(
-                  onTap: () => _seleccionarArchivo(false),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: _ciFile != null
-                            ? const Color(0xFF6B1233)
-                            : const Color(0xFFDCD6CC),
-                        width: _ciFile != null ? 1.6 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.upload_file_outlined,
-                          color: _ciFile != null
-                              ? const Color(0xFF6B1233)
-                              : const Color(0xFF8C7A6B),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _ciFile != null
-                                ? _ciFile!.name
-                                : 'Haz clic aquí para seleccionar el archivo',
-                            style: GoogleFonts.manrope(
-                              color: _ciFile != null
-                                  ? const Color(0xFF241512)
-                                  : const Color(0xFF8C7A6B),
-                              fontWeight: _ciFile != null
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        if (_ciFile != null)
-                          const Icon(
-                            Icons.check_circle,
-                            color: Color(0xFF5C7A52),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton.icon(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() => _currentStep = 1),
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 14,
-                        color: Color(0xFF7A6A5C),
-                      ),
-                      label: Text(
-                        'Atrás',
-                        style: GoogleFonts.manrope(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF7A6A5C),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 220,
-                      child: AuthSubmitButton(
-                        label: 'Enviar Solicitud',
-                        loading: _isLoading,
-                        onPressed: _enviarSolicitud,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-
-              const SizedBox(height: 40),
-              Text(
-                'Al hacer clic en «Próximo», acepta nuestra Política de privacidad.\n\nTambién acepta recibir comunicaciones de marketing de Mesa Chapaca sobre noticias, eventos, promociones y boletines mensuales. Puede cancelar su suscripción a los correos electrónicos en cualquier momento.',
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  color: const Color(0xFF7A6A5C), // ink-soft
-                  height: 1.5,
-                ),
-              ),
+              const SliverToBoxAdapter(child: LandingFooter()),
             ],
           ),
+          Positioned(
+            top: 18,
+            left: 20,
+            right: 20,
+            child: LandingNavbar(
+              showLinks: false,
+              pageTitle: 'Registro de restaurante',
+              onLogin: () {
+                if (Navigator.canPop(context)) Navigator.pop(context);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+  Widget _buildSuccess() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: LandingPalette.card,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: LandingPalette.line),
+            boxShadow: const [BoxShadow(color: Color(0x10000000), blurRadius: 40, offset: Offset(0, 16))],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(52),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: LandingPalette.leafSoft,
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Icon(Icons.check_rounded, color: LandingPalette.leaf, size: 42),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Text('Solicitud recibida',
+                    style: LandingType.heading(size: 30, color: LandingPalette.ink),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 14),
+                Text(
+                  'Si la solicitud puede procesarse, recibirás un enlace por correo. Confírmalo para que podamos revisarla. Si no aparece, revisa la carpeta de spam.',
+                  style: LandingType.bodyText(size: 15),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: _isResending ? null : _reenviarVerificacion,
+                  child: Text(_isResending ? 'Enviando...' : 'Reenviar enlace de confirmación'),
+                ),
+                const SizedBox(height: 36),
+                FilledButton(
+                  onPressed: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminLandingScreen()),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: LandingPalette.wine,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 52),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    textStyle: LandingType.bodyText(size: 16, weight: FontWeight.w700, color: Colors.white),
+                  ),
+                  child: const Text('Volver al inicio'),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildFormSection() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final width = constraints.maxWidth;
+      final h = LandingLayout.horizontalPadding(width);
+      return Padding(
+        padding: EdgeInsets.fromLTRB(h, 20, h, 64),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: LandingPalette.card,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: LandingPalette.line),
+                boxShadow: const [BoxShadow(color: Color(0x10000000), blurRadius: 40, offset: Offset(0, 16))],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(width < 600 ? 28 : 52),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildFormHeader(),
+                      const SizedBox(height: 32),
+                      _buildStepIndicator(),
+                      const SizedBox(height: 36),
+                      if (_currentStep == 1) _buildStep1(width) else _buildStep2(),
+                      const SizedBox(height: 36),
+                      _buildLegalNote(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildFormHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionMarker('Formulario de registro'),
+        const SizedBox(height: 16),
+        Text(
+          _currentStep == 1 ? 'Cuentanos sobre ti!' : 'Documentacion del negocio.',
+          style: LandingType.heading(size: 34, color: LandingPalette.ink),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          _currentStep == 1
+              ? 'Comparte tu informacion para que podamos personalizar tu experiencia en Mesa Chapaca.'
+              : 'Necesitamos estos documentos para validar y activar tu restaurante en la plataforma.',
+          style: LandingType.bodyText(size: 15),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepIndicator() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          _StepDot(number: 1, active: true, done: _currentStep == 2),
+          _StepLine(active: _currentStep == 2),
+          _StepDot(number: 2, active: _currentStep == 2, done: false),
+        ]),
+        const SizedBox(height: 10),
+        Text(
+          _currentStep == 1 ? 'Paso 1 de 2  Datos personales' : 'Paso 2 de 2  Documentos legales',
+          style: LandingType.bodyText(size: 13, color: LandingPalette.muted, weight: FontWeight.w600),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep1(double width) {
+    final compact = width < 600;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (compact) ...[
+          _LandingField(label: 'Nombre', hint: 'Tu nombre de pila', icon: Icons.person_outline_rounded, controller: _nombreCtrl, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
+          const SizedBox(height: 20),
+          _LandingField(label: 'Apellido', hint: 'Tu apellido', icon: Icons.person_outline_rounded, controller: _apellidoCtrl, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
+        ] else
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: _LandingField(label: 'Nombre', hint: 'Tu nombre de pila', icon: Icons.person_outline_rounded, controller: _nombreCtrl, validator: (v) => v!.isEmpty ? 'Campo requerido' : null)),
+            const SizedBox(width: 20),
+            Expanded(child: _LandingField(label: 'Apellido', hint: 'Tu apellido', icon: Icons.person_outline_rounded, controller: _apellidoCtrl, validator: (v) => v!.isEmpty ? 'Campo requerido' : null)),
+          ]),
+        const SizedBox(height: 20),
+        _LandingField(label: 'Correo electronico', hint: 'tunombre@correo.com', icon: Icons.email_outlined, controller: _correoCtrl, keyboardType: TextInputType.emailAddress, validator: (v) => v!.isEmpty || !v.contains('@') ? 'Correo invalido' : null),
+        const SizedBox(height: 20),
+        if (compact) ...[
+          _LandingField(label: 'Restaurante', hint: 'Nombre de tu negocio', icon: Icons.storefront_outlined, controller: _restauranteCtrl, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
+          const SizedBox(height: 20),
+          _LandingField(label: 'Telefono', hint: 'Numero de celular', icon: Icons.phone_outlined, controller: _telefonoCtrl, keyboardType: TextInputType.phone, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
+        ] else
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: _LandingField(label: 'Restaurante', hint: 'Nombre de tu negocio', icon: Icons.storefront_outlined, controller: _restauranteCtrl, validator: (v) => v!.isEmpty ? 'Campo requerido' : null)),
+            const SizedBox(width: 20),
+            Expanded(child: _LandingField(label: 'Telefono', hint: 'Numero de celular', icon: Icons.phone_outlined, controller: _telefonoCtrl, keyboardType: TextInputType.phone, validator: (v) => v!.isEmpty ? 'Campo requerido' : null)),
+          ]),
+        const SizedBox(height: 20),
+        _LandingField(label: 'Descripcion (opcional)', hint: 'Cuentanos un poco sobre tu restaurante...', icon: Icons.notes_rounded, controller: _descripcionCtrl, maxLines: 3),
+        const SizedBox(height: 32),
+        Align(
+          alignment: Alignment.centerRight,
+          child: _LandingButton(
+            label: 'Siguiente paso',
+            trailingIcon: Icons.arrow_forward_rounded,
+            onPressed: () {
+              if (_formKey.currentState!.validate()) setState(() => _currentStep = 2);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep2() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _LandingField(label: 'NIT del negocio', hint: 'Ingresa tu numero de NIT', icon: Icons.badge_outlined, controller: _nitCtrl, validator: (v) => v!.isEmpty ? 'Campo requerido' : null),
+        const SizedBox(height: 28),
+        _FilePickerField(label: 'Documento NIT', sublabel: 'PDF, JPG o PNG', file: _nitFile, onTap: () => _seleccionarArchivo(true)),
+        const SizedBox(height: 20),
+        _FilePickerField(label: 'Cedula de identidad', sublabel: 'PDF, JPG o PNG', file: _ciFile, onTap: () => _seleccionarArchivo(false)),
+        const SizedBox(height: 36),
+        Row(children: [
+          _LandingBackButton(onPressed: _isLoading ? null : () => setState(() => _currentStep = 1)),
+          const SizedBox(width: 16),
+          Expanded(child: _LandingButton(label: 'Enviar solicitud', loading: _isLoading, onPressed: _enviarSolicitud)),
+        ]),
+      ],
+    );
+  }
+
+  Widget _buildLegalNote() {
+    return Text(
+      'Al enviar este formulario, aceptas nuestra Politica de privacidad y autorizas a Mesa Chapaca a contactarte sobre tu solicitud y noticias relevantes.',
+      style: LandingType.bodyText(size: 12, color: const Color(0xFF9A8A80), height: 1.6),
+    );
+  }
+}
+
+// ── Subwidgets ──────────────────────────────────────────────────────────────
+
+class _StepDot extends StatelessWidget {
+  const _StepDot({required this.number, required this.active, required this.done});
+  final int number;
+  final bool active;
+  final bool done;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = done || active ? LandingPalette.wine : LandingPalette.paperDeep;
+    final fg = done || active ? Colors.white : LandingPalette.muted;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: 32, height: 32,
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(16)),
+      alignment: Alignment.center,
+      child: done
+          ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+          : Text('$number', style: LandingType.bodyText(size: 14, color: fg, weight: FontWeight.w700)),
+    );
+  }
+}
+
+class _StepLine extends StatelessWidget {
+  const _StepLine({required this.active});
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: 2,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: active ? LandingPalette.wine : LandingPalette.paperDeep,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    ),
+  );
+}
+
+class _LandingField extends StatelessWidget {
+  const _LandingField({
+    required this.label, required this.hint,
+    required this.icon, required this.controller,
+    this.validator, this.keyboardType, this.maxLines = 1,
+  });
+  final String label, hint;
+  final IconData icon;
+  final TextEditingController controller;
+  final String? Function(String?)? validator;
+  final TextInputType? keyboardType;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: LandingType.bodyText(size: 13, color: LandingPalette.ink, weight: FontWeight.w700)),
+      const SizedBox(height: 8),
+      TextFormField(
+        controller: controller,
+        validator: validator,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        style: LandingType.bodyText(size: 15, color: LandingPalette.ink),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: LandingType.bodyText(size: 15, color: const Color(0xFFAA9A90)),
+          prefixIcon: Icon(icon, size: 20, color: LandingPalette.muted),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          filled: true,
+          fillColor: LandingPalette.paper,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: LandingPalette.line)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: LandingPalette.line)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: LandingPalette.wine, width: 1.5)),
+          errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: LandingPalette.terracotta)),
+          focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: LandingPalette.terracotta, width: 1.5)),
+          errorStyle: LandingType.bodyText(size: 12, color: LandingPalette.terracotta),
+        ),
+      ),
+    ],
+  );
+}
+
+class _FilePickerField extends StatelessWidget {
+  const _FilePickerField({required this.label, required this.sublabel, required this.file, required this.onTap});
+  final String label, sublabel;
+  final PlatformFile? file;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasFile = file != null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: LandingType.bodyText(size: 13, color: LandingPalette.ink, weight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            decoration: BoxDecoration(
+              color: hasFile ? const Color(0x066B1233) : LandingPalette.paper,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: hasFile ? LandingPalette.wine : LandingPalette.line, width: hasFile ? 1.5 : 1),
+            ),
+            child: Row(children: [
+              Icon(hasFile ? Icons.insert_drive_file_outlined : Icons.upload_file_outlined, size: 22, color: hasFile ? LandingPalette.wine : LandingPalette.muted),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  hasFile ? file!.name : 'Seleccionar archivo',
+                  style: LandingType.bodyText(size: 14, color: hasFile ? LandingPalette.ink : LandingPalette.muted, weight: hasFile ? FontWeight.w600 : FontWeight.w400),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (!hasFile)
+                  Text(sublabel, style: LandingType.bodyText(size: 12, color: const Color(0xFFAA9A90))),
+              ])),
+              if (hasFile)
+                DecoratedBox(
+                  decoration: BoxDecoration(color: LandingPalette.leafSoft, borderRadius: BorderRadius.circular(20)),
+                  child: const Padding(padding: EdgeInsets.all(4), child: Icon(Icons.check_rounded, size: 16, color: LandingPalette.leaf)),
+                ),
+            ]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LandingButton extends StatelessWidget {
+  const _LandingButton({required this.label, required this.onPressed, this.trailingIcon, this.loading = false});
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? trailingIcon;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) => FilledButton(
+    onPressed: loading ? null : onPressed,
+    style: FilledButton.styleFrom(
+      backgroundColor: LandingPalette.wine,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: const Color(0x806B1233),
+      minimumSize: const Size(0, 52),
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      textStyle: LandingType.bodyText(size: 15, weight: FontWeight.w700, color: Colors.white),
+    ),
+    child: loading
+        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+        : Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(label),
+            if (trailingIcon != null) ...[const SizedBox(width: 8), Icon(trailingIcon, size: 18)],
+          ]),
+  );
+}
+
+class _LandingBackButton extends StatelessWidget {
+  const _LandingBackButton({required this.onPressed});
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => TextButton.icon(
+    onPressed: onPressed,
+    style: TextButton.styleFrom(
+      foregroundColor: LandingPalette.muted,
+      minimumSize: const Size(0, 52),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      textStyle: LandingType.bodyText(size: 14, weight: FontWeight.w700, color: LandingPalette.muted),
+    ),
+    icon: const Icon(Icons.arrow_back_rounded, size: 18),
+    label: const Text('Atras'),
+  );
 }

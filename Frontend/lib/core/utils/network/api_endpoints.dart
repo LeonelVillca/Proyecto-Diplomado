@@ -14,6 +14,16 @@ class ApiEndpoints {
   static const Environment currentEnv = Environment.dispositivoFisico;
 
   static String get baseUrl {
+    const configured = String.fromEnvironment('API_BASE_URL');
+    if (configured.isNotEmpty) {
+      final uri = Uri.parse(configured);
+      if (!uri.hasAuthority || uri.userInfo.isNotEmpty || uri.hasQuery || uri.hasFragment ||
+          (kReleaseMode && uri.scheme != 'https') || !['http', 'https'].contains(uri.scheme)) {
+        throw StateError('API_BASE_URL debe ser una URL HTTPS válida en producción');
+      }
+      return configured.replaceFirst(RegExp(r'/$'), '');
+    }
+    if (kReleaseMode) throw StateError('Falta --dart-define=API_BASE_URL para producción');
     // En web (Chrome corriendo en la misma PC) el navegador alcanza el
     // backend por localhost; los aliases 10.0.2.2 / IP WiFi solo aplican
     // cuando la app corre en un emulador o dispositivo móvil.

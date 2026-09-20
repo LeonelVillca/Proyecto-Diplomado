@@ -12,6 +12,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
+import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
 import { UbicacionService } from './ubicacion.service';
 import { CrearUbicacionDto } from './dto/crear-ubicacion.dto';
 import { ActualizarUbicacionDto } from './dto/actualizar-ubicacion.dto';
@@ -22,7 +23,8 @@ export class UbicacionController {
   constructor(private readonly ubicacionService: UbicacionService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
+  @CheckOwnership('ubicacion')
   @Roles('admin_restaurante', 'admin_sistema')
   crear(@Body() dto: CrearUbicacionDto): Promise<Ubicacion> {
     return this.ubicacionService.crear(dto);
@@ -46,7 +48,8 @@ export class UbicacionController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
+  @CheckOwnership('ubicacion')
   @Roles('admin_restaurante', 'admin_sistema')
   actualizar(
     @Param('id', ParseIntPipe) id: number,
@@ -56,7 +59,8 @@ export class UbicacionController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
+  @CheckOwnership('ubicacion')
   @Roles('admin_restaurante', 'admin_sistema')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.ubicacionService.eliminar(id);

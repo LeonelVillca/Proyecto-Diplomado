@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // ─── Paleta del sistema (compartida) ─────────────────────────────────────────
-const Color authWine = Color(0xFF6B1233);
-const Color authWineSoft = Color(0xFF8C3350);
-const Color authWineDeep = Color(0xFF3A0A1B);
-const Color authGold = Color(0xFFD4AF37);
-const Color authGoldAccent = Color(0xFFB0832B);
-const Color authPaper = Color(0xFFF5EEE0);
-const Color authCard = Color(0xFFFFFCF6);
-const Color authInk = Color(0xFF241512);
-const Color authInkSoft = Color(0xFF7A6A5C);
-const Color authInkFaint = Color(0xFF8C7A6B);
+const Color authWine = Color(0xFFBA5631); // Rust orange replacing wine
+const Color authWineSoft = Color(0xFFD4693D);
+const Color authWineDeep = Color(0xFF8A3E21);
+const Color authGold = Color(0xFFBA5631); // Using rust orange for accents too
+const Color authGoldAccent = Color(0xFFBA5631);
+const Color authPaper = Color(0xFFF6F2EB); // Beige background
+const Color authCard = Colors.white;
+const Color authInk = Color(0xFF2A2825);
+const Color authInkSoft = Color(0xFF7D7A75);
+const Color authInkFaint = Color(0xFFB5AFA6);
 const Color authSage = Color(0xFF5C7A52);
 
 // ─── Lado izquierdo: imagen + capa editorial ─────────────────────────────────
@@ -208,24 +208,14 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              widget.icon,
-              size: 15,
-              color: _active ? authGoldAccent : authInkFaint,
-            ),
-            const SizedBox(width: 7),
-            Text(
-              widget.label,
-              style: GoogleFonts.manrope(
-                color: _active ? authWine : authInkSoft,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.15,
-              ),
-            ),
-          ],
+        Text(
+          widget.label,
+          style: GoogleFonts.manrope(
+            color: authInk,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.15,
+          ),
         ),
         const SizedBox(height: 9),
         MouseRegion(
@@ -270,21 +260,10 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
                   fontWeight: FontWeight.w500,
                   fontSize: 15,
                 ),
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.only(left: 14, right: 10),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: (_active ? authGoldAccent : authWine).withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      color: _active ? authGoldAccent : authWine,
-                      size: 17,
-                    ),
-                  ),
+                prefixIcon: Icon(
+                  widget.icon,
+                  color: _active ? authGoldAccent : authInkSoft,
+                  size: 20,
                 ),
                 suffixIcon: widget.suffixIcon,
                 filled: true,
@@ -347,7 +326,7 @@ class _AuthSubmitButtonState extends State<AuthSubmitButton> {
             gradient: widget.disabled
                 ? null
                 : LinearGradient(
-                    colors: _hovered && !widget.loading ? [authWineSoft, authWine] : [authWine, const Color(0xFF55102A)],
+                    colors: _hovered && !widget.loading ? [authWineSoft, authWine] : [authWine, authWineDeep],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),

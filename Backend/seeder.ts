@@ -22,6 +22,14 @@ import { Menu } from './src/modules/menu/menu.entity';
 import { Plato } from './src/modules/plato/plato.entity';
 
 async function runSeeder() {
+  if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DESTRUCTIVE_SEED !== 'true') {
+    throw new Error('Seeder bloqueado. Solo en desarrollo con ALLOW_DESTRUCTIVE_SEED=true.');
+  }
+  const demoPassword = process.env.SEED_DEMO_PASSWORD;
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!process.env.DB_PASSWORD || !demoPassword || !adminPassword || demoPassword.length < 12 || adminPassword.length < 12) {
+    throw new Error('Configura DB_PASSWORD y contraseñas de seed de al menos 12 caracteres.');
+  }
   console.log('Iniciando Seeding Masivo...');
 
   const dataSource = new DataSource({
@@ -29,7 +37,7 @@ async function runSeeder() {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
     username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '12345',
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME || 'restaurantes_tarija',
     entities: [__dirname + '/src/**/*.entity.{ts,js}'],
     synchronize: false,
@@ -80,11 +88,11 @@ async function runSeeder() {
   let superAdminRol = await rolRepo.findOneBy({ nombre: 'admin_sistema' });
   if (!superAdminRol) superAdminRol = await rolRepo.save(rolRepo.create({ nombre: 'admin_sistema' }));
 
-  const defaultPasswordHash = await bcrypt.hash('MesaChapaca2026!', 10);
-  const reporteCredenciales = ["=== CREDENCIALES ===\nPass Global: MesaChapaca2026!\n"];
+  const defaultPasswordHash = await bcrypt.hash(demoPassword, 12);
+  const reporteCredenciales = ['=== CUENTAS DE PRUEBA (contraseñas solo en variables de entorno) ==='];
   
   // Crear Super Admin
-  const superAdminPasswordHash = await bcrypt.hash('admin123', 10);
+  const superAdminPasswordHash = await bcrypt.hash(adminPassword, 12);
   const superUsuario = await usuarioRepo.save(usuarioRepo.create({ 
     nombre: 'Leonel', 
     apellido: 'Villca', 
@@ -104,7 +112,7 @@ async function runSeeder() {
     idRol: superAdminRol.id 
   }));
   
-  reporteCredenciales.push(`=== SUPER ADMIN ===\nEmail: admin@mesachapaca.com\nPass: admin123\n`);
+  reporteCredenciales.push('=== SUPER ADMIN === Email: admin@mesachapaca.com');
   
   console.log('Generando datos...');
   for (let i = 0; i < 20; i++) {

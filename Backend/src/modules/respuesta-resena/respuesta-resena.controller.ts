@@ -25,7 +25,7 @@ export class RespuestaResenaController {
   constructor(private readonly respuestaResenaService: RespuestaResenaService) {}
 
   @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('resena') // Valida que el restaurante de la reseña sea propiedad de este admin
+  @CheckOwnership('respuesta_resena')
   @Post()
   crear(@Body() dto: CrearRespuestaResenaDto, @Req() req: any) {
     if (dto.idUsuarioRestaurante !== req.user.id) {
@@ -52,7 +52,7 @@ export class RespuestaResenaController {
   }
 
   @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('resena') // OwnershipGuard sabe buscar el restaurante a partir de respuesta_resena/:id
+  @CheckOwnership('respuesta_resena')
   @Patch(':id')
   actualizar(
     @Param('id', ParseIntPipe) id: number,
@@ -62,7 +62,7 @@ export class RespuestaResenaController {
   }
 
   @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('resena')
+  @CheckOwnership('respuesta_resena')
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number) {
     return this.respuestaResenaService.eliminar(id);

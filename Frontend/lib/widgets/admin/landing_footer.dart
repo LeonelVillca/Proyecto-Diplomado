@@ -1,10 +1,26 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:frontend/widgets/admin/landing_tokens.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LandingFooter extends StatelessWidget {
-  const LandingFooter({this.onRegister, super.key});
+  const LandingFooter({
+    this.onRegister,
+    this.onBenefits,
+    this.onHowItWorks,
+    this.onProfile,
+    this.onRestaurants,
+    this.onFaq,
+    this.onAccess,
+    super.key,
+  });
+
   final VoidCallback? onRegister;
+  final VoidCallback? onBenefits;
+  final VoidCallback? onHowItWorks;
+  final VoidCallback? onProfile;
+  final VoidCallback? onRestaurants;
+  final VoidCallback? onFaq;
+  final VoidCallback? onAccess;
 
   Future<void> _open(Uri uri) async {
     await launchUrl(uri, mode: LaunchMode.platformDefault);
@@ -14,70 +30,123 @@ class LandingFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final horizontal = LandingLayout.horizontalPadding(width);
-    final compact = width < LandingLayout.tablet;
-    final brand = _FooterBrand(onRegister: onRegister);
-    final contact = _FooterContact(onOpen: _open);
-    
-    return ColoredBox(
-      color: LandingPalette.wineDeep,
+    final columns = width < 640 ? 1 : (width < 1020 ? 2 : 4);
+
+    final parts = <Widget>[
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset(
+                  'assets/icon_app.png',
+                  width: 38,
+                  height: 38,
+                  fit: BoxFit.cover,
+                  cacheWidth: 76,
+                  filterQuality: FilterQuality.medium,
+                  errorBuilder: (context, e, s) => DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: LandingPalette.wine,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const SizedBox(width: 38, height: 38),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Mesa Chapaca',
+                style: LandingType.heading(
+                  size: 18,
+                  color: LandingPalette.ink,
+                  weight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: Text(
+              'La plataforma que llena mesas y ordena salones. Hecha con carino en Tarija, Bolivia, para los restaurantes de todo el pais.',
+              style: LandingType.bodyText(size: 14, height: 1.55),
+            ),
+          ),
+        ],
+      ),
+      _FooterColumn(
+        title: 'Producto',
+        links: [
+          _FooterLink('Beneficios', onBenefits),
+          _FooterLink('Como funciona', onHowItWorks),
+          _FooterLink('Tu perfil', onProfile),
+          _FooterLink('Preguntas', onFaq),
+        ],
+      ),
+      _FooterColumn(
+        title: 'Restaurantes',
+        links: [
+          _FooterLink('Historias', onRestaurants),
+          _FooterLink('Registrar mi restaurante', onAccess ?? onRegister),
+          _FooterLink('Solicitar acceso', onAccess ?? onRegister),
+        ],
+      ),
+      _FooterColumn(
+        title: 'Contacto',
+        links: [
+          _FooterLink('hola@mesachapaca.bo', () => _open(Uri.parse('mailto:hola@mesachapaca.bo'))),
+          _FooterLink('+591 700 00000', () => _open(Uri.parse('tel:+591700000000'))),
+          _FooterLink('Tarija, Bolivia', () => _open(Uri.parse('https://maps.google.com/?q=Tarija,Bolivia'))),
+        ],
+      ),
+    ];
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: LandingPalette.paper,
+        border: Border(top: BorderSide(color: LandingPalette.line)),
+      ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            horizontal,
-            compact ? 56 : 72,
-            horizontal,
-            28,
-          ),
+          padding: EdgeInsets.fromLTRB(horizontal, 56, horizontal, 34),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: LandingLayout.maxWidth,
-              ),
+              constraints: const BoxConstraints(maxWidth: LandingLayout.maxWidth),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (compact)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        brand,
-                        const SizedBox(height: 40),
-                        contact,
-                      ],
-                    )
-                  else
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 6, child: brand),
-                        const SizedBox(width: 64),
-                        Expanded(flex: 4, child: contact),
-                      ],
-                    ),
-                  const SizedBox(height: 56),
-                  const Divider(color: Color(0x44FFFFFF)),
-                  const SizedBox(height: 20),
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    runSpacing: 8,
-                    spacing: 24,
-                    children: [
-                      Text(
-                        '© 2026 Mesa Chapaca. Todos los derechos reservados.',
-                        style: LandingType.bodyText(
-                          size: 14,
-                          color: const Color(0xFFCDBDC3),
-                        ),
-                      ),
-                      Text(
-                        'Hecho en Tarija, Bolivia.',
-                        style: LandingType.bodyText(
-                          size: 14,
-                          color: const Color(0xFFCDBDC3),
-                        ),
-                      ),
-                    ],
+                  _ResponsiveGrid(columns: columns, gap: 40, children: parts),
+                  const SizedBox(height: 44),
+                  const Divider(height: 1, color: LandingPalette.line),
+                  const SizedBox(height: 26),
+                  LayoutBuilder(
+                    builder: (_, box) => box.maxWidth < 560
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '2025 Mesa Chapaca. Todos los derechos reservados.',
+                                style: LandingType.bodyText(size: 13),
+                              ),
+                              const SizedBox(height: 8),
+                              Text('Terminos - Privacidad', style: LandingType.bodyText(size: 13)),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Text(
+                                '2025 Mesa Chapaca. Todos los derechos reservados.',
+                                style: LandingType.bodyText(size: 13),
+                              ),
+                              const Spacer(),
+                              Text('Terminos - Privacidad', style: LandingType.bodyText(size: 13)),
+                            ],
+                          ),
                   ),
                 ],
               ),
@@ -89,119 +158,93 @@ class LandingFooter extends StatelessWidget {
   }
 }
 
-class _FooterBrand extends StatelessWidget {
-  const _FooterBrand({required this.onRegister});
-  final VoidCallback? onRegister;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Semantics(
-          header: true,
-          child: Text(
-            'Una mejor mesa empieza con una mejor coordinación.',
-            style: LandingType.heading(size: 36, color: Colors.white),
-          ),
-        ),
-        const SizedBox(height: 18),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 620),
-          child: Text(
-            'Mesa Chapaca conecta restaurantes y comensales con una experiencia de reserva clara, cercana y hecha para Tarija.',
-            style: LandingType.bodyText(
-              size: 17,
-              color: const Color(0xFFD8CAD0),
-            ),
-          ),
-        ),
-        if (onRegister != null) ...[
-          const SizedBox(height: 28),
-          FilledButton(
-            onPressed: onRegister,
-            style: FilledButton.styleFrom(
-              backgroundColor: LandingPalette.gold,
-              foregroundColor: LandingPalette.ink,
-              minimumSize: const Size(48, 52),
-              textStyle: LandingType.bodyText(
-                size: 16,
-                color: LandingPalette.ink,
-                weight: FontWeight.w700,
-              ),
-            ),
-            child: const Text('Registrar mi restaurante'),
-          ),
-        ],
-      ],
-    );
-  }
+class _FooterLink {
+  const _FooterLink(this.label, this.onTap);
+  final String label;
+  final VoidCallback? onTap;
 }
 
-class _FooterContact extends StatelessWidget {
-  const _FooterContact({required this.onOpen});
-  final Future<void> Function(Uri uri) onOpen;
+class _FooterColumn extends StatelessWidget {
+  const _FooterColumn({required this.title, required this.links});
+  final String title;
+  final List<_FooterLink> links;
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      container: true,
-      label: 'Información de contacto',
-      child: Column(
+  Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Hablemos de tu restaurante',
+            title.toUpperCase(),
             style: LandingType.bodyText(
-              size: 18,
-              color: Colors.white,
+              size: 12,
               weight: FontWeight.w700,
+              color: LandingPalette.ink,
             ),
           ),
-          const SizedBox(height: 18),
-          _ContactButton(
-            icon: Icons.email_outlined,
-            label: 'contacto@mesachapaca.bo',
-            onPressed: () =>
-                onOpen(Uri.parse('mailto:contacto@mesachapaca.bo')),
-          ),
-          const SizedBox(height: 8),
-          _ContactButton(
-            icon: Icons.location_on_outlined,
-            label: 'Tarija, Bolivia',
-            onPressed: () => onOpen(
-              Uri.parse('https://maps.google.com/?q=Tarija%2C+Bolivia'),
+          const SizedBox(height: 12),
+          for (final link in links)
+            TextButton(
+              onPressed: link.onTap,
+              style: TextButton.styleFrom(
+                foregroundColor: LandingPalette.ink,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: LandingType.bodyText(
+                  size: 14.5,
+                  color: LandingPalette.ink,
+                  weight: FontWeight.w500,
+                  height: 1.3,
+                ),
+              ),
+              child: Text(link.label),
             ),
-          ),
         ],
-      ),
-    );
-  }
+      );
 }
 
-class _ContactButton extends StatelessWidget {
-  const _ContactButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
+class _ResponsiveGrid extends StatelessWidget {
+  const _ResponsiveGrid({
+    required this.columns,
+    required this.gap,
+    required this.children,
   });
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
+  final int columns;
+  final double gap;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: const Color(0xFFF7EEF1),
-        minimumSize: const Size(48, 48),
-        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-        alignment: Alignment.centerLeft,
-        textStyle: LandingType.bodyText(size: 16, color: Colors.white),
-      ),
-      icon: Icon(icon, color: LandingPalette.gold),
-      label: Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
-    );
+    if (columns == 1) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i != children.length - 1) SizedBox(height: gap),
+          ],
+        ],
+      );
+    }
+    final rows = <Widget>[];
+    for (int i = 0; i < children.length; i += columns) {
+      final end = (i + columns).clamp(0, children.length);
+      final rowItems = children.sublist(i, end);
+      rows.add(Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (int j = 0; j < rowItems.length; j++) ...[
+            Expanded(child: rowItems[j]),
+            if (j != rowItems.length - 1) SizedBox(width: gap),
+          ],
+          for (int j = rowItems.length; j < columns; j++) ...[
+            SizedBox(width: gap),
+            const Expanded(child: SizedBox()),
+          ],
+        ],
+      ));
+      if (i + columns < children.length) rows.add(SizedBox(height: gap));
+    }
+    return Column(children: rows);
   }
 }

@@ -6,6 +6,9 @@ abstract final class LandingPalette {
   static const wineHover = Color(0xFF842344);
   static const wineDeep = Color(0xFF310916);
   static const gold = Color(0xFFB98324);
+  static const terracotta = Color(0xFFC45B3C);
+  static const sun = Color(0xFFE7A84B);
+  static const leafSoft = Color(0xFFE4EEE3);
   static const paper = Color(0xFFF7F1E7);
   static const paperDeep = Color(0xFFE7DDCC);
   static const card = Color(0xFFFFFCF7);
@@ -15,21 +18,21 @@ abstract final class LandingPalette {
 }
 
 abstract final class LandingType {
-  static const display = 'BodoniModa';
+  static const display = 'Karla';
   static const body = 'Karla';
 
   static TextStyle heading({
     double size = 40,
     Color color = LandingPalette.ink,
-    FontWeight weight = FontWeight.w600,
-    double height = 1.08,
+    FontWeight weight = FontWeight.w700,
+    double height = 1.06,
   }) => TextStyle(
     fontFamily: display,
     fontSize: size,
     fontWeight: weight,
     height: height,
     color: color,
-    letterSpacing: -0.4,
+    letterSpacing: -1.15,
   );
 
   static TextStyle bodyText({

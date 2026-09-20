@@ -60,6 +60,9 @@ export class DocumentoAdjuntoController {
       console.log(`[DocumentoAdjunto] Archivo no encontrado en disco: ${filePath}`);
       return res.status(404).json({ message: 'El documento solicitado no existe' });
     }
+    res.setHeader('Content-Disposition', 'attachment');
+    res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+    res.setHeader('Cache-Control', 'private, no-store');
     return res.sendFile(filePath);
   }
 

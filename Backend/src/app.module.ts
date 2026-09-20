@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { AuditInterceptor } from './core/security/audit.interceptor';
 
 import databaseConfig from './core/config/database.config';
+import { AUTH_RATE_LIMITS, validateSecurityEnvironment } from './core/config/security.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
@@ -23,7 +25,6 @@ import { PlatoModule } from './modules/plato/plato.module';
 import { ImagenModule } from './modules/imagen/imagen.module';
 import { CategoriaSoporteModule } from './modules/categoria-soporte/categoria-soporte.module';
 import { SoporteModule } from './modules/soporte/soporte.module';
-import { ReportesModule } from './modules/reportes/reportes.module';
 import { NotificacionModule } from './modules/notificacion/notificacion.module';
 import { VisitaModule } from './modules/visita/visita.module';
 import { ReservasModule } from './modules/reservas/reservas.module';
@@ -39,16 +40,11 @@ import { MailModule } from './modules/mail/mail.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      validate: validateSecurityEnvironment,
       load: [databaseConfig],
     }),
     // VUL-019: Rate limiting global — 100 peticiones por minuto por IP
-    ThrottlerModule.forRoot([
-      {
-        name: 'global',
-        ttl: 60000,  // 60 segundos
-        limit: 100,
-      },
-    ]),
+    ThrottlerModule.forRoot(AUTH_RATE_LIMITS),
     UsuariosModule,
     RolesModule,
     PermisosModule,
@@ -65,7 +61,6 @@ import { MailModule } from './modules/mail/mail.module';
     ImagenModule,
     CategoriaSoporteModule,
     SoporteModule,
-    ReportesModule,
     NotificacionModule,
     VisitaModule,
     ReservasModule,
@@ -85,6 +80,7 @@ import { MailModule } from './modules/mail/mail.module';
   controllers: [AppController],
   providers: [
     AppService,
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
     // Aplicar ThrottlerGuard globalmente a todos los endpoints
     {
       provide: APP_GUARD,

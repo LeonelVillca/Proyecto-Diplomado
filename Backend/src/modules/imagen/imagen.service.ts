@@ -1,4 +1,6 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Imagen } from './imagen.entity';
@@ -9,9 +11,7 @@ import { Restaurante } from '../restaurante/restaurante.entity';
 
 @Injectable()
 export class ImagenService {
-  upload(file: Express.Multer.File, filename: string) {
-    throw new Error('Method not implemented.');
-  }
+  private readonly logger = new Logger(ImagenService.name);
   constructor(
     @InjectRepository(Imagen)
     private readonly imagenRepository: Repository<Imagen>,
@@ -128,5 +128,17 @@ export class ImagenService {
   async eliminar(id: number): Promise<void> {
     const imagen = await this.buscarPorId(id);
     await this.imagenRepository.delete(imagen.id);
+    // Solo archivos locales con el formato que genera el servidor.
+    const match = /^\/publico\/restaurantes\/(\d+)\/(galeria|platos)\/([0-9a-f-]{36}\.webp)$/i.exec(imagen.url);
+    if (match) {
+      const file = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', match[1], match[2], match[3]);
+      try {
+        await fs.unlink(file);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          this.logger.error('No se pudo borrar el archivo de imagen local.', (error as Error).message);
+        }
+      }
+    }
   }
 }

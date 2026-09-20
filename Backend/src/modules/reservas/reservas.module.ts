@@ -6,9 +6,10 @@ import { Reserva } from './reserva.entity';
 import { Usuario } from '../usuarios/usuario.entity';
 import { Mesa } from '../mesa/mesa.entity';
 import { ReservasGateway } from './reservas.gateway';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Reserva, Usuario, Mesa])],
+  imports: [AuthModule, TypeOrmModule.forFeature([Reserva, Usuario, Mesa])],
   controllers: [ReservasController],
   providers: [ReservasService, ReservasGateway],
   exports: [ReservasService],

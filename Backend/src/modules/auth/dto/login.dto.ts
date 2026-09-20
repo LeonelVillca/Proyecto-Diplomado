@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, MaxLength } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -8,5 +8,6 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
+  @MaxLength(72, { message: 'La contraseña no puede superar 72 caracteres' })
   password: string;
 }

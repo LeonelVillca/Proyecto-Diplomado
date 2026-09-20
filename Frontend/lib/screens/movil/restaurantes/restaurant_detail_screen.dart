@@ -54,19 +54,44 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       backgroundColor: AppColors.paper,
       body: Stack(
         children: [
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // 1. Foto de portada (hero)
-              SliverToBoxAdapter(
-                child: _HeroSection(restaurant: widget.restaurant),
+          // La imagen se desplaza y desaparece; el título queda fijado en la barra.
+          NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: 300,
+                collapsedHeight: 72,
+                backgroundColor: AppColors.paper,
+                elevation: innerBoxIsScrolled ? 2 : 0,
+                automaticallyImplyLeading: false,
+                leading: _RoundBtn(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => Navigator.pop(context),
+                ),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _RoundBtn(icon: Icons.share_rounded, onTap: () {}),
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Text(
+                    widget.restaurant.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: innerBoxIsScrolled ? AppColors.ink : Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  titlePadding: const EdgeInsetsDirectional.only(start: 58, end: 54, bottom: 14),
+                  background: _HeroSection(restaurant: widget.restaurant),
+                ),
               ),
-              
-              // 2. Hoja de informacion (superpuesta)
-              SliverToBoxAdapter(
-                child: Transform.translate(
-                  offset: const Offset(0, -30),
-                  child: Container(
+            ],
+            body: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Container(
                     decoration: BoxDecoration(
                       color: AppColors.paper,
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -99,16 +124,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                               const SizedBox(width: 8),
                               _buildOpenBadge(),
                             ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        
-                        // Titulo
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 22),
-                          child: Text(
-                            widget.restaurant.name,
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 26, color: AppColors.ink),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -171,13 +186,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                         const SizedBox(height: 120),
                       ],
                     ),
-                  ),
-                ),
               ),
-            ],
+            ),
           ),
 
-          // 4. Barra de reserva
+          // Barra de reserva fija sobre el contenido inferior.
           Positioned(
             left: 0,
             right: 0,
@@ -274,24 +287,6 @@ class _HeroSectionState extends State<_HeroSection> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.center, colors: [Colors.black54, Colors.transparent]),
-            ),
-          ),
-          
-          SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _RoundBtn(icon: Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
-                  Row(
-                    children: [
-                      _RoundBtn(icon: Icons.share_rounded, onTap: () {}),
-                    ],
-                  ),
-                ],
-              ),
             ),
           ),
           

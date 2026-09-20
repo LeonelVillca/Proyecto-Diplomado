@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';

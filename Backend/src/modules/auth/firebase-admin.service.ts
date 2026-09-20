@@ -60,11 +60,14 @@ export class FirebaseAdminService {
 
     let decodedToken: DecodedIdToken;
     try {
-      decodedToken = await getAuth(this.app).verifyIdToken(idToken);
+      decodedToken = await getAuth(this.app).verifyIdToken(idToken, true);
     } catch {
       throw new UnauthorizedException('Token de Google inválido o expirado');
     }
 
+    if (decodedToken.firebase?.sign_in_provider !== 'google.com' || decodedToken.email_verified !== true) {
+      throw new UnauthorizedException('Se requiere una cuenta de Google con correo verificado');
+    }
     return {
       uid: decodedToken.uid,
       correo:

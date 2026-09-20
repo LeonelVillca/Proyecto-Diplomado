@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/models/admin/menu_admin_model.dart';
@@ -71,10 +71,9 @@ class MenuAdminService {
   }
 
   Future<String> subirFotoPlato(Uint8List bytes, String filename, int idRestaurante) async {
-    final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/plato/upload-foto');
+    final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/plato/restaurante/$idRestaurante/foto');
     final req = http.MultipartRequest('POST', url)
       ..headers['Authorization'] = 'Bearer $_token'
-      ..fields['idRestaurante'] = idRestaurante.toString()
       ..files.add(http.MultipartFile.fromBytes(
         'file',
         bytes,

@@ -50,7 +50,15 @@ export class ReservasService {
       estado: 'pendiente',
     });
 
-    const guardada = await this.reservasRepo.save(reserva);
+    let guardada: Reserva;
+    try {
+      guardada = await this.reservasRepo.save(reserva);
+    } catch (error) {
+      if (this.isSlotConflict(error)) {
+        throw new BadRequestException('La mesa no está disponible en la fecha y hora seleccionadas');
+      }
+      throw error;
+    }
     
     // Emitir únicamente los datos necesarios para actualizar las interfaces.
     // No se expone la entidad completa (usuario, correo u otras relaciones).
@@ -64,7 +72,7 @@ export class ReservasService {
       numeroPersonas: guardada.numeroPersonas,
       estado: guardada.estado,
     };
-    this.reservasGateway.emitNuevaReserva(payload);
+    await this.reservasGateway.emitNuevaReserva(payload);
     
     return guardada;
   }
@@ -108,27 +116,35 @@ export class ReservasService {
       reserva.mesa = mesa;
     }
 
-    if (dto.estado && dto.estado !== reserva.estado) {
-        reserva.estado = dto.estado;
-        
-        // Emite evento con idRestaurante
-        this.reservasGateway.emitActualizacionReserva(
-          reserva.id, 
-          reserva.estado, 
-          reserva.mesa.restaurante.id
-        );
-    }
+    const changed = dto.estado && dto.estado !== reserva.estado;
+    if (dto.estado) reserva.estado = dto.estado;
     
     if (dto.fecha) reserva.fecha = dto.fecha;
     if (dto.hora) reserva.hora = dto.hora;
     if (dto.numeroPersonas) reserva.numeroPersonas = dto.numeroPersonas;
     if (dto.comentarios !== undefined) reserva.comentarios = dto.comentarios;
 
-    return this.reservasRepo.save(reserva);
+    let saved: Reserva;
+    try {
+      saved = await this.reservasRepo.save(reserva);
+    } catch (error) {
+      if (this.isSlotConflict(error)) {
+        throw new BadRequestException('La mesa no está disponible en la fecha y hora seleccionadas');
+      }
+      throw error;
+    }
+    if (changed) await this.reservasGateway.emitActualizacionReserva(saved.id, saved.estado, saved.mesa.restaurante.id, saved.usuario.id);
+    return saved;
   }
 
   async eliminar(id: number): Promise<void> {
     const reserva = await this.buscarPorId(id);
     await this.reservasRepo.remove(reserva);
+  }
+
+  private isSlotConflict(error: unknown): boolean {
+    const dbError = error as { code?: string; constraint?: string; driverError?: { code?: string; constraint?: string } };
+    const cause = dbError?.driverError ?? dbError;
+    return cause?.code === '23505' && cause?.constraint === 'uq_reserva_mesa_horario_activa';
   }
 }

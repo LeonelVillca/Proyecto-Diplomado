@@ -19,10 +19,24 @@ export class MailService {
     });
   }
 
+  async enviarVerificacionSolicitud(correoDestino: string, token: string): Promise<void> {
+    const apiBase = this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000';
+    const url = new URL('/api/v1/solicitud/verificar-correo', apiBase);
+    url.searchParams.set('token', token);
+    await this.transporter.sendMail({
+      from: this.configService.get<string>('MAIL_FROM'),
+      to: correoDestino,
+      subject: 'Confirma tu solicitud - Mesa Chapaca',
+      text: `Confirma tu correo para que podamos revisar tu solicitud: ${url.toString()}\nEl enlace vence en 24 horas. Si no hiciste la solicitud, ignora este correo.`,
+      html: `<p>Para que podamos revisar tu solicitud, confirma tu correo:</p><p><a href="${url.toString()}">Confirmar correo</a></p><p>El enlace vence en 24 horas. Si no hiciste la solicitud, ignora este correo.</p>`,
+    });
+  }
+
   async enviarInvitacion(correoDestino: string, token: string): Promise<void> {
     const from = this.configService.get<string>('MAIL_FROM');
     // Para entornos locales usamos el puerto por defecto de Flutter Web, en producción sería el dominio real
-    const url = `http://localhost:62532/#/crear-contrasena?token=${token}`; 
+    const frontend = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:62532';
+    const url = `${new URL(frontend).origin}/#/crear-contrasena?token=${encodeURIComponent(token)}`;
 
     const html = `
       <div style="background-color: #F5EEE0; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">

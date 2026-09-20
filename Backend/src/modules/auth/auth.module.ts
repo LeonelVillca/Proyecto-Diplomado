@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
+import { jwtSecret } from '../../core/config/security.config';
 import { PassportModule } from '@nestjs/passport';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { CuentasAuthModule } from '../cuentas-auth/cuentas-auth.module';
@@ -18,11 +19,10 @@ import { FirebaseAdminService } from './firebase-admin.service';
       global: true,
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') ?? '7d';
         return {
-          secret:
-            configService.get<string>('JWT_SECRET') ?? 'secreto-diplomado',
-          signOptions: { expiresIn: expiresIn as JwtSignOptions['expiresIn'] },
+          secret: jwtSecret(configService),
+          signOptions: { expiresIn: '1h', algorithm: 'HS256', issuer: 'mesa-chapaca', audience: 'mesa-chapaca-app' },
+          verifyOptions: { algorithms: ['HS256'], issuer: 'mesa-chapaca', audience: 'mesa-chapaca-app' },
         };
       },
     }),
@@ -32,6 +32,6 @@ import { FirebaseAdminService } from './firebase-admin.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard, FirebaseAdminService],
-  exports: [JwtAuthGuard],
+  exports: [JwtAuthGuard, JwtStrategy],
 })
 export class AuthModule {}

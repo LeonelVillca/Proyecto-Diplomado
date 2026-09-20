@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/perfil_restaurante_model.dart';
@@ -14,7 +14,6 @@ import 'package:frontend/screens/admin/reservas/gestion_reservas_screen.dart';
 import 'package:frontend/screens/admin/resenas/gestion_resenas_screen.dart';
 import 'package:frontend/screens/admin/perfil/perfil_restaurante_screen.dart';
 import 'package:frontend/screens/admin/admin_restaurante/soporte_restaurante_screen.dart';
-import 'package:frontend/screens/admin/admin_restaurante/reportes_restaurante_screen.dart';
 
 class AdminRestauranteDashboard extends StatefulWidget {
   const AdminRestauranteDashboard({super.key});

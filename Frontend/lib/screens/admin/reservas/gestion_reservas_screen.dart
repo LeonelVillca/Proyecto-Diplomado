@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
@@ -21,11 +21,14 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
   int? _idRestaurante;
   List<ReservaAdminModel> _reservas = [];
   io.Socket? _socket;
+  String? _socketToken;
   String _filtroEstado = 'todas';
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    AuthScope.of(context);
+    if (_idRestaurante != null) _conectarSocket();
     if (_isInit) {
       _cargarDatos();
       _isInit = false;
@@ -40,10 +43,15 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
   }
 
   void _conectarSocket() {
-    final token = AuthScope.of(context).token;
+    final token = AuthScope.of(context, listen: false).token;
+    if (token == _socketToken && _socket != null) return;
+    _socket?.dispose();
+    _socketToken = token;
+    if (token == null) { _socket = null; return; }
     _socket = io.io(ApiEndpoints.baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
+      'forceNew': true,
       'auth': {'token': token},
       'extraHeaders': {'Authorization': 'Bearer $token'}
     });

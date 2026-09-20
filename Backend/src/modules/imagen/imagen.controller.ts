@@ -24,17 +24,20 @@ export class ImagenController {
   constructor(private readonly imagenService: ImagenService) {}
 
   @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('restaurante')
+  @CheckOwnership('imagen')
   @Post()
   crear(@Body() dto: CrearImagenDto): Promise<Imagen> {
     return this.imagenService.crear(dto);
   }
 
+  @Roles('admin_sistema')
   @Get()
   listarTodos(): Promise<Imagen[]> {
     return this.imagenService.listarTodos();
   }
 
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('imagen')
   @Get('plato/:idPlato')
   listarPorPlato(
     @Param('idPlato', ParseIntPipe) idPlato: number,
@@ -42,6 +45,8 @@ export class ImagenController {
     return this.imagenService.listarPorPlato(idPlato);
   }
 
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('imagen')
   @Get('restaurante/:idRestaurante')
   listarPorRestaurante(
     @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
@@ -49,13 +54,15 @@ export class ImagenController {
     return this.imagenService.listarPorRestaurante(idRestaurante);
   }
 
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('imagen')
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Imagen> {
     return this.imagenService.buscarPorId(id);
   }
 
   @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('restaurante')
+  @CheckOwnership('imagen')
   @Patch(':id')
   actualizar(
     @Param('id', ParseIntPipe) id: number,
@@ -65,7 +72,7 @@ export class ImagenController {
   }
 
   @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('restaurante')
+  @CheckOwnership('imagen')
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.imagenService.eliminar(id);

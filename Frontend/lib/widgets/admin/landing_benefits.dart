@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/widgets/admin/landing_footer.dart';
+import 'package:frontend/widgets/admin/landing_showcase.dart';
 import 'package:frontend/widgets/admin/landing_tokens.dart';
 
 class LandingBenefits extends StatelessWidget {
@@ -24,6 +25,7 @@ class LandingBenefits extends StatelessWidget {
       children: [
         _HowItWorks(key: howKey),
         _Benefits(key: benefitsKey, onRegister: onRegister),
+        LandingShowcase(onRegister: onRegister),
         _RestaurantStories(key: restaurantsKey),
         const _ProofStrip(),
         LandingFooter(key: contactKey, onRegister: onRegister),

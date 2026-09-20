@@ -1,9 +1,8 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:frontend/widgets/admin/landing_tokens.dart';
 
-class LandingNavbar extends StatelessWidget {
+class LandingNavbar extends StatefulWidget {
   const LandingNavbar({
     this.onBenefits,
     this.onHowItWorks,
@@ -12,6 +11,7 @@ class LandingNavbar extends StatelessWidget {
     this.onLogin,
     this.onRegister,
     this.showLinks = true,
+    this.pageTitle,
     super.key,
   });
 
@@ -22,6 +22,18 @@ class LandingNavbar extends StatelessWidget {
   final VoidCallback? onLogin;
   final VoidCallback? onRegister;
   final bool showLinks;
+  final String? pageTitle;
+
+  @override
+  State<LandingNavbar> createState() => _LandingNavbarState();
+}
+
+class _LandingNavbarState extends State<LandingNavbar> {
+  bool _menuOpen = false;
+
+  void _toggleMenu() {
+    setState(() => _menuOpen = !_menuOpen);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,55 +41,123 @@ class LandingNavbar extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final compact = width < LandingLayout.desktop;
-        return ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: Container(
-              height: 80,
-              padding: EdgeInsets.symmetric(
-                horizontal: LandingLayout.horizontalPadding(width),
-              ),
-              decoration: const BoxDecoration(
-                color: Color(0xEDF7F1E7),
-                border: Border(bottom: BorderSide(color: LandingPalette.line)),
-              ),
-              child: Semantics(
-                container: true,
-                label: 'Navegación principal',
-                child: Row(
-                  children: [
-                    const _Brand(),
-                    const Spacer(),
-                    if (showLinks && !compact) ...[
-                      _NavAction(label: 'Beneficios', onPressed: onBenefits),
-                      _NavAction(
-                        label: 'Cómo funciona',
-                        onPressed: onHowItWorks,
-                      ),
-                      _NavAction(
-                        label: 'Restaurantes',
-                        onPressed: onRestaurants,
-                      ),
-                      _NavAction(label: 'Contacto', onPressed: onContact),
-                      const SizedBox(width: 12),
-                      _LoginButton(onPressed: onLogin),
-                      const SizedBox(width: 10),
-                      _RegisterButton(onPressed: onRegister),
-                    ] else if (showLinks) ...[
-                      if (width >= 900)
-                        _LoginButton(onPressed: onLogin),
-                      if (width >= 900)
-                        const SizedBox(width: 8),
-                      _MenuButton(
-                        onBenefits: onBenefits,
-                        onHowItWorks: onHowItWorks,
-                        onRestaurants: onRestaurants,
-                        onContact: onContact,
-                        onLogin: onLogin,
-                        onRegister: onRegister,
-                      ),
+        final mobile = width <= 640;
+        
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1080),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: EdgeInsets.fromLTRB(22, 10, mobile ? 8 : 12, 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(242), // ~0.95 alpha
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: LandingPalette.line.withAlpha(230)),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 4)),
                     ],
-                  ],
+                  ),
+                  child: Row(
+                    children: [
+                      const _Brand(compact: true),
+                      if (widget.showLinks) ...[
+                        // Modo landing completo: links de navegacion + botones auth
+                        if (!mobile) ...[
+                          const Spacer(),
+                          if (!compact)
+                            _NavLinks(
+                              onBenefits: widget.onBenefits,
+                              onHowItWorks: widget.onHowItWorks,
+                              onRestaurants: widget.onRestaurants,
+                              onContact: widget.onContact,
+                            ),
+                          const Spacer(),
+                          if (!compact)
+                            TextButton(
+                              onPressed: widget.onLogin,
+                              style: TextButton.styleFrom(
+                                foregroundColor: LandingPalette.ink,
+                                textStyle: LandingType.bodyText(size: 15, weight: FontWeight.w600),
+                              ),
+                              child: const Text('Iniciar sesion'),
+                            ),
+                          const SizedBox(width: 4),
+                          FilledButton(
+                            onPressed: widget.onRegister,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: LandingPalette.wine,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 24),
+                              textStyle: LandingType.bodyText(size: 15, weight: FontWeight.w600, color: Colors.white),
+                            ),
+                            child: Text(compact ? 'Registrar' : 'Registrar mi restaurante'),
+                          ),
+                        ] else ...[
+                          const Spacer(),
+                          FilledButton(
+                            onPressed: widget.onRegister,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: LandingPalette.wine,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              textStyle: LandingType.bodyText(size: 15, weight: FontWeight.w600, color: Colors.white),
+                            ),
+                            child: const Text('Registrar'),
+                          ),
+                          const SizedBox(width: 2),
+                          IconButton(
+                            onPressed: _toggleMenu,
+                            icon: Icon(
+                              _menuOpen ? Icons.close : Icons.menu,
+                              color: LandingPalette.ink,
+                              size: 24,
+                            ),
+                          ),
+                        ],
+                      ] else ...[
+                        // Modo pagina interna: solo badge de titulo + boton volver
+                        const SizedBox(width: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: LandingPalette.wine.withAlpha(15),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: LandingPalette.wine.withAlpha(40)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(color: LandingPalette.wine, shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 7),
+                              Text(
+                                widget.pageTitle ?? 'Mesa Chapaca',
+                                style: LandingType.bodyText(size: 12, color: LandingPalette.wine, weight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: widget.onLogin,
+                          icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                          label: const Text('Volver al inicio'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: LandingPalette.muted,
+                            textStyle: LandingType.bodyText(size: 14, weight: FontWeight.w600),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -89,210 +169,108 @@ class LandingNavbar extends StatelessWidget {
 }
 
 class _Brand extends StatelessWidget {
-  const _Brand();
+  const _Brand({this.compact = false});
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      image: true,
-      label: 'Mesa Chapaca',
-      child: ExcludeSemantics(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                'assets/icon_app.png',
-                width: 42,
-                height: 42,
-                fit: BoxFit.cover,
-                cacheWidth: 84,
-                filterQuality: FilterQuality.medium,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            'assets/icon_app.png',
+            width: compact ? 36 : 42,
+            height: compact ? 36 : 42,
+            fit: BoxFit.cover,
+            cacheWidth: compact ? 72 : 84,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, __, ___) => DecoratedBox(
+              decoration: BoxDecoration(
+                color: LandingPalette.wine,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: SizedBox(
+                width: compact ? 36 : 42,
+                height: compact ? 36 : 42,
               ),
             ),
-            const SizedBox(width: 10),
-            Text(
-              'Mesa Chapaca',
-              style: LandingType.heading(size: 19, weight: FontWeight.w700),
-            ),
-          ],
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _NavAction extends StatelessWidget {
-  const _NavAction({required this.label, required this.onPressed});
-  final String label;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: LandingPalette.ink,
-        minimumSize: const Size(48, 48),
-        textStyle: LandingType.bodyText(size: 15, weight: FontWeight.w600),
-      ),
-      child: Text(label),
-    );
-  }
-}
-
-class _LoginButton extends StatelessWidget {
-  const _LoginButton({required this.onPressed});
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: LandingPalette.wine,
-        minimumSize: const Size(48, 48),
-        side: const BorderSide(color: LandingPalette.wine),
-        textStyle: LandingType.bodyText(size: 15, weight: FontWeight.w700),
-      ),
-      child: const Text('Iniciar sesión'),
-    );
-  }
-}
-
-class _RegisterButton extends StatelessWidget {
-  const _RegisterButton({required this.onPressed});
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: LandingPalette.wine,
-        foregroundColor: Colors.white,
-        minimumSize: const Size(48, 48),
-        textStyle: LandingType.bodyText(
-          size: 15,
-          weight: FontWeight.w700,
-          color: Colors.white,
+        const SizedBox(width: 10),
+        Text(
+          'Mesa Chapaca',
+          style: LandingType.heading(
+            size: compact ? 18 : 20,
+            weight: FontWeight.w700,
+            color: LandingPalette.ink,
+          ),
         ),
-      ),
-      child: const Text('Registrar restaurante'),
+      ],
     );
   }
 }
 
-class _MenuButton extends StatelessWidget {
-  const _MenuButton({
-    required this.onBenefits,
-    required this.onHowItWorks,
-    required this.onRestaurants,
-    required this.onContact,
-    required this.onLogin,
-    required this.onRegister,
-  });
-
+class _NavLinks extends StatelessWidget {
+  const _NavLinks({this.onBenefits, this.onHowItWorks, this.onRestaurants, this.onContact});
   final VoidCallback? onBenefits;
   final VoidCallback? onHowItWorks;
   final VoidCallback? onRestaurants;
   final VoidCallback? onContact;
-  final VoidCallback? onLogin;
-  final VoidCallback? onRegister;
-
-  Future<void> _showMenu(BuildContext context) async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      backgroundColor: LandingPalette.card,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Explorar Mesa Chapaca',
-                style: LandingType.heading(size: 26),
-              ),
-              const SizedBox(height: 12),
-              _SheetAction(value: 'benefits', label: 'Beneficios'),
-              _SheetAction(value: 'how', label: 'Cómo funciona'),
-              _SheetAction(value: 'restaurants', label: 'Restaurantes'),
-              _SheetAction(value: 'contact', label: 'Contacto'),
-              const Divider(height: 24),
-              OutlinedButton(
-                onPressed: () => Navigator.pop(context, 'login'),
-                child: const Text('Iniciar sesión'),
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, 'register'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: LandingPalette.wine,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Registrar restaurante'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    switch (action) {
-      case 'benefits':
-        onBenefits?.call();
-        return;
-      case 'how':
-        onHowItWorks?.call();
-        return;
-      case 'restaurants':
-        onRestaurants?.call();
-        return;
-      case 'contact':
-        onContact?.call();
-        return;
-      case 'login':
-        onLogin?.call();
-        return;
-      case 'register':
-        onRegister?.call();
-        return;
-      default:
-        return;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    return IconButton.filledTonal(
-      onPressed: () => _showMenu(context),
-      tooltip: 'Abrir menú',
-      icon: const Icon(Icons.menu_rounded),
-      color: LandingPalette.wine,
-      iconSize: 24,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _NavLink('Beneficios', onBenefits),
+        _NavLink('Como funciona', onHowItWorks),
+        _NavLink('Restaurantes', onRestaurants),
+        _NavLink('FAQ', onContact),
+      ],
     );
   }
 }
 
-class _SheetAction extends StatelessWidget {
-  const _SheetAction({required this.value, required this.label});
-  final String value;
+class _NavLink extends StatefulWidget {
+  const _NavLink(this.label, this.onTap);
   final String label;
+  final VoidCallback? onTap;
+
+  @override
+  State<_NavLink> createState() => _NavLinkState();
+}
+
+class _NavLinkState extends State<_NavLink> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      minTileHeight: 48,
-      title: Text(
-        label,
-        style: LandingType.bodyText(color: LandingPalette.ink),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: _hovered ? LandingPalette.line.withAlpha(76) : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            widget.label,
+            style: LandingType.bodyText(
+              size: 14,
+              color: _hovered ? LandingPalette.ink : LandingPalette.muted,
+              weight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
-      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-      onTap: () => Navigator.pop(context, value),
     );
   }
 }

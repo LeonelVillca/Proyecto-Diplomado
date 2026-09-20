@@ -18,11 +18,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
+import { DataSource } from 'typeorm';
+import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
+import { Restaurante } from '../restaurante/restaurante.entity';
 
 @Controller('reservas')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class ReservasController {
-  constructor(private readonly reservasService: ReservasService) {}
+  constructor(private readonly reservasService: ReservasService, private readonly dataSource: DataSource) {}
 
   @Post()
   crear(@Body() dto: CrearReservaDto, @Req() req: any) {
@@ -57,19 +60,22 @@ export class ReservasController {
   async buscarPorId(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const reserva = await this.reservasService.buscarPorId(id);
 
-    // VUL-010: Verificar acceso correctamente
-    // Los admins (admin_sistema, admin_restaurante) pueden ver cualquier reserva.
-    // Los clientes regulares solo pueden ver sus propias reservas.
-    const userRoles: string[] = req.user.roles ?? [];
-    const esAdmin = userRoles.some((r: string) =>
-      ['admin_sistema', 'admin_restaurante'].includes(r),
-    );
-
-    if (!esAdmin && reserva.usuario.id !== req.user.id) {
-      throw new ForbiddenException('No tienes permisos para ver esta reserva');
+    if (reserva.usuario.id === req.user.id) return reserva;
+    const roles = await this.dataSource.getRepository(UsuarioRol).find({
+      where: { idUsuario: req.user.id }, relations: { rol: true },
+    });
+    if (roles.some((r) => r.rol.nombre === 'admin_sistema')) return reserva;
+    if (roles.some((r) => r.rol.nombre === 'admin_restaurante')) {
+      const restaurante = await this.dataSource.getRepository(Restaurante).findOne({
+        where: {
+          id: reserva.mesa.restaurante.id,
+          solicitud: { usuario: { id: req.user.id }, estado: 'aprobada' },
+        },
+        select: { id: true },
+      });
+      if (restaurante) return reserva;
     }
-
-    return reserva;
+    throw new ForbiddenException('No tienes permisos para ver esta reserva');
   }
 
   @Roles('admin_restaurante', 'admin_sistema')

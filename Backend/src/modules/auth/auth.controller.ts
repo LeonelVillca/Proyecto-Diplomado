@@ -25,6 +25,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('google')
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @HttpCode(HttpStatus.CREATED)
   loginGoogle(@Body() dto: GoogleLoginDto) {
     return this.authService.loginGoogle(dto);
@@ -39,6 +40,7 @@ export class AuthController {
   }
 
   @Post('crear-contrasena')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @HttpCode(HttpStatus.OK)
   crearContrasena(@Body() dto: CrearContrasenaDto) {
     return this.authService.crearContrasena(dto);
@@ -72,5 +74,20 @@ export class AuthController {
   @Get('perfil')
   perfil(@Req() request: RequestConUsuario) {
     return this.authService.perfil((request.user as any).id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @Post('renovar')
+  @HttpCode(HttpStatus.OK)
+  renovar(@Req() req: any) {
+    return this.authService.renovarSesion(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('cerrar-sesiones')
+  @HttpCode(HttpStatus.OK)
+  cerrarSesiones(@Req() req: any) {
+    return this.authService.cerrarSesiones(req.user.id);
   }
 }

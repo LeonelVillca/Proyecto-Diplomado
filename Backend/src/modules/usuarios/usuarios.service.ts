@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './usuario.entity';
+import { CuentaAuth } from '../cuentas-auth/cuenta-auth.entity';
 import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 
@@ -32,7 +33,6 @@ export class UsuariosService {
       nombre: u.nombre,
       apellido: u.apellido,
       correo: u.correo,
-      ci: u.ci,
       fechaNacimiento: u.fecha_nacimiento,
       foto: u.foto,
       telefono: u.telefono,
@@ -57,6 +57,9 @@ export class UsuariosService {
 
   async actualizar(id: number, dto: ActualizarUsuarioDto): Promise<Usuario> {
     const usuario = await this.buscarPorId(id);
+    if (dto.estado !== undefined && dto.estado !== usuario.estado) {
+      await this.usuarioRepository.manager.getRepository(CuentaAuth).increment({ usuario: { id } }, 'sessionVersion', 1);
+    }
     Object.assign(usuario, dto);
     return this.usuarioRepository.save(usuario);
   }

@@ -4,6 +4,7 @@ class SolicitudAdminModel {
   final String celularContacto;
   final String? descripcion;
   final String estado;
+  final bool correoVerificado;
   final String fechaSolicitud;
   final String? fechaRevision;
   final String? motivoRechazo;
@@ -17,6 +18,7 @@ class SolicitudAdminModel {
     required this.celularContacto,
     this.descripcion,
     required this.estado,
+    required this.correoVerificado,
     required this.fechaSolicitud,
     this.fechaRevision,
     this.motivoRechazo,
@@ -32,6 +34,7 @@ class SolicitudAdminModel {
       celularContacto: json['celularContacto'],
       descripcion: json['descripcion'],
       estado: json['estado'] ?? 'pendiente',
+      correoVerificado: json['correoVerificadoAt'] != null,
       fechaSolicitud: json['fecha'] ?? '',
       fechaRevision: json['fechaRevision'],
       motivoRechazo: json['motivoRechazo'],

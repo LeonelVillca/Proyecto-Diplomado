@@ -58,20 +58,15 @@ export class CuentasAuthService {
   }
 
   async registrarUltimoIngreso(idUsuario: number): Promise<void> {
-    const cuenta = await this.buscarPorUsuario(idUsuario);
-    if (cuenta) {
-      cuenta.ultimoIngreso = new Date();
-      cuenta.intentosFallidos = 0; // Resetear contador al login exitoso
-      await this.cuentaAuthRepository.save(cuenta);
-    }
+    await this.cuentaAuthRepository.update({ usuario: { id: idUsuario } }, { ultimoIngreso: new Date(), intentosFallidos: 0 });
   }
 
   async incrementarIntentosFallidos(idCuenta: number): Promise<void> {
-    const cuenta = await this.cuentaAuthRepository.findOne({ where: { id: idCuenta } });
-    if (cuenta) {
-      cuenta.intentosFallidos = (cuenta.intentosFallidos ?? 0) + 1;
-      await this.cuentaAuthRepository.save(cuenta);
-    }
+    await this.cuentaAuthRepository.increment({ id: idCuenta }, 'intentosFallidos', 1);
+  }
+
+  async revocarSesiones(idUsuario: number): Promise<void> {
+    await this.cuentaAuthRepository.increment({ usuario: { id: idUsuario } }, 'sessionVersion', 1);
   }
 
   async actualizar(
@@ -87,10 +82,17 @@ export class CuentasAuthService {
 
     if (dto.password !== undefined) {
       cuenta.passwordHash = await bcrypt.hash(dto.password, 10);
+      cuenta.intentosFallidos = 0;
     }
     if (dto.estado !== undefined) {
       cuenta.estado = dto.estado;
     }
-    return this.cuentaAuthRepository.save(cuenta);
+    await this.cuentaAuthRepository.update(idCuenta, {
+      passwordHash: cuenta.passwordHash,
+      estado: cuenta.estado,
+      intentosFallidos: cuenta.intentosFallidos,
+      sessionVersion: () => 'session_version + 1',
+    });
+    return this.cuentaAuthRepository.findOneByOrFail({ id: idCuenta });
   }
 }

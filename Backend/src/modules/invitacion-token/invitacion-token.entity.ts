@@ -30,6 +30,9 @@ export class InvitacionToken {
   @Column({ name: 'usado', type: 'boolean', default: false })
   usado: boolean;
 
+  @Column({ name: 'intentos_verificacion', type: 'int', default: 0 })
+  intentosVerificacion: number;
+
   @Column({ name: 'fecha_creacion', type: 'timestamp', default: () => 'now()' })
   fechaCreacion: Date;
 

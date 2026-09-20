@@ -16,6 +16,10 @@ import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
 import { SolicitarRecuperacionDto, RestablecerPasswordDto, VerificarPinDto } from './dto/recuperar-password.dto';
 import { MailService } from '../mail/mail.service';
 import { BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { createHmac, randomInt, timingSafeEqual } from 'crypto';
+import { CuentaAuth } from '../cuentas-auth/cuenta-auth.entity';
+import { pinHmacSecret } from '../../core/config/security.config';
 
 function nombreDesdeCorreo(correo: string): string {
   const local = correo.split('@')[0];
@@ -46,12 +50,17 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
+    private readonly configService: ConfigService,
   ) { }
 
-  private async emitirTokenAsync(usuario: Usuario): Promise<{
+  private async emitirTokenAsync(usuario: Usuario, sessionStartedAt = Math.floor(Date.now() / 1000), expectedVersion?: number): Promise<{
     token: string;
     usuario: UsuarioPublico;
   }> {
+    const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
+    if (!cuenta?.estado || usuario.estado !== 'activo' || (expectedVersion !== undefined && cuenta.sessionVersion !== expectedVersion)) {
+      throw new UnauthorizedException('La sesión no está autorizada');
+    }
     const usuarioRoles = await this.dataSource.getRepository(UsuarioRol).find({
       where: { idUsuario: usuario.id },
     });
@@ -70,6 +79,8 @@ export class AuthService {
       sub: usuario.id,
       correo: usuario.correo,
       permisos,
+      sv: cuenta.sessionVersion,
+      sessionStartedAt,
     });
 
     return {
@@ -97,7 +108,7 @@ export class AuthService {
     }
 
     // VUL-004: Verificar estado ANTES de ejecutar bcrypt (evita timing oracle)
-    if (cuenta.estado === false) {
+    if (cuenta.estado === false || usuario.estado !== 'activo') {
       throw new UnauthorizedException('La cuenta está suspendida');
     }
 
@@ -118,7 +129,7 @@ export class AuthService {
     }
 
     await this.cuentasAuthService.registrarUltimoIngreso(usuario.id);
-    return await this.emitirTokenAsync(usuario);
+    return await this.emitirTokenAsync(usuario, Math.floor(Date.now() / 1000), cuenta.sessionVersion);
   }
 
   /// Inicio de sesión con cuenta de Google.
@@ -136,7 +147,7 @@ export class AuthService {
       dto.idToken,
     );
 
-    if (!verificado.correo) {
+    if (!verificado.correo || !verificado.emailVerificado) {
       throw new UnauthorizedException(
         'La cuenta de Google no tiene un correo válido asociado',
       );
@@ -166,6 +177,10 @@ export class AuthService {
         foto: verificado.foto ?? undefined,
       });
     } else {
+      const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
+      if (usuario.estado !== 'activo' || cuenta?.estado === false) {
+        throw new UnauthorizedException('La cuenta está suspendida');
+      }
       const patch: ActualizarUsuarioDto = {};
       if (verificado.nombre) {
         patch.nombre = nombreFinal;
@@ -207,9 +222,18 @@ export class AuthService {
     };
   }
 
+  renovarSesion(usuario: Usuario & { sessionStartedAt: number; sessionVersion: number }) {
+    return this.emitirTokenAsync(usuario, usuario.sessionStartedAt, usuario.sessionVersion);
+  }
+
+  async cerrarSesiones(idUsuario: number) {
+    await this.cuentasAuthService.revocarSesiones(idUsuario);
+    return { mensaje: 'Todas las sesiones fueron cerradas' };
+  }
+
   async crearContrasena(dto: CrearContrasenaDto): Promise<{ mensaje: string }> {
     const invitacion = await this.dataSource.manager.findOne(InvitacionToken, {
-      where: { token: dto.token },
+      where: { token: dto.token, tipo: 'invitacion' },
       relations: { usuario: true },
     });
 
@@ -233,129 +257,77 @@ export class AuthService {
     return { mensaje: 'Contraseña creada exitosamente' };
   }
 
+  private hashPin(idUsuario: number, pin: string): string {
+    return createHmac('sha256', pinHmacSecret(this.configService)).update(`recuperacion:${idUsuario}:${pin}`).digest('hex');
+  }
+
   async solicitarRecuperacion(dto: SolicitarRecuperacionDto): Promise<{ mensaje: string }> {
-    const correoNormalizado = dto.correo.trim().toLowerCase();
-    const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
-
-    // BB-01: Respuesta genérica para no revelar si el correo existe en el sistema
-    const MENSAJE_GENERICO = 'Si el correo existe en el sistema, recibirás un código PIN en los próximos minutos.';
-
-    if (!usuario) {
-      // Esperar el mismo tiempo que si existiera para evitar timing attack
-      return { mensaje: MENSAJE_GENERICO };
-    }
-
+    const usuario = await this.usuariosService.buscarPorCorreo(dto.correo.trim().toLowerCase());
+    const respuesta = { mensaje: 'Si el correo existe en el sistema, recibirás un código PIN en los próximos minutos.' };
+    if (!usuario || usuario.estado !== 'activo') return respuesta;
     const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
-    if (!cuenta || cuenta.estado === false) {
-      return { mensaje: MENSAJE_GENERICO };
-    }
-
-    // Generar PIN numérico de 6 dígitos usando crypto.randomInt para mayor entropía
-    const pin = require('crypto').randomInt(100000, 999999).toString();
-
-    // Invalidar tokens de recuperación anteriores para este usuario
-    await this.dataSource.getRepository(InvitacionToken)
-      .createQueryBuilder()
-      .update(InvitacionToken)
-      .set({ usado: true })
-      .where('id_usuario = :idUsuario AND tipo = :tipo AND usado = false', {
-        idUsuario: usuario.id,
-        tipo: 'recuperacion'
-      })
-      .execute();
-
-    // Crear nuevo token
-    const fechaExpiracion = new Date();
-    fechaExpiracion.setMinutes(fechaExpiracion.getMinutes() + 15);
-
-    const tokenRepo = this.dataSource.getRepository(InvitacionToken);
-    const nuevoToken = tokenRepo.create({
-      usuario: { id: usuario.id },
-      token: pin,
-      tipo: 'recuperacion',
-      fechaExpiracion,
+    if (!cuenta?.estado) return respuesta;
+    const pin = randomInt(100000, 1000000).toString();
+    const created = await this.dataSource.transaction(async (manager) => {
+      // Bloquear la cuenta serializa solicitudes desde distintas IP/procesos.
+      await manager.findOne(CuentaAuth, { where: { id: cuenta.id }, lock: { mode: 'pessimistic_write' } });
+      const repo = manager.getRepository(InvitacionToken);
+      const last = await repo.findOne({ where: { usuario: { id: usuario.id }, tipo: 'recuperacion' }, order: { id: 'DESC' } });
+      if (last && Date.now() - last.fechaCreacion.getTime() < 60_000) return false;
+      await repo.update({ usuario: { id: usuario.id }, tipo: 'recuperacion', usado: false }, { usado: true });
+      await repo.save(repo.create({
+        usuario: { id: usuario.id }, token: this.hashPin(usuario.id, pin), tipo: 'recuperacion',
+        fechaExpiracion: new Date(Date.now() + 15 * 60_000),
+      }));
+      return true;
     });
-
-    // VUL-008: Fallback corregido — genera un PIN completamente nuevo si hay colisión
-    try {
-      await tokenRepo.save(nuevoToken);
-    } catch {
-      // Generar un PIN completamente diferente en caso de colisión
-      const pinAlternativo = require('crypto').randomInt(100000, 999999).toString();
-      nuevoToken.token = pinAlternativo;
-      await tokenRepo.save(nuevoToken);
-    }
-
-    await this.mailService.enviarRecuperacionPassword(usuario.correo, nuevoToken.token);
-
-    return { mensaje: MENSAJE_GENERICO };
+    if (created) await this.mailService.enviarRecuperacionPassword(usuario.correo, pin);
+    return respuesta;
   }
 
   async verificarPinRecuperacion(dto: VerificarPinDto): Promise<{ valido: boolean }> {
-    const correoNormalizado = dto.correo.trim().toLowerCase();
-    const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
-
-    if (!usuario) {
-      throw new BadRequestException('El PIN es inválido o ha expirado.');
-    }
-
-    const tokenRepo = this.dataSource.getRepository(InvitacionToken);
-    const tokenRecord = await tokenRepo.findOne({
-      where: {
-        usuario: { id: usuario.id },
-        token: dto.pin,
-        tipo: 'recuperacion',
-        usado: false,
-      },
-      order: { id: 'DESC' },
-    });
-
-    if (!tokenRecord || tokenRecord.fechaExpiracion < new Date()) {
-      throw new BadRequestException('El PIN es inválido o ha expirado.');
-    }
-
+    await this.validarRecuperacion(dto);
     return { valido: true };
   }
 
   async restablecerPassword(dto: RestablecerPasswordDto): Promise<{ mensaje: string }> {
-    const correoNormalizado = dto.correo.trim().toLowerCase();
-    const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
-
-    if (!usuario) {
-      throw new BadRequestException('El PIN es inválido o ha expirado.');
-    }
-
-    const tokenRepo = this.dataSource.getRepository(InvitacionToken);
-    const tokenRecord = await tokenRepo.findOne({
-      where: {
-        usuario: { id: usuario.id },
-        token: dto.pin,
-        tipo: 'recuperacion',
-        usado: false,
-      },
-      order: { id: 'DESC' },
-    });
-
-    if (!tokenRecord) {
-      throw new BadRequestException('El PIN es inválido o ha expirado.');
-    }
-
-    if (tokenRecord.fechaExpiracion < new Date()) {
-      throw new BadRequestException('El PIN ha expirado. Por favor, solicita uno nuevo.');
-    }
-
-    // Actualizar contraseña
-    const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
-    if (!cuenta) {
-      throw new BadRequestException('La cuenta administrativa no existe.');
-    }
-    await this.cuentasAuthService.actualizar(cuenta.id, { password: dto.nuevaContrasena });
-
-    // Marcar PIN como usado
-    tokenRecord.usado = true;
-    await tokenRepo.save(tokenRecord);
-
+    await this.validarRecuperacion(dto, dto.nuevaContrasena);
     return { mensaje: 'Contraseña actualizada exitosamente' };
+  }
+
+  private async validarRecuperacion(dto: VerificarPinDto, password?: string): Promise<void> {
+    const usuario = await this.usuariosService.buscarPorCorreo(dto.correo.trim().toLowerCase());
+    if (!usuario || usuario.estado !== 'activo') throw new BadRequestException('El PIN es inválido o ha expirado.');
+    const accepted = await this.dataSource.transaction(async (manager) => {
+      const cuenta = await manager.findOne(CuentaAuth, {
+        where: { usuario: { id: usuario.id } }, lock: { mode: 'pessimistic_write' },
+      });
+      if (!cuenta?.estado) return false;
+      const repo = manager.getRepository(InvitacionToken);
+      const record = await repo.findOne({
+        where: { usuario: { id: usuario.id }, tipo: 'recuperacion', usado: false },
+        order: { id: 'DESC' }, lock: { mode: 'pessimistic_write' },
+      });
+      if (!record || record.fechaExpiracion <= new Date() || record.intentosVerificacion >= 5) return false;
+      const stored = Buffer.from(record.token);
+      const supplied = Buffer.from(this.hashPin(usuario.id, dto.pin));
+      if (stored.length !== supplied.length || !timingSafeEqual(stored, supplied)) {
+        record.intentosVerificacion++;
+        if (record.intentosVerificacion >= 5) record.usado = true;
+        await repo.save(record);
+        return false; // Confirmar el contador antes de devolver el error.
+      }
+      if (password !== undefined) {
+        await manager.update(CuentaAuth, cuenta.id, {
+          passwordHash: await bcrypt.hash(password, 12), intentosFallidos: 0,
+          sessionVersion: () => 'session_version + 1',
+        });
+        record.usado = true;
+        await repo.save(record);
+      }
+      return true;
+    });
+    if (!accepted) throw new BadRequestException('El PIN es inválido o ha expirado.');
   }
 }
 

@@ -34,6 +34,9 @@ export class Solicitud {
   })
   estado: (typeof ESTADO_SOLICITUD)[number];
 
+  @Column({ name: 'correo_verificado_at', type: 'timestamptz', nullable: true })
+  correoVerificadoAt: Date | null;
+
   @Column({ name: 'nombre_restaurante', type: 'varchar', length: 150 })
   nombreRestaurante: string;
 

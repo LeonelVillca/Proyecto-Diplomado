@@ -12,15 +12,16 @@ export class CuentasAuthController {
   constructor(private readonly cuentasAuthService: CuentasAuthService) {}
 
   @Get()
-  listar() {
-    return this.cuentasAuthService.listar();
+  async listar() {
+    return (await this.cuentasAuthService.listar()).map(({ passwordHash, sessionVersion, ...publico }) => publico);
   }
 
   @Patch(':id')
-  actualizar(
+  async actualizar(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ActualizarCuentaAuthDto,
   ) {
-    return this.cuentasAuthService.actualizar(id, dto);
+    const { passwordHash, sessionVersion, ...publico } = await this.cuentasAuthService.actualizar(id, dto);
+    return publico;
   }
 }

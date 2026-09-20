@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import sharp from 'sharp';
+import { sanitizeImage } from '../../core/security/uploads';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurante } from './restaurante.entity';
@@ -51,6 +51,7 @@ export class RestauranteService {
     const restaurante = this.restauranteRepository.create({
       ...datos,
       solicitud: idSolicitud ? { id: idSolicitud } : null,
+      estado: false,
     });
     return this.restauranteRepository.save(restaurante);
   }
@@ -92,7 +93,96 @@ export class RestauranteService {
         };
       })
     );
-    return restaurantesCompletos;
+    // Los perfiles incompletos solo deben estar disponibles para su administrador.
+    return restaurantesCompletos.filter((rest) => this.perfilPublicable(rest));
+  }
+
+  async listarParaAdministrador(): Promise<any[]> {
+    const restaurantes = await this.restauranteRepository.find({
+      relations: { solicitud: { usuario: true } },
+      order: { id: 'DESC' },
+    });
+
+    return restaurantes.map((restaurante) => ({
+      id: restaurante.id,
+      nombre: restaurante.nombre,
+      tipoComida: restaurante.tipoComida,
+      descripcion: restaurante.descripcion,
+      telefono: restaurante.telefono,
+      correo: restaurante.correo,
+      fotoPortada: restaurante.fotoPortada,
+      logo: restaurante.logo,
+      estado: restaurante.estado,
+      solicitudEstado: restaurante.solicitud?.estado ?? null,
+      administrador: restaurante.solicitud?.usuario
+        ? {
+            id: restaurante.solicitud.usuario.id,
+            nombre: restaurante.solicitud.usuario.nombre,
+            apellido: restaurante.solicitud.usuario.apellido,
+            correo: restaurante.solicitud.usuario.correo,
+          }
+        : null,
+    }));
+  }
+
+  async cambiarEstadoComoAdministrador(id: number, estado: boolean): Promise<any> {
+    const restaurante = await this.buscarPorId(id);
+    restaurante.estado = estado;
+    const actualizado = await this.restauranteRepository.save(restaurante);
+    return {
+      id: actualizado.id,
+      nombre: actualizado.nombre,
+      estado: actualizado.estado,
+    };
+  }
+
+  private perfilPublicable(restaurante: any): boolean {
+    const textoCompleto = (valor: unknown) => typeof valor === 'string' && valor.trim().length > 0;
+    const solicitudAprobada = !restaurante.solicitud || restaurante.solicitud.estado === 'aprobada';
+
+    return restaurante.estado === true
+      && solicitudAprobada
+      && textoCompleto(restaurante.nombre)
+      && textoCompleto(restaurante.tipoComida)
+      && textoCompleto(restaurante.descripcion)
+      && textoCompleto(restaurante.telefono)
+      && textoCompleto(restaurante.correo)
+      && textoCompleto(restaurante.fotoPortada)
+      && textoCompleto(restaurante.logo)
+      && textoCompleto(restaurante.direccion)
+      && restaurante.latitud !== null
+      && restaurante.latitud !== undefined
+      && restaurante.longitud !== null
+      && restaurante.longitud !== undefined
+      && Array.isArray(restaurante.horarios)
+      && restaurante.horarios.length > 0
+      && Array.isArray(restaurante.mesas)
+      && restaurante.mesas.length > 0;
+  }
+
+  private async activarSiPerfilCompleto(id: number): Promise<void> {
+    const restaurante = await this.restauranteRepository.findOne({
+      where: { id },
+      relations: { solicitud: true },
+    });
+    if (!restaurante || restaurante.estado === true) return;
+
+    const ubicacion = await this.ubicacionRepository.findOne({ where: { restaurante: { id } } });
+    const horarios = await this.horarioRepository.find({ where: { restaurante: { id } } });
+    const mesas = await this.mesaRepository.find({ where: { restaurante: { id } } });
+    const publicable = this.perfilPublicable({
+      ...restaurante,
+      direccion: ubicacion?.direccion,
+      latitud: ubicacion?.latitud,
+      longitud: ubicacion?.longitud,
+      horarios,
+      mesas,
+    });
+
+    if (publicable) {
+      restaurante.estado = true;
+      await this.restauranteRepository.save(restaurante);
+    }
   }
 
   async obtenerRanking(
@@ -131,6 +221,7 @@ export class RestauranteService {
           descripcion: solicitudAprobada.descripcion,
           telefono: solicitudAprobada.celularContacto,
           correo: solicitudAprobada.usuario.correo,
+          estado: false,
         });
         const guardado = await this.restauranteRepository.save(nuevoRestaurante);
         const conRelaciones = await this.restauranteRepository.findOne({
@@ -192,20 +283,28 @@ export class RestauranteService {
     return restaurante;
   }
 
+  async buscarPorIdPublico(id: number): Promise<Restaurante> {
+    const restaurante = await this.buscarPorId(id);
+    const ubicacion = await this.ubicacionRepository.findOne({ where: { restaurante: { id } } });
+    const horarios = await this.horarioRepository.find({ where: { restaurante: { id } } });
+    const mesas = await this.mesaRepository.find({ where: { restaurante: { id } } });
+    if (!this.perfilPublicable({
+      ...restaurante,
+      direccion: ubicacion?.direccion,
+      latitud: ubicacion?.latitud,
+      longitud: ubicacion?.longitud,
+      horarios,
+      mesas,
+    })) {
+      throw new NotFoundException(`Restaurante con id ${id} no disponible`);
+    }
+    return restaurante;
+  }
+
   async actualizar(id: number, dto: ActualizarRestauranteDto): Promise<Restaurante> {
     const restaurante = await this.buscarPorId(id);
 
-    if (dto.idSolicitud !== undefined) {
-      const solicitud = await this.solicitudRepository.findOneBy({
-        id: dto.idSolicitud,
-      });
-      if (!solicitud) {
-        throw new NotFoundException(`Solicitud con id ${dto.idSolicitud} no encontrada`);
-      }
-      restaurante.solicitud = solicitud;
-    }
-
-    const { idSolicitud: _ignorado, direccion, latitud, longitud, horarios, mesasTotal, capacidadTotal, ...datos } = dto;
+    const { direccion, latitud, longitud, horarios, mesasTotal, capacidadTotal, ...datos } = dto;
     Object.assign(restaurante, datos);
     await this.restauranteRepository.save(restaurante);
 
@@ -272,12 +371,13 @@ export class RestauranteService {
     const ext = '.webp';
     const filename = `${crypto.randomUUID()}${ext}`;
     
-    await sharp(file.buffer).webp().toFile(path.join(uploadDir, filename));
+    await fs.writeFile(path.join(uploadDir, filename), await sanitizeImage(file));
     
     const url = `/publico/restaurantes/${id}/portada/${filename}`;
     restaurante.fotoPortada = url;
-    
-    return this.restauranteRepository.save(restaurante);
+    const guardado = await this.restauranteRepository.save(restaurante);
+    await this.activarSiPerfilCompleto(id);
+    return guardado;
   }
 
   async subirLogo(id: number, file: Express.Multer.File): Promise<Restaurante> {
@@ -295,11 +395,12 @@ export class RestauranteService {
     const ext = '.webp';
     const filename = `${crypto.randomUUID()}${ext}`;
     
-    await sharp(file.buffer).webp().toFile(path.join(uploadDir, filename));
+    await fs.writeFile(path.join(uploadDir, filename), await sanitizeImage(file));
     
     restaurante.logo = `/publico/restaurantes/${id}/logo/${filename}`;
-    
-    return this.restauranteRepository.save(restaurante);
+    const guardado = await this.restauranteRepository.save(restaurante);
+    await this.activarSiPerfilCompleto(id);
+    return guardado;
   }
 
   async subirGaleria(id: number, files: Express.Multer.File[]): Promise<Restaurante> {
@@ -309,19 +410,20 @@ export class RestauranteService {
     const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', id.toString(), 'galeria');
     await fs.mkdir(uploadDir, { recursive: true });
     
-    const nuevasImagenes = await Promise.all(
-      files.map(async (file) => {
+    const count = await this.imagenRepository.count({ where: { restaurante: { id } } });
+    if (count + files.length > 50) throw new BadRequestException('La galería admite hasta 50 imágenes');
+    const nuevasImagenes: Imagen[] = [];
+    for (const file of files) {
         if (!file.mimetype.startsWith('image/')) throw new BadRequestException('Los archivos deben ser imágenes');
         const ext = '.webp';
         const filename = `${crypto.randomUUID()}${ext}`;
-        await sharp(file.buffer).webp().toFile(path.join(uploadDir, filename));
+        await fs.writeFile(path.join(uploadDir, filename), await sanitizeImage(file));
         
-        return this.imagenRepository.create({
+        nuevasImagenes.push(this.imagenRepository.create({
           restaurante: { id: restaurante.id },
           url: `/publico/restaurantes/${id}/galeria/${filename}`
-        });
-      })
-    );
+        }));
+    }
     
     await this.imagenRepository.save(nuevasImagenes);
     return restaurante;

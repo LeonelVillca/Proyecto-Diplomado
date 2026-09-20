@@ -23,6 +23,7 @@ import { RestauranteService } from './restaurante.service';
 import { CrearRestauranteDto } from './dto/crear-restaurante.dto';
 import { ActualizarRestauranteDto } from './dto/actualizar-restaurante.dto';
 import { Restaurante } from './restaurante.entity';
+import { imageUploadOptions } from '../../core/security/uploads';
 
 @Controller('restaurante')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
@@ -45,6 +46,21 @@ export class RestauranteController {
     return this.restauranteService.obtenerRanking(orden, limiteNumero);
   }
 
+  @Roles('admin_sistema')
+  @Get('admin/listado')
+  listarParaAdministrador(): Promise<any[]> {
+    return this.restauranteService.listarParaAdministrador();
+  }
+
+  @Roles('admin_sistema')
+  @Patch('admin/:id/estado')
+  cambiarEstadoComoAdministrador(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('estado') estado: boolean,
+  ): Promise<any> {
+    return this.restauranteService.cambiarEstadoComoAdministrador(id, estado);
+  }
+
   @Get()
   listarTodos(): Promise<any[]> {
     return this.restauranteService.listarTodos();
@@ -57,7 +73,7 @@ export class RestauranteController {
   }
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Restaurante> {
-    return this.restauranteService.buscarPorId(id);
+    return this.restauranteService.buscarPorIdPublico(id);
   }
 
   @Roles('admin_restaurante', 'admin_sistema')
@@ -80,7 +96,7 @@ export class RestauranteController {
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('restaurante')
   @Post(':id/portada')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   subirPortada(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
@@ -91,7 +107,7 @@ export class RestauranteController {
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('restaurante')
   @Post(':id/logo')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   subirLogo(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFile() file: Express.Multer.File,
@@ -102,7 +118,7 @@ export class RestauranteController {
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('restaurante')
   @Post(':id/galeria')
-  @UseInterceptors(FilesInterceptor('files', 10))
+  @UseInterceptors(FilesInterceptor('files', 10, imageUploadOptions))
   subirGaleria(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles() files: Express.Multer.File[],

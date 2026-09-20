@@ -5,8 +5,8 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=Edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#F7F1E7">
-  <meta name="description" content="Gestiona reservas, mesas y menú digital con Mesa Chapaca, la plataforma creada para restaurantes de Tarija, Bolivia.">
+  <meta name="theme-color" content="#FAF5EC">
+  <meta name="description" content="Publica el perfil de tu restaurante, recibe reservas en tiempo real y coordina tu salón con Mesa Chapaca.">
   <meta name="robots" content="index, follow, max-image-preview:large">
 
   <title>Mesa Chapaca | Reservas para restaurantes de Tarija</title>
@@ -19,10 +19,10 @@
   <meta property="og:locale" content="es_BO">
   <meta property="og:site_name" content="Mesa Chapaca">
   <meta property="og:title" content="Mesa Chapaca | Reservas para restaurantes de Tarija">
-  <meta property="og:description" content="Centraliza reservas, mesas y menú digital en una plataforma creada para la gastronomía tarijeña.">
+  <meta property="og:description" content="Publica tu perfil, recibe reservas en tiempo real y coordina todo tu salón desde un solo lugar.">
   <meta property="og:url" content="https://resttarija.web.app/">
-  <meta property="og:image" content="https://resttarija.web.app/assets/assets/restaurant_hero_optimized.jpg">
-  <meta property="og:image:alt" content="Mesa preparada en un restaurante de ambiente cálido">
+  <meta property="og:image" content="https://resttarija.web.app/assets/assets/landing_reference/hero.webp">
+  <meta property="og:image:alt" content="Interior cálido de un restaurante">
   <meta name="twitter:card" content="summary_large_image">
 
   <meta name="mobile-web-app-capable" content="yes">
@@ -50,18 +50,29 @@
   </script>
 
   <style>
-    :root { color-scheme: light; font-family: Arial, sans-serif; background: #f7f1e7; color: #2a1020; }
+    @font-face { font-family: 'Fraunces'; src: url('assets/assets/fonts/Fraunces-Variable.ttf') format('truetype'); font-style: normal; font-weight: 400 700; font-display: swap; }
+    @font-face { font-family: 'Fraunces'; src: url('assets/assets/fonts/Fraunces-Italic-Variable.ttf') format('truetype'); font-style: italic; font-weight: 400 700; font-display: swap; }
+    @font-face { font-family: 'Instrument Sans'; src: url('assets/assets/fonts/InstrumentSans-Variable.ttf') format('truetype'); font-style: normal; font-weight: 400 700; font-display: swap; }
+    :root { color-scheme: light; font-family: 'Instrument Sans', sans-serif; background: #FAF5EC; color: #26201A; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: #f7f1e7; }
-    .skip-link { position: fixed; left: 12px; top: 12px; z-index: 10; padding: 12px 16px; color: #fff; background: #6b1233; border-radius: 10px; transform: translateY(-140%); }
-    .skip-link:focus { transform: translateY(0); outline: 3px solid #b98324; outline-offset: 3px; }
-    .shell-nav { height: 80px; display: flex; align-items: center; padding: 0 clamp(20px, 5vw, 56px); border-bottom: 1px solid #d4c6b4; font-weight: 700; }
-    .shell-main { min-height: calc(100vh - 80px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 520px); gap: clamp(32px, 6vw, 72px); align-items: center; max-width: 1292px; margin: auto; padding: clamp(48px, 9vw, 112px) clamp(20px, 5vw, 56px); }
-    .shell-main h1 { max-width: 700px; margin: 0 0 24px; font: 600 clamp(42px, 6vw, 72px)/1.05 Georgia, serif; letter-spacing: -.02em; text-wrap: balance; }
-    .shell-main p { max-width: 620px; margin: 0 0 32px; color: #6e5f55; font-size: clamp(17px, 2vw, 20px); line-height: 1.55; }
-    .shell-cta { display: inline-block; min-height: 48px; padding: 14px 22px; border-radius: 14px; color: #fff; background: #6b1233; font-weight: 700; text-decoration: none; }
-    .shell-visual { aspect-ratio: 1; border: 1px solid #b98324; border-radius: 88px 24px; background: #310916 url('assets/assets/restaurant_hero_optimized.jpg') center/cover; }
-    @media (max-width: 800px) { .shell-main { grid-template-columns: 1fr; padding-top: 56px; } .shell-visual { max-width: 560px; width: 100%; } }
+    body { margin: 0; background: #FAF5EC; }
+    .skip-link { position: fixed; left: 12px; top: 12px; z-index: 110; padding: 12px 16px; color: #fff; background: #BE4B24; border-radius: 999px; transform: translateY(-160%); }
+    .skip-link:focus { transform: translateY(0); outline: 3px solid #C08A2D; outline-offset: 3px; }
+    .shell-nav-wrap { position: fixed; z-index: 100; top: 18px; left: 20px; right: 20px; display: flex; justify-content: center; }
+    .shell-nav { width: 100%; max-width: 1080px; min-height: 58px; display: flex; align-items: center; padding: 10px 20px; border: 1px solid rgba(234,225,211,.9); border-radius: 999px; background: rgba(255,255,255,.9); box-shadow: 0 2px 10px rgba(38,32,26,.06); font: 600 1.22rem/1 'Fraunces', serif; }
+    .shell-mark { width: 36px; height: 36px; display: inline-grid; place-items: center; margin-right: 10px; border-radius: 11px; color: #fff; background: #BE4B24; font: 700 16px/1 'Instrument Sans', sans-serif; }
+    .shell-mark svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .shell-main { min-height: 100vh; display: grid; grid-template-columns: 1.05fr .95fr; gap: 60px; align-items: center; max-width: 1180px; margin: auto; padding: 150px 24px 80px; }
+    .shell-chip { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 22px; padding: 8px 16px; border: 1px solid #EAE1D3; border-radius: 999px; background: #fff; color: #6F6259; font-size: .85rem; font-weight: 600; }
+    .shell-dot { width: 8px; height: 8px; border-radius: 50%; background: #2E8B5F; }
+    .shell-main h1 { max-width: 650px; margin: 0 0 20px; font: 560 clamp(2.6rem,5.2vw,4.3rem)/1.04 'Fraunces', serif; letter-spacing: -.025em; text-wrap: balance; }
+    .shell-main h1 em { color: #BE4B24; font-weight: 500; }
+    .shell-main p { max-width: 512px; margin: 0 0 30px; color: #6F6259; font-size: 1.13rem; line-height: 1.58; }
+    .shell-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+    .shell-cta { display: inline-block; min-height: 50px; padding: 14px 24px; border-radius: 999px; color: #fff; background: #BE4B24; box-shadow: 0 8px 20px rgba(190,75,36,.28); font-weight: 600; text-decoration: none; }
+    .shell-secondary { display: inline-block; min-height: 50px; padding: 13px 24px; border: 1.5px solid #EAE1D3; border-radius: 999px; color: #26201A; font-weight: 600; text-decoration: none; }
+    .shell-visual { aspect-ratio: 4/4.7; border: 6px solid #fff; border-radius: 28px; background: #26201A url('assets/assets/landing_reference/hero.webp') center/cover; box-shadow: 0 24px 60px rgba(38,32,26,.14); }
+    @media (max-width: 800px) { .shell-main { grid-template-columns: 1fr; gap: 44px; padding-top: 140px; } .shell-visual { max-width: 520px; width: 100%; } }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
   </style>
 </head>
@@ -69,14 +80,15 @@
   <a class="skip-link" href="#contenido">Saltar al contenido principal</a>
   <span id="contenido" tabindex="-1"></span>
   <div id="app-shell">
-    <header class="shell-nav" aria-label="Navegación principal">Mesa Chapaca</header>
+    <div class="shell-nav-wrap"><header class="shell-nav" aria-label="Navegación principal"><span class="shell-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 2v7c0 1.1.9 2 2 2s2-.9 2-2V2M5 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg></span>Mesa Chapaca</header></div>
     <main class="shell-main">
       <section>
-        <h1>Tu restaurante, listo para recibir más comensales.</h1>
-        <p>Centraliza reservas, mesas y menú digital en una plataforma creada para restaurantes de Tarija.</p>
-        <a class="shell-cta" href="#" aria-label="Cargando la aplicación para registrar mi restaurante">Registrar mi restaurante</a>
+        <span class="shell-chip"><span class="shell-dot"></span>Recibiendo restaurantes nuevos esta semana</span>
+        <h1>Tu restaurante merece una <em>mesa llena.</em></h1>
+        <p>Publica tu perfil, recibe reservas en tiempo real y coordina todo tu salón desde un solo lugar. Sin permanencia, sin letra pequeña.</p>
+        <div class="shell-actions"><a class="shell-cta" href="#" aria-label="Cargando la solicitud de acceso">Solicitar acceso →</a><a class="shell-secondary" href="#" aria-label="Cargando la explicación de la plataforma">Ver cómo funciona</a></div>
       </section>
-      <div class="shell-visual" role="img" aria-label="Mesa preparada en un restaurante de ambiente cálido"></div>
+      <div class="shell-visual" role="img" aria-label="Interior cálido de un restaurante"></div>
     </main>
   </div>
   <script>

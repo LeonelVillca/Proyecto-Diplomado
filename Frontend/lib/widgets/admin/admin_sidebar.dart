@@ -254,14 +254,20 @@ class _LogoutNavItemState extends State<_LogoutNavItem> {
                   child: const Icon(Icons.logout_rounded, size: 18),
                 ),
                 const SizedBox(width: 10),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: GoogleFonts.manrope(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: fgColor,
+                Expanded(
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: GoogleFonts.manrope(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: fgColor,
+                    ),
+                    child: const Text(
+                      'Cerrar todas las sesiones',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  child: const Text('Cerrar sesión'),
                 ),
               ],
             ),

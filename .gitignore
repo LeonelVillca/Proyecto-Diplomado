@@ -4,3 +4,18 @@
 !CMakeLists.txt
 !Frontend/docs/landing-quality-audit.md
 !Frontend/web/robots.txt
+
+# Credenciales privadas y configuración local
+.env
+.env.*
+!.env.example
+**/*firebase-adminsdk*.json
+**/*service-account*.json
+*.pem
+*.p12
+*.jks
+*.keystore
+credenciales_prueba.txt
+fix_quotes.js
+temp_old_login*.dart
+!Backend/docs/security-hardening.md

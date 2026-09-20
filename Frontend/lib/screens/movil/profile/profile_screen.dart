@@ -5,7 +5,7 @@ import 'package:frontend/screens/movil/login/login_screen.dart';
 import 'package:frontend/screens/movil/profile/user_reviews_screen.dart';
 import 'package:frontend/screens/movil/profile/user_support_screen.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -202,10 +202,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildSettingRow(
                     context, 
                     Icons.logout_rounded, 
-                    'Cerrar sesión', 
+                    'Cerrar todas las sesiones',
                     isDestructive: true,
                     onTap: () async {
+                      final messenger = ScaffoldMessenger.of(context);
                       await auth.signOut();
+                      if (auth.errorMessage != null && messenger.mounted) {
+                        messenger.showSnackBar(SnackBar(content: Text(auth.errorMessage!)));
+                      }
                     }
                   ),
                   

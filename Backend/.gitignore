@@ -8,6 +8,10 @@
 .env.local
 .env.*.local
 
+# - Archivos con credenciales de prueba (NUNCA commitear)
+credenciales_prueba.txt
+*.credentials.txt
+
 # - Logs
 *.log
 .npm-debug.log*

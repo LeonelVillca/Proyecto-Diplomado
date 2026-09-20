@@ -25,7 +25,7 @@ export class RolPermisoService implements OnModuleInit {
     ];
     
     const permisosAdminSistema = [
-      'menu_solicitudes', 'menu_usuarios', 'menu_roles', 
+      'menu_solicitudes', 'menu_usuarios', 'menu_restaurantes', 'menu_roles', 
       'menu_asignar_roles', 'menu_permisos', 'menu_soporte', 'menu_moderacion'
     ];
 

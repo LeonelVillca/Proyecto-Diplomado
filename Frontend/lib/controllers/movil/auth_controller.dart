@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:async';
+import 'package:frontend/services/shared/secure_http.dart' show SessionHttp;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -43,19 +45,30 @@ enum AuthStatus {
 /// Google disponible, p. ej. en Windows), se entra automáticamente en un
 /// modo de simulación con un perfil de demostración para poder recorrer la
 /// app sin depender de la cuenta de Google.
-class AuthController extends ChangeNotifier {
+class AuthController extends ChangeNotifier with WidgetsBindingObserver {
   AuthController({
     this._firebaseAuth,
     this.demoFallback = false,   // Desactivado: errores reales deben ser visibles
     SessionService? session,
   })  : _session = session ?? SessionService() {
     _subscribeToAuthChanges();
+    WidgetsBinding.instance.addObserver(this);
+    SessionHttp.tokenProvider = validToken;
+    SessionHttp.onUnauthorized = invalidateToken;
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (isAuthenticated) unawaited(validToken().catchError((_) => null));
+    });
   }
 
   final FirebaseAuth? _firebaseAuth;
 
   /// Persistencia segura del JWT del backend.
   final SessionService _session;
+  Timer? _refreshTimer;
+  Future<String?>? _refreshInFlight;
+  StreamSubscription<User?>? _authSubscription;
+  int _sessionGeneration = 0;
+  bool _disposed = false;
 
   /// Si es `true`, los fallos de Google caen a un perfil simulado.
   final bool demoFallback;
@@ -144,7 +157,7 @@ class AuthController extends ChangeNotifier {
 
   void _subscribeToAuthChanges() {
     try {
-      _auth.authStateChanges().listen((firebaseUser) {
+      _authSubscription = _auth.authStateChanges().listen((firebaseUser) {
         // Solo actualizamos el usuario de Firebase.
         // El estado `authenticated` LO DECIDE el backend (JWT válido).
         // Si marcamos authenticated aquí, la app entra sin validar el token.
@@ -158,6 +171,7 @@ class AuthController extends ChangeNotifier {
 
   /// Intenta restaurar una sesión previa guardada en [SessionService].
   Future<bool> restaurarSesion() async {
+    final generation = _sessionGeneration;
     final token = await _session.obtenerToken();
     if (token == null || token.isEmpty) {
       return false;
@@ -171,6 +185,7 @@ class AuthController extends ChangeNotifier {
           )
           .timeout(const Duration(seconds: 10));
 
+      if (generation != _sessionGeneration || _disposed) return false;
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<String, dynamic>;
@@ -189,7 +204,8 @@ class AuthController extends ChangeNotifier {
         return true;
       }
 
-      // 401 (u otro error): token inválido/vencido → limpiar sesión.
+      // No borrar credenciales por una caída temporal del servidor.
+      if (response.statusCode != 401 && response.statusCode != 403) return false;
       await _session.eliminarToken();
       _limpiarSesionBackend();
       _status = AuthStatus.idle;
@@ -229,7 +245,8 @@ class AuthController extends ChangeNotifier {
       _user = _auth.currentUser;
 
       final firebaseUser = _user;
-      if (firebaseUser != null && firebaseUser.email != null) {
+      if (firebaseUser == null || firebaseUser.email == null) throw StateError('Falta la identidad de Google');
+      if (firebaseUser.email != null) {
         final registrado = await _registrarGoogleEnBackend(firebaseUser);
         if (!registrado) {
           await _cerrarGoogle();
@@ -259,6 +276,7 @@ class AuthController extends ChangeNotifier {
 
   /// Envía el ID Token de Firebase al backend.
   Future<bool> _registrarGoogleEnBackend(User firebaseUser) async {
+    final generation = _sessionGeneration;
     try {
       final idToken = await firebaseUser.getIdToken();
       if (idToken == null) {
@@ -276,11 +294,13 @@ class AuthController extends ChangeNotifier {
           )
           .timeout(const Duration(seconds: 10));
 
+      if (generation != _sessionGeneration || _disposed) return false;
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(utf8.decode(response.bodyBytes))
             as Map<String, dynamic>;
         final usuario =
             (data['usuario'] as Map?)?.cast<String, dynamic>() ?? {};
+        if (data['token'] is! String || (data['token'] as String).isEmpty || usuario['id'] == null) return false;
         _token = data['token'] as String?;
         _backendNombre = (usuario['nombre'] as String?)?.trim();
         _backendApellido = usuario['apellido'] as String?;
@@ -317,6 +337,7 @@ class AuthController extends ChangeNotifier {
 
   /// Entra manualmente al modo de demostración (útil para maquetas).
   void enterSimulation() {
+    if (!kDebugMode || !demoFallback) return;
     _demoMode = true;
     _demoName = 'Kevin Chapaco';
     _demoEmail = 'demo@mesachapaca.dev';
@@ -351,10 +372,86 @@ class AuthController extends ChangeNotifier {
     _backendEmail = null;
     _backendId = null;
     _roles = [];
+    _permisos = [];
+  }
+
+  Future<String?> validToken() async {
+    if (_token == null || _disposed) return null;
+    final exp = _decodeJwt(_token!)['exp'];
+    if (exp is! num || exp * 1000 <= DateTime.now().millisecondsSinceEpoch) {
+      await invalidateToken(_token!);
+      return null;
+    }
+    if (exp * 1000 - DateTime.now().millisecondsSinceEpoch > 5 * 60 * 1000) return _token;
+    final pending = _refreshInFlight;
+    if (pending != null) return pending;
+    final future = _renewToken();
+    _refreshInFlight = future;
+    try { return await future; } finally { if (identical(_refreshInFlight, future)) _refreshInFlight = null; }
+  }
+
+  Future<String?> _renewToken() async {
+    final previous = _token;
+    final generation = _sessionGeneration;
+    final response = await http.post(Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/renovar'),
+      headers: {'Authorization': 'Bearer $previous'}).timeout(const Duration(seconds: 10));
+    if (_disposed || generation != _sessionGeneration || previous != _token) return null;
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      await invalidateToken(previous!);
+      return null;
+    }
+    if (response.statusCode != 200) throw StateError('No se pudo renovar la sesión');
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final renewed = data['token'];
+    if (renewed is! String || renewed.isEmpty) throw StateError('Respuesta de sesión inválida');
+    await _session.guardarToken(renewed);
+    if (_disposed || generation != _sessionGeneration) { await _session.eliminarToken(); return null; }
+    _token = renewed;
+    _permisos = (_decodeJwt(renewed)['permisos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    notifyListeners();
+    return renewed;
+  }
+
+  Future<void> invalidateToken(String rejected) async {
+    if (rejected != _token) return;
+    _sessionGeneration++;
+    _limpiarSesionBackend();
+    _status = AuthStatus.idle;
+    await _session.eliminarToken();
+    if (!_disposed) notifyListeners();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && isAuthenticated) unawaited(validToken().catchError((_) => null));
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _sessionGeneration++;
+    _refreshTimer?.cancel();
+    _authSubscription?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    SessionHttp.tokenProvider = null;
+    SessionHttp.onUnauthorized = null;
+    super.dispose();
   }
 
   /// Cierra la sesión (real o simulada) y vuelve al inicio.
   Future<void> signOut() async {
+    final previous = _token;
+    _errorMessage = null;
+    _sessionGeneration++;
+    if (previous != null) {
+      try {
+        final response = await http.post(Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/cerrar-sesiones'),
+          headers: {'Authorization': 'Bearer $previous'}).timeout(const Duration(seconds: 10));
+        if (response.statusCode != 200) throw StateError('No se pudieron cerrar las sesiones remotas');
+      } catch (_) {
+        _errorMessage = 'Se cerró la sesión en este dispositivo, pero no se pudo confirmar el cierre en los demás.';
+      }
+    }
     try {
       if (!_demoMode && !kIsWeb) {
         // En google_sign_in ^7.0.0, disconnect() revoca la cuenta a nivel OS.
@@ -366,7 +463,7 @@ class AuthController extends ChangeNotifier {
       // Si no había sesión de Google, ignoramos el error.
     }
     if (!_demoMode) {
-      await _auth.signOut();
+      await _cerrarGoogle();
     }
     await _session.eliminarToken();
     _user = null;

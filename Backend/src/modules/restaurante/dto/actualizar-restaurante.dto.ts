@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CrearRestauranteDto } from './crear-restaurante.dto';
 
-export class ActualizarRestauranteDto extends PartialType(CrearRestauranteDto) {}
+export class ActualizarRestauranteDto extends PartialType(OmitType(CrearRestauranteDto, ['idSolicitud'] as const)) {}

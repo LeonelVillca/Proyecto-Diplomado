@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Resena } from './resena.entity';
 import { CrearResenaDto } from './dto/crear-resena.dto';
 import { ActualizarResenaDto } from './dto/actualizar-resena.dto';
@@ -22,6 +22,7 @@ export class ResenasService {
     private readonly respuestasRepo: Repository<RespuestaResena>,
     @InjectRepository(UsuarioRol)
     private readonly usuarioRolesRepo: Repository<UsuarioRol>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async crear(dto: CrearResenaDto): Promise<Resena> {
@@ -31,24 +32,28 @@ export class ResenasService {
     const restaurante = await this.restaurantesRepo.findOne({ where: { id: dto.idRestaurante } });
     if (!restaurante) throw new NotFoundException('Restaurante no encontrado');
 
-    const resenaExistente = await this.resenasRepo.findOne({
-      where: {
-        usuario: { id: dto.idUsuario },
-        restaurante: { id: dto.idRestaurante }
+    return this.dataSource.transaction(async (manager) => {
+      const resenaExistente = await manager.findOne(Resena, {
+        where: { usuario: { id: dto.idUsuario }, restaurante: { id: dto.idRestaurante } },
+      });
+      if (resenaExistente) {
+        throw new BadRequestException('Ya tienes una reseña para este restaurante.');
       }
+      // El UPSERT es atómico: dos peticiones simultáneas no pueden saltarse el plazo.
+      const habilitada: Array<{ id_usuario: number }> = await manager.query(
+        `INSERT INTO resena_creacion_control (id_usuario, id_restaurante, ultima_creacion)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (id_usuario, id_restaurante)
+         DO UPDATE SET ultima_creacion = EXCLUDED.ultima_creacion
+         WHERE resena_creacion_control.ultima_creacion <= NOW() - INTERVAL '30 days'
+         RETURNING id_usuario`,
+        [dto.idUsuario, dto.idRestaurante],
+      );
+      if (!habilitada.length) {
+        throw new BadRequestException('Puedes publicar una nueva reseña de este restaurante 30 días después de la anterior.');
+      }
+      return manager.save(manager.create(Resena, { ...dto, usuario, restaurante }));
     });
-
-    if (resenaExistente) {
-      throw new BadRequestException('El usuario ya ha creado una reseña para este restaurante');
-    }
-
-    const resena = this.resenasRepo.create({
-      ...dto,
-      usuario,
-      restaurante,
-    });
-
-    return this.resenasRepo.save(resena);
   }
 
   listarTodas(): Promise<Resena[]> {

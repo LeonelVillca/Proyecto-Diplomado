@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
 import { SetMetadata } from '@nestjs/common';
@@ -49,7 +49,8 @@ export class ClientOwnershipGuard implements CanActivate {
         if (Number(params.idUsuario) !== user.id) throw new ForbiddenException('Solo puedes ver tu propio soporte.');
       } else if (params.id) {
         const soporte = await this.dataSource.getRepository(Soporte).findOne({ where: { id: Number(params.id) }, relations: { usuario: true } });
-        if (soporte && soporte.usuario.id !== user.id) throw new ForbiddenException('No tienes acceso a este ticket de soporte.');
+        if (!soporte) throw new NotFoundException('Ticket de soporte no encontrado.');
+        if (soporte.usuario.id !== user.id) throw new ForbiddenException('No tienes acceso a este ticket de soporte.');
       } else if (body && body.idUsuario) {
         if (Number(body.idUsuario) !== user.id) throw new ForbiddenException('No puedes crear un ticket a nombre de otro usuario.');
       }
@@ -60,16 +61,21 @@ export class ClientOwnershipGuard implements CanActivate {
         if (Number(params.idUsuario) !== user.id) throw new ForbiddenException('Solo puedes ver tus propias notificaciones.');
       } else if (params.id) {
         const notif = await this.dataSource.getRepository(Notificacion).findOne({ where: { id: Number(params.id) }, relations: { usuario: true } });
-        if (notif && notif.usuario.id !== user.id) throw new ForbiddenException('No tienes acceso a esta notificacion.');
+        if (!notif) throw new NotFoundException('Notificación no encontrada.');
+        if (notif.usuario.id !== user.id) throw new ForbiddenException('No tienes acceso a esta notificación.');
       } else if (body && body.idUsuario) {
         if (Number(body.idUsuario) !== user.id) throw new ForbiddenException('No puedes actuar en nombre de otro usuario.');
       }
     }
 
     if (resourceType === 'resena') {
-      if (params.id) {
+      if (params.idUsuario) {
+        // GET /resenas/usuario/:idUsuario — solo el propio usuario puede ver sus reseñas
+        if (Number(params.idUsuario) !== user.id) throw new ForbiddenException('Solo puedes ver tus propias reseñas.');
+      } else if (params.id) {
         const resena = await this.dataSource.getRepository(Resena).findOne({ where: { id: Number(params.id) }, relations: { usuario: true } });
-        if (resena && resena.usuario.id !== user.id) throw new ForbiddenException('No tienes permisos sobre esta reseña.');
+        if (!resena) throw new NotFoundException('Reseña no encontrada.');
+        if (resena.usuario.id !== user.id) throw new ForbiddenException('No tienes permisos sobre esta reseña.');
       } else if (body && body.idUsuario) {
         if (Number(body.idUsuario) !== user.id) throw new ForbiddenException('No puedes crear una reseña a nombre de otro usuario.');
       }

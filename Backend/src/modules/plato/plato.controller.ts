@@ -15,7 +15,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import sharp from 'sharp';
+import { randomUUID } from 'crypto';
+import { imageUploadOptions, sanitizeImage } from '../../core/security/uploads';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
@@ -35,11 +36,12 @@ export class PlatoController {
   ) { }
 
   @Roles('admin_restaurante', 'admin_sistema')
-  @Post('upload-foto')
-  @UseInterceptors(FileInterceptor('file'))
+  @Post('restaurante/:idRestaurante/foto')
+  @CheckOwnership('plato')
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   async uploadFoto(
     @UploadedFile() file: Express.Multer.File,
-    @Body('idRestaurante') idRestaurante: string
+    @Param('idRestaurante', ParseIntPipe) idRestaurante: number
   ): Promise<{ url: string }> {
     if (!idRestaurante) throw new BadRequestException('idRestaurante is required');
     if (!file) throw new BadRequestException('Se requiere una imagen');
@@ -48,11 +50,12 @@ export class PlatoController {
       throw new BadRequestException('El archivo debe ser una imagen válida (JPG/PNG/WEBP)');
     }
     
-    const fileName = `${Date.now()}.webp`;
-    const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', idRestaurante, 'platos');
+    if (!Number.isSafeInteger(idRestaurante) || idRestaurante < 1) throw new BadRequestException('Restaurante inválido');
+    const fileName = `${randomUUID()}.webp`;
+    const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', idRestaurante.toString(), 'platos');
     
     await fs.mkdir(uploadDir, { recursive: true });
-    await sharp(file.buffer).webp().toFile(path.join(uploadDir, fileName));
+    await fs.writeFile(path.join(uploadDir, fileName), await sanitizeImage(file));
     
     const url = `/publico/restaurantes/${idRestaurante}/platos/${fileName}`;
     return { url };

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
@@ -19,6 +19,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   bool _isLoading = true;
   List<ReservaAdminModel> _reservas = [];
   io.Socket? _socket;
+  String? _socketToken;
   
   List<ReservaAdminModel> get proximas => _reservas.where((r) => r.estado == 'pendiente' || r.estado == 'confirmada' || r.estado == 'aprobada').toList();
   List<ReservaAdminModel> get historial => _reservas.where((r) => r.estado != 'pendiente' && r.estado != 'confirmada' && r.estado != 'aprobada').toList();
@@ -39,11 +40,23 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     super.dispose();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AuthScope.of(context);
+    _conectarSocket();
+  }
+
   void _conectarSocket() {
     final token = AuthScope.of(context, listen: false).token;
+    if (token == _socketToken && _socket != null) return;
+    _socket?.dispose();
+    _socketToken = token;
+    if (token == null) { _socket = null; return; }
     _socket = io.io(ApiEndpoints.baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
+      'forceNew': true,
       'auth': {'token': token},
       'extraHeaders': {'Authorization': 'Bearer $token'}
     });

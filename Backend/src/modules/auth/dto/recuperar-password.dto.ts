@@ -13,6 +13,7 @@ export class VerificarPinDto {
 
   @IsString({ message: 'El PIN debe ser un texto' })
   @IsNotEmpty({ message: 'El PIN es obligatorio' })
+  @Matches(/^\d{6}$/, { message: 'El PIN debe contener 6 dígitos' })
   pin: string;
 }
 
@@ -23,6 +24,7 @@ export class RestablecerPasswordDto {
 
   @IsString({ message: 'El PIN debe ser un texto' })
   @IsNotEmpty({ message: 'El PIN es obligatorio' })
+  @Matches(/^\d{6}$/, { message: 'El PIN debe contener 6 dígitos' })
   pin: string;
 
   @IsString()

@@ -6,6 +6,7 @@ import { join } from 'path';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
+import { originAllowed } from './core/config/security.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -24,17 +25,13 @@ async function bootstrap() {
   app.use(helmet());
 
   // VUL-002: CORS restringido a orígenes conocidos
-  const allowedOrigins = (
-    configService.get<string>('CORS_ORIGINS') ?? 'http://localhost:4200'
-  ).split(',').map((o) => o.trim());
-
   app.enableCors({
     origin: (origin, callback) => {
       // Permitir peticiones sin origen (apps móviles, Postman en desarrollo) o desde cualquier localhost (Flutter Web)
-      if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+      if (originAllowed(origin)) {
         callback(null, true);
       } else {
-        callback(new Error(`Origen no permitido por política CORS: ${origin}`));
+        callback(null, false);
       }
     },
     credentials: true,

@@ -3,11 +3,12 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export default registerAs('database', (): TypeOrmModuleOptions => ({
   type: 'postgres',
-  host: process.env.DB_HOST ?? 'localhost',
+  host: process.env.DB_HOST,
   port: parseInt(process.env.DB_PORT ?? '5432', 10),
-  username: process.env.DB_USER ?? 'postgres',
-  password: process.env.DB_PASSWORD ?? '12345',
-  database: process.env.DB_NAME ?? 'restaurantes_tarija',
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : false,
   entities: [__dirname + '/../../**/*.entity.{ts,js}'],
   autoLoadEntities: true,
   synchronize: false,

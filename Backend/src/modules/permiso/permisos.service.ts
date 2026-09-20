@@ -16,6 +16,7 @@ export class PermisosService implements OnModuleInit {
     const defaultPermisos = [
       { nombre: 'Menú Solicitudes', codigo: 'menu_solicitudes', descripcion: 'Aprobar o rechazar solicitudes' },
       { nombre: 'Menú Usuarios', codigo: 'menu_usuarios', descripcion: 'Gestión de usuarios' },
+      { nombre: 'Menú Restaurantes', codigo: 'menu_restaurantes', descripcion: 'Gestión de cuentas de restaurantes' },
       { nombre: 'Menú Roles', codigo: 'menu_roles', descripcion: 'Gestión y listado de roles' },
       { nombre: 'Menú Asignar Roles', codigo: 'menu_asignar_roles', descripcion: 'Asignar roles a usuarios' },
       { nombre: 'Menú Permisos', codigo: 'menu_permisos', descripcion: 'Configuración de permisos por rol' },
@@ -37,11 +38,6 @@ export class PermisosService implements OnModuleInit {
         await this.permisoRepository.save(permiso);
       }
     }
-    
-    // Opcional: Borrar menu_reportes si existe
-    const reporte = await this.permisoRepository.findOneBy({ codigo: 'menu_reportes' });
-    if (reporte) await this.permisoRepository.remove(reporte);
-
     console.log('Permisos sincronizados correctamente.');
   }
 

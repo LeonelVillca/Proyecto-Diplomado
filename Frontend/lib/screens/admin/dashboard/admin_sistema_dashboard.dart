@@ -9,6 +9,7 @@ import 'package:frontend/screens/admin/usuarios/roles_crud_screen.dart';
 import 'package:frontend/screens/admin/usuarios/asignacion_roles_screen.dart';
 import 'package:frontend/screens/admin/usuarios/asignacion_permisos_screen.dart';
 import 'package:frontend/screens/admin/soporte/admin_soporte_screen.dart';
+import 'package:frontend/screens/admin/restaurantes/restaurantes_screen.dart';
 
 class AdminSistemaDashboard extends StatefulWidget {
   const AdminSistemaDashboard({super.key});
@@ -23,6 +24,7 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
   final List<Widget> _screens = [
     const SolicitudesScreen(),
     const UsuariosScreen(),
+    const RestaurantesScreen(),
     const RolesCrudScreen(),
     const AsignacionRolesScreen(),
     const AsignacionPermisosScreen(),
@@ -36,16 +38,17 @@ class _AdminSistemaDashboardState extends State<AdminSistemaDashboard> {
       items: [
         SidebarItem(icon: Icons.assignment_ind_outlined, label: 'Solicitudes', codigo: 'menu_solicitudes', index: 0),
         SidebarItem(icon: Icons.people_outline, label: 'Usuarios', codigo: 'menu_usuarios', index: 1),
-        SidebarItem(icon: Icons.shield_outlined, label: 'Roles', codigo: 'menu_roles', index: 2),
-        SidebarItem(icon: Icons.manage_accounts_outlined, label: 'Asignar Roles', codigo: 'menu_asignar_roles', index: 3),
-        SidebarItem(icon: Icons.vpn_key_outlined, label: 'Permisos', codigo: 'menu_permisos', index: 4),
+        SidebarItem(icon: Icons.restaurant_outlined, label: 'Restaurantes', codigo: 'menu_restaurantes', index: 2),
+        SidebarItem(icon: Icons.shield_outlined, label: 'Roles', codigo: 'menu_roles', index: 3),
+        SidebarItem(icon: Icons.manage_accounts_outlined, label: 'Asignar Roles', codigo: 'menu_asignar_roles', index: 4),
+        SidebarItem(icon: Icons.vpn_key_outlined, label: 'Permisos', codigo: 'menu_permisos', index: 5),
       ],
     ),
     SidebarSection(
       title: 'GENERAL',
       items: [
-        SidebarItem(icon: Icons.support_agent_outlined, label: 'Soporte', codigo: 'menu_soporte', index: 5),
-        SidebarItem(icon: Icons.reviews_outlined, label: 'Moderación', codigo: 'menu_moderacion', index: 6),
+        SidebarItem(icon: Icons.support_agent_outlined, label: 'Soporte', codigo: 'menu_soporte', index: 6),
+        SidebarItem(icon: Icons.reviews_outlined, label: 'Moderación', codigo: 'menu_moderacion', index: 7),
       ],
     ),
   ];

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/movil/api_config.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';

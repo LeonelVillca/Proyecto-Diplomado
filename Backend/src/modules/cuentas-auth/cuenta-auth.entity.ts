@@ -21,4 +21,7 @@ export class CuentaAuth {
 
   @Column({ name: 'estado', type: 'boolean', default: true })
   estado: boolean;
+
+  @Column({ name: 'session_version', type: 'int', default: 0 })
+  sessionVersion: number;
 }

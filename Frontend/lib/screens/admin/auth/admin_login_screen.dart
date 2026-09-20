@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,12 +28,10 @@ class AdminLoginScreen extends StatefulWidget {
 }
 
 class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerProviderStateMixin {
-  // Login State
   final _loginFormKey = GlobalKey<FormState>();
   final _correoCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   
-  // Recovery State
   final _recoveryFormKey = GlobalKey<FormState>();
   final _recoveryCorreoCtrl = TextEditingController();
   final List<TextEditingController> _pinCtrls = List.generate(6, (_) => TextEditingController());
@@ -65,10 +63,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
     _quoteFade = CurvedAnimation(parent: _animCtrl, curve: const Interval(0.3, 1.0, curve: Curves.easeOut));
     _quoteSlide = Tween<Offset>(begin: const Offset(0, 0.07), end: Offset.zero)
         .animate(CurvedAnimation(parent: _animCtrl, curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic)));
-    
     _nuevaPasswordCtrl.addListener(() => setState(() {}));
     _confirmPasswordCtrl.addListener(() => setState(() {}));
-
     _animCtrl.forward();
   }
 
@@ -145,7 +141,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
     );
   }
 
-  // --- API Calls ---
   Future<void> _login() async {
     if (!_loginFormKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -170,17 +165,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             } else {
               auth.signOut();
               if (!mounted) return;
-              _mostrarMensaje(
-                'Tu cuenta no tiene permisos para acceder al Panel Administrativo. Contacta a soporte si crees que es un error.',
-              );
+              _mostrarMensaje('Tu cuenta no tiene permisos para acceder al Panel Administrativo. Contacta a soporte si crees que es un error.');
             }
           }
         }
       } else {
-        _mostrarMensaje('Credenciales inválidas o cuenta suspendida.');
+        _mostrarMensaje('Credenciales invalidas o cuenta suspendida.');
       }
     } catch (_) {
-      _mostrarMensaje('Error de red. Verifica tu conexión.');
+      _mostrarMensaje('Error de red. Verifica tu conexion.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -201,10 +194,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         setState(() => _screenState = AuthScreenState.paso2Pin);
       } else {
         final error = jsonDecode(res.body);
-        _mostrarMensaje(error['message'] ?? 'Error al solicitar recuperación.');
+        _mostrarMensaje(error['message'] ?? 'Error al solicitar recuperacion.');
       }
     } catch (_) {
-      _mostrarMensaje('Error de red. Verifica tu conexión.');
+      _mostrarMensaje('Error de red. Verifica tu conexion.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -213,7 +206,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   Future<void> _verificarPin() async {
     final pin = _pinCtrls.map((c) => c.text).join();
     if (pin.length < 6) {
-      _mostrarMensaje('Ingresa el código completo de 6 dígitos.');
+      _mostrarMensaje('Ingresa el codigo completo de 6 digitos.');
       return;
     }
     setState(() => _isLoading = true);
@@ -221,19 +214,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
       final res = await http.post(
         Uri.parse(ApiEndpoints.authVerificarPinRecuperacion),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'correo': _recoveryCorreoCtrl.text.trim(),
-          'pin': pin,
-        }),
+        body: jsonEncode({'correo': _recoveryCorreoCtrl.text.trim(), 'pin': pin}),
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
         setState(() => _screenState = AuthScreenState.paso3NuevaContrasena);
       } else {
         final error = jsonDecode(res.body);
-        _mostrarMensaje(error['message'] ?? 'El PIN es inválido o ha expirado.');
+        _mostrarMensaje(error['message'] ?? 'El PIN es invalido o ha expirado.');
       }
     } catch (_) {
-      _mostrarMensaje('Error de red. Verifica tu conexión.');
+      _mostrarMensaje('Error de red. Verifica tu conexion.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -257,10 +247,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         setState(() => _screenState = AuthScreenState.exito);
       } else {
         final error = jsonDecode(res.body);
-        _mostrarMensaje(error['message'] ?? 'Error al actualizar contraseña.');
+        _mostrarMensaje(error['message'] ?? 'Error al actualizar contrasena.');
       }
     } catch (_) {
-      _mostrarMensaje('Error de red. Verifica tu conexión.');
+      _mostrarMensaje('Error de red. Verifica tu conexion.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -269,72 +259,52 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 900;
-    
-    final leftVisual = AuthLeftVisual(
-      fadeIn: _fadeIn,
-      quoteFade: _quoteFade,
-      quoteSlide: _quoteSlide,
-    );
+    final leftVisual = AuthLeftVisual(fadeIn: _fadeIn, quoteFade: _quoteFade, quoteSlide: _quoteSlide);
 
-    final rightPanel = DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFF9F4EA), Color(0xFFF1E6D7)],
+    final rightPanel = Stack(
+      children: [
+        Positioned(
+          top: 40,
+          left: 40,
+          child: TextButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back, size: 16, color: authInkSoft),
+            label: Text('Volver al inicio', style: GoogleFonts.manrope(color: authInkSoft, fontWeight: FontWeight.w700, fontSize: 14)),
+            style: TextButton.styleFrom(padding: EdgeInsets.zero),
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -160,
-            right: -140,
-            child: Container(
-              width: 380,
-              height: 380,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [Color(0x2ED4AF37), Color(0x00D4AF37)],
-                  stops: [0.0, 1.0],
-                ),
-              ),
+        Positioned(
+          top: 40,
+          right: 40,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE8E5E1)),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
             ),
+            child: Text('PANEL DE RESTAURANTES', style: GoogleFonts.manrope(color: authInkSoft, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
           ),
-          Positioned(
-            bottom: -180,
-            left: -150,
-            child: Container(
-              width: 360,
-              height: 360,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: authWine.withValues(alpha: 0.045),
-              ),
-            ),
-          ),
-          Center(
+        ),
+        Positioned.fill(
+          top: 80,
+          child: Align(
+            alignment: Alignment.center,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: FadeTransition(
                 opacity: _fadeIn,
                 child: SlideTransition(
                   position: _slideIn,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 500),
+                    constraints: const BoxConstraints(maxWidth: 440),
                     child: Container(
-                      padding: const EdgeInsets.fromLTRB(36, 30, 36, 30),
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 44),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.76),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.9)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: authWineDeep.withValues(alpha: 0.08),
-                            blurRadius: 34,
-                            offset: const Offset(0, 18),
-                          ),
-                        ],
+                        color: authCard,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 30, offset: const Offset(0, 10))],
                       ),
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
@@ -343,16 +313,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                         layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
                           return Stack(
                             alignment: Alignment.center,
-                            children: <Widget>[
-                              ...previousChildren,
-                              if (currentChild != null) currentChild,
-                            ],
+                            children: <Widget>[...previousChildren, if (currentChild != null) currentChild],
                           );
                         },
-                        child: KeyedSubtree(
-                          key: ValueKey(_screenState),
-                          child: _buildCurrentState(),
-                        ),
+                        child: KeyedSubtree(key: ValueKey(_screenState), child: _buildCurrentState()),
                       ),
                     ),
                   ),
@@ -360,130 +324,54 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
 
     return Scaffold(
       backgroundColor: authPaper,
       body: isDesktop
-          ? Row(
-              children: [
-                Expanded(flex: 5, child: leftVisual),
-                Expanded(flex: 5, child: rightPanel),
-              ],
-            )
-          : Column(
-              children: [
-                SizedBox(height: 240, width: double.infinity, child: leftVisual),
-                Expanded(child: rightPanel),
-              ],
-            ),
+          ? Row(children: [Expanded(flex: 5, child: leftVisual), Expanded(flex: 5, child: rightPanel)])
+          : Column(children: [SizedBox(height: 240, width: double.infinity, child: leftVisual), Expanded(child: rightPanel)]),
     );
   }
 
   Widget _buildCurrentState() {
     switch (_screenState) {
-      case AuthScreenState.login:
-        return _buildLoginState();
-      case AuthScreenState.paso1Correo:
-        return _buildPaso1();
-      case AuthScreenState.paso2Pin:
-        return _buildPaso2();
-      case AuthScreenState.paso3NuevaContrasena:
-        return _buildPaso3();
-      case AuthScreenState.exito:
-        return _buildExito();
+      case AuthScreenState.login: return _buildLoginState();
+      case AuthScreenState.paso1Correo: return _buildPaso1();
+      case AuthScreenState.paso2Pin: return _buildPaso2();
+      case AuthScreenState.paso3NuevaContrasena: return _buildPaso3();
+      case AuthScreenState.exito: return _buildExito();
     }
   }
 
-  // ─── LOGIN STATE ─────────────────────────────────────────────────────────────
   Widget _buildLoginState() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 9,
-              height: 9,
-              decoration: const BoxDecoration(color: authGoldAccent, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 9),
-            Text(
-              'PANEL DE RESTAURANTES',
-              style: GoogleFonts.manrope(
-                color: authGoldAccent,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.7,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new, size: 14, color: authInkSoft),
-            label: Text(
-              'Volver al inicio',
-              style: GoogleFonts.manrope(
-                color: authInkSoft,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
-            ),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              alignment: Alignment.centerLeft,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        RichText(
-          text: TextSpan(
-            style: GoogleFonts.piazzolla(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: authInk,
-              height: 1.1,
-              letterSpacing: -0.8,
-            ),
-            children: [
-              const TextSpan(text: 'Bienvenido '),
-              TextSpan(
-                text: 'de vuelta',
-                style: GoogleFonts.piazzolla(color: authWine, fontStyle: FontStyle.italic),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Ingresa con tu correo y contraseña para gestionar tu restaurante.',
-          style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.4),
-        ),
-        const SizedBox(height: 24),
+        Text('Bienvenido de vuelta', style: GoogleFonts.piazzolla(fontSize: 32, fontWeight: FontWeight.w700, color: authInk, height: 1.1, letterSpacing: -0.5)),
+        const SizedBox(height: 12),
+        Text('Ingresa con tu cuenta para ver el salon de hoy.', style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.4)),
+        const SizedBox(height: 32),
         Form(
           key: _loginFormKey,
           child: Column(
             children: [
               AuthLoginField(
                 controller: _correoCtrl,
-                label: 'Correo electrónico',
-                hintText: 'tunombre@correo.com',
+                label: 'Correo electronico',
+                hintText: 'correo@turestaurante.com',
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                validator: (v) => v == null || !v.contains('@') ? 'Correo inválido' : null,
+                validator: (v) => v == null || !v.contains('@') ? 'Correo invalido' : null,
               ),
               const SizedBox(height: 24),
               AuthLoginField(
                 controller: _passwordCtrl,
-                label: 'Contraseña',
-                hintText: 'Escribe tu contraseña',
+                label: 'Contrasena',
+                hintText: 'Tu contrasena',
                 icon: Icons.lock_outline,
                 obscureText: _obscureText,
                 validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
@@ -504,8 +392,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
             Row(
               children: [
                 SizedBox(
-                  width: 22,
-                  height: 22,
+                  width: 20,
+                  height: 20,
                   child: Checkbox(
                     value: _rememberMe,
                     onChanged: (v) => setState(() => _rememberMe = v ?? false),
@@ -515,7 +403,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text('Mantener sesión', style: GoogleFonts.manrope(color: authInkSoft, fontSize: 14, fontWeight: FontWeight.w600)),
+                Text('Recordarme', style: GoogleFonts.manrope(color: authInkSoft, fontSize: 14, fontWeight: FontWeight.w600)),
               ],
             ),
             TextButton(
@@ -524,58 +412,22 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                 setState(() => _screenState = AuthScreenState.paso1Correo);
               },
               style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerRight),
-              child: Text(
-                '¿Olvidaste tu contraseña?',
-                style: GoogleFonts.manrope(color: authWine, fontSize: 14, fontWeight: FontWeight.w700),
-              ),
+              child: Text('Olvidaste tu contrasena?', style: GoogleFonts.manrope(color: authWine, fontSize: 14, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
-        const SizedBox(height: 20),
-        AuthSubmitButton(label: 'Ingresar', loading: _isLoading, onPressed: _login),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
-          decoration: BoxDecoration(
-            color: authCard,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFEAE0C9)),
-            boxShadow: [BoxShadow(color: authInk.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Row(
-            children: [
-              Container(width: 3, height: 38, decoration: BoxDecoration(color: authGoldAccent, borderRadius: BorderRadius.circular(3))),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  '¿Tu restaurante aún no está\nen Mesa Chapaca?',
-                  style: GoogleFonts.manrope(color: authInkSoft, fontSize: 13, fontWeight: FontWeight.w600, height: 1.3),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen())),
-                style: TextButton.styleFrom(padding: EdgeInsets.zero),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Unirme', style: GoogleFonts.manrope(color: authWine, fontSize: 14.5, fontWeight: FontWeight.w800)),
-                    const SizedBox(width: 3),
-                    const Icon(Icons.arrow_forward, size: 16, color: authWine),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 32),
+        AuthSubmitButton(label: 'Ingresar a mi panel', loading: _isLoading, onPressed: _login),
+        const SizedBox(height: 32),
+        const Divider(color: Color(0xFFF0EBE1), height: 1),
         const SizedBox(height: 24),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.center,
           children: [
-            const Icon(Icons.lock_outline, size: 14, color: authInkSoft),
-            const SizedBox(width: 6),
-            Text(
-              'Tus datos están protegidos y encriptados',
-              style: GoogleFonts.manrope(color: authInkSoft, fontSize: 11.5, fontWeight: FontWeight.w600),
+            Text('Todavia no tienes cuenta? ', style: GoogleFonts.manrope(color: authInkSoft, fontSize: 14, fontWeight: FontWeight.w500)),
+            GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SolicitudRegistroScreen())),
+              child: Text('Registra tu restaurante', style: GoogleFonts.manrope(color: authWine, fontSize: 14, fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -583,7 +435,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
     );
   }
 
-  // ─── HELPER HEADER RECOVERY ────────────────────────────────────────────────
   Widget _buildRecoveryHeader(int step, {required VoidCallback onBack, required String title, required String subtitle}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -593,10 +444,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
           child: TextButton.icon(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_ios_new, size: 14, color: authInkSoft),
-            label: Text(
-              step == 1 ? 'Volver al login' : 'Volver',
-              style: GoogleFonts.manrope(color: authInkSoft, fontWeight: FontWeight.w700, fontSize: 13),
-            ),
+            label: Text(step == 1 ? 'Volver al login' : 'Volver', style: GoogleFonts.manrope(color: authInkSoft, fontWeight: FontWeight.w700, fontSize: 13)),
             style: TextButton.styleFrom(padding: EdgeInsets.zero, alignment: Alignment.centerLeft),
           ),
         ),
@@ -609,75 +457,41 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                 duration: const Duration(milliseconds: 400),
                 margin: EdgeInsets.only(right: index < 2 ? 6 : 0),
                 height: 4,
-                decoration: BoxDecoration(
-                  color: isFilled ? authWine : const Color(0xFFE5DCD0),
-                  borderRadius: BorderRadius.circular(3),
-                ),
+                decoration: BoxDecoration(color: isFilled ? authWine : const Color(0xFFE5DCD0), borderRadius: BorderRadius.circular(3)),
               ),
             );
           }),
         ),
         const SizedBox(height: 24),
-        Text(
-          title,
-          style: GoogleFonts.piazzolla(
-            fontSize: 34,
-            fontWeight: FontWeight.w700,
-            color: authInk,
-            height: 1.1,
-            letterSpacing: -0.5,
-          ),
-        ),
+        Text(title, style: GoogleFonts.piazzolla(fontSize: 34, fontWeight: FontWeight.w700, color: authInk, height: 1.1, letterSpacing: -0.5)),
         const SizedBox(height: 10),
-        Text(
-          subtitle,
-          style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.4),
-        ),
+        Text(subtitle, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.4)),
         const SizedBox(height: 24),
       ],
     );
   }
 
-  // ─── PASO 1 ────────────────────────────────────────────────────────────────
   Widget _buildPaso1() {
     return Form(
       key: _recoveryFormKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildRecoveryHeader(
-            1,
-            onBack: () => setState(() => _screenState = AuthScreenState.login),
-            title: 'Recupera tu contraseña',
-            subtitle: 'Ingresa el correo asociado a tu cuenta y te enviaremos un código de verificación.',
-          ),
-          AuthLoginField(
-            controller: _recoveryCorreoCtrl,
-            label: 'Correo electrónico',
-            hintText: 'tunombre@correo.com',
-            icon: Icons.email_outlined,
-            keyboardType: TextInputType.emailAddress,
-            validator: (v) => v == null || !v.contains('@') ? 'Correo inválido' : null,
-          ),
+          _buildRecoveryHeader(1, onBack: () => setState(() => _screenState = AuthScreenState.login), title: 'Recupera tu contrasena', subtitle: 'Ingresa el correo asociado a tu cuenta y te enviaremos un codigo de verificacion.'),
+          AuthLoginField(controller: _recoveryCorreoCtrl, label: 'Correo electronico', hintText: 'tunombre@correo.com', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, validator: (v) => v == null || !v.contains('@') ? 'Correo invalido' : null),
           _buildInlineMessage(),
           const SizedBox(height: 32),
-          AuthSubmitButton(label: 'Enviar código', loading: _isLoading, onPressed: _solicitarRecuperacion),
+          AuthSubmitButton(label: 'Enviar codigo', loading: _isLoading, onPressed: _solicitarRecuperacion),
         ],
       ),
     );
   }
 
-  // ─── PASO 2 ────────────────────────────────────────────────────────────────
   Widget _buildPaso2() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRecoveryHeader(
-          2,
-          onBack: () => setState(() => _screenState = AuthScreenState.paso1Correo),
-          title: 'Ingresa el código',
-          subtitle: 'Enviamos un código de 6 dígitos a ${_recoveryCorreoCtrl.text}.',
-        ),
+        _buildRecoveryHeader(2, onBack: () => setState(() => _screenState = AuthScreenState.paso1Correo), title: 'Ingresa el codigo', subtitle: 'Enviamos un codigo de 6 digitos a ${_recoveryCorreoCtrl.text}.'),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(6, (index) {
@@ -688,9 +502,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                   focusNode: FocusNode(),
                   onKeyEvent: (event) {
                     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.backspace) {
-                      if (_pinCtrls[index].text.isEmpty && index > 0) {
-                        _pinFocusNodes[index - 1].requestFocus();
-                      }
+                      if (_pinCtrls[index].text.isEmpty && index > 0) _pinFocusNodes[index - 1].requestFocus();
                     }
                   },
                   child: TextFormField(
@@ -705,16 +517,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                       filled: true,
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: const Color(0xFFE5DCD0))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: const Color(0xFFE5DCD0))),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5DCD0))),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5DCD0))),
                       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: authWine, width: 2)),
                     ),
                     onChanged: (val) {
-                      if (val.isNotEmpty && index < 5) {
-                        _pinFocusNodes[index + 1].requestFocus();
-                      } else if (val.isEmpty && index > 0) {
-                        _pinFocusNodes[index - 1].requestFocus();
-                      }
+                      if (val.isNotEmpty && index < 5) _pinFocusNodes[index + 1].requestFocus();
+                      else if (val.isEmpty && index > 0) _pinFocusNodes[index - 1].requestFocus();
                       setState(() {});
                     },
                   ),
@@ -725,37 +534,21 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         ),
         _buildInlineMessage(),
         const SizedBox(height: 16),
-        Text(
-          'El código vence en 15:00 minutos',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.manrope(fontSize: 13, color: authInkSoft, fontWeight: FontWeight.w600),
-        ),
+        Text('El codigo vence en 15:00 minutos', textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 13, color: authInkSoft, fontWeight: FontWeight.w600)),
         const SizedBox(height: 32),
-        AuthSubmitButton(
-          label: 'Verificar código',
-          loading: _isLoading,
-          disabled: _pinCtrls.map((c) => c.text).join().length < 6,
-          onPressed: _verificarPin,
-        ),
+        AuthSubmitButton(label: 'Verificar codigo', loading: _isLoading, disabled: _pinCtrls.map((c) => c.text).join().length < 6, onPressed: _verificarPin),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('¿No recibiste el código? ', style: GoogleFonts.manrope(fontSize: 14, color: authInkSoft, fontWeight: FontWeight.w500)),
-            GestureDetector(
-              onTap: _isLoading ? null : _solicitarRecuperacion,
-              child: Text(
-                'Reenviar',
-                style: GoogleFonts.manrope(fontSize: 14, color: authWine, fontWeight: FontWeight.w800),
-              ),
-            ),
+            Text('No recibiste el codigo? ', style: GoogleFonts.manrope(fontSize: 14, color: authInkSoft, fontWeight: FontWeight.w500)),
+            GestureDetector(onTap: _isLoading ? null : _solicitarRecuperacion, child: Text('Reenviar', style: GoogleFonts.manrope(fontSize: 14, color: authWine, fontWeight: FontWeight.w800))),
           ],
         ),
       ],
     );
   }
 
-  // ─── PASO 3 ────────────────────────────────────────────────────────────────
   bool get _hasMinLength => _nuevaPasswordCtrl.text.length >= 8;
   bool get _hasRegex => RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*[\d\W]).+$').hasMatch(_nuevaPasswordCtrl.text);
   bool get _hasMatch => _nuevaPasswordCtrl.text == _confirmPasswordCtrl.text && _nuevaPasswordCtrl.text.isNotEmpty;
@@ -768,12 +561,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
         children: [
           Icon(isValid ? Icons.check_circle : Icons.check_circle_outline, color: isValid ? authSage : const Color(0xFFB5A89D), size: 20),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.manrope(fontSize: 13.5, color: isValid ? authSage : authInkSoft, fontWeight: isValid ? FontWeight.w700 : FontWeight.w500),
-            ),
-          ),
+          Expanded(child: Text(text, style: GoogleFonts.manrope(fontSize: 13.5, color: isValid ? authSage : authInkSoft, fontWeight: isValid ? FontWeight.w700 : FontWeight.w500))),
         ],
       ),
     );
@@ -785,76 +573,37 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildRecoveryHeader(
-            3,
-            onBack: () => setState(() => _screenState = AuthScreenState.paso2Pin),
-            title: 'Crea una nueva contraseña',
-            subtitle: 'Elige una contraseña segura que no hayas usado antes.',
-          ),
-          AuthLoginField(
-            controller: _nuevaPasswordCtrl,
-            label: 'Nueva contraseña',
-            hintText: 'Escribe tu nueva contraseña',
-            icon: Icons.lock_outline,
-            obscureText: _obscureRecoveryText,
-            suffixIcon: IconButton(
-              icon: Icon(_obscureRecoveryText ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: authInkFaint, size: 20),
-              onPressed: () => setState(() => _obscureRecoveryText = !_obscureRecoveryText),
-            ),
-          ),
+          _buildRecoveryHeader(3, onBack: () => setState(() => _screenState = AuthScreenState.paso2Pin), title: 'Crea una nueva contrasena', subtitle: 'Elige una contrasena segura que no hayas usado antes.'),
+          AuthLoginField(controller: _nuevaPasswordCtrl, label: 'Nueva contrasena', hintText: 'Escribe tu nueva contrasena', icon: Icons.lock_outline, obscureText: _obscureRecoveryText,
+            suffixIcon: IconButton(icon: Icon(_obscureRecoveryText ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: authInkFaint, size: 20), onPressed: () => setState(() => _obscureRecoveryText = !_obscureRecoveryText))),
           const SizedBox(height: 24),
-          AuthLoginField(
-            controller: _confirmPasswordCtrl,
-            label: 'Confirmar contraseña',
-            hintText: 'Vuelve a escribir la contraseña',
-            icon: Icons.lock_outline,
-            obscureText: _obscureRecoveryText,
-          ),
+          AuthLoginField(controller: _confirmPasswordCtrl, label: 'Confirmar contrasena', hintText: 'Vuelve a escribir la contrasena', icon: Icons.lock_outline, obscureText: _obscureRecoveryText),
           const SizedBox(height: 24),
           _buildChecklistItem('Al menos 8 caracteres', _hasMinLength),
-          _buildChecklistItem('Incluye mayúscula, minúscula y un número o símbolo', _hasRegex),
-          _buildChecklistItem('Las contraseñas coinciden', _hasMatch),
+          _buildChecklistItem('Incluye mayuscula, minuscula y un numero o simbolo', _hasRegex),
+          _buildChecklistItem('Las contrasenas coinciden', _hasMatch),
           _buildInlineMessage(),
           const SizedBox(height: 24),
-          AuthSubmitButton(
-            label: 'Guardar contraseña',
-            loading: _isLoading,
-            disabled: !_isPasswordValid,
-            onPressed: _restablecerPassword,
-          ),
+          AuthSubmitButton(label: 'Guardar contrasena', loading: _isLoading, disabled: !_isPasswordValid, onPressed: _restablecerPassword),
         ],
       ),
     );
   }
 
-  // ─── EXITO ─────────────────────────────────────────────────────────────────
   Widget _buildExito() {
     return Container(
       padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: authInk.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 12))],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: authInk.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 12))]),
       child: Column(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(color: authSage.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle_outline, color: authSage, size: 40),
-          ),
+          Container(width: 72, height: 72, decoration: BoxDecoration(color: authSage.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.check_circle_outline, color: authSage, size: 40)),
           const SizedBox(height: 24),
-          Text('¡Contraseña actualizada!', style: GoogleFonts.piazzolla(fontSize: 26, fontWeight: FontWeight.w700, color: authInk)),
+          Text('Contrasena actualizada!', style: GoogleFonts.piazzolla(fontSize: 26, fontWeight: FontWeight.w700, color: authInk)),
           const SizedBox(height: 12),
-          Text(
-            'Ya puedes iniciar sesión con tu nueva contraseña.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(fontSize: 14.5, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.5),
-          ),
+          Text('Ya puedes iniciar sesion con tu nueva contrasena.', textAlign: TextAlign.center, style: GoogleFonts.manrope(fontSize: 14.5, fontWeight: FontWeight.w500, color: authInkSoft, height: 1.5)),
           const SizedBox(height: 32),
           AuthSubmitButton(
-            label: 'Volver a iniciar sesión',
+            label: 'Volver a iniciar sesion',
             loading: false,
             onPressed: () {
               _correoCtrl.text = _recoveryCorreoCtrl.text;

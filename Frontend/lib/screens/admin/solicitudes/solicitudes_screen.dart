@@ -1,7 +1,7 @@
 ﻿import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
+import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/solicitud_admin_model.dart';
@@ -130,10 +130,10 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           ),
           const SizedBox(width: 16),
           ElevatedButton(
-            onPressed: () {
+            onPressed: solicitud.correoVerificado ? () {
               Navigator.pop(context);
               _cambiarEstadoSolicitud(solicitud, 'aprobada');
-            },
+            } : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6E1E39),
               foregroundColor: Colors.white,
@@ -188,6 +188,9 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           ),
           const SizedBox(height: 16),
           _buildDetailItem('Correo Electrónico', '${solicitud.usuario?['correo'] ?? ''}'),
+          const SizedBox(height: 12),
+          _buildDetailItem('Confirmación de correo',
+              solicitud.correoVerificado ? 'Confirmado' : 'Pendiente — no se puede aprobar todavía'),
           const SizedBox(height: 24),
           Text('Descripción del Negocio', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
           const SizedBox(height: 8),
@@ -328,25 +331,16 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         final blob = html.Blob([res.bodyBytes], 'application/pdf');
         final blobUrl = html.Url.createObjectUrlFromBlob(blob);
         
-        if (newWindow != null) {
-          // Redirigir la pestaña abierta al visor de PDF nativo del navegador
-          newWindow.location.href = blobUrl;
-        } else {
-          // Fallback por si acaso
-          html.window.open(blobUrl, '_blank');
-        }
+        // Redirigir la pestaña abierta al visor de PDF nativo del navegador.
+        newWindow.location.href = blobUrl;
       } else {
-        if (newWindow != null) {
-          newWindow.close();
-        }
+        newWindow.close();
         if (mounted) {
           AdminNotificationModal.error(context, 'Error al cargar el documento (${res.statusCode}).');
         }
       }
     } catch (e) {
-      if (newWindow != null) {
-        newWindow.close();
-      }
+      newWindow.close();
       if (mounted) {
         AdminNotificationModal.error(context, 'Error de conexión al cargar el documento.');
       }
