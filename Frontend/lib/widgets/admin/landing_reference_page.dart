@@ -215,6 +215,7 @@ class _LandingReferencePageState extends State<LandingReferencePage> {
                       onProfile: () => _scrollTo(_profileKey),
                       onRestaurants: () => _scrollTo(_restaurantsKey),
                       onFaq: () => _scrollTo(_faqKey),
+                      onLogin: widget.onLogin,
                       onRegister: widget.onRegister,
                     ),
                   ),
@@ -344,6 +345,7 @@ class _LandingNavbar extends StatelessWidget {
                     ),
                   ] else ...[
                     const Spacer(),
+                    _TextButton(label: 'Entrar', onTap: onLogin),
                     _PrimaryButton(
                       label: 'Registrar',
                       onTap: onRegister,
@@ -451,6 +453,7 @@ class _MobileMenu extends StatelessWidget {
     required this.onProfile,
     required this.onRestaurants,
     required this.onFaq,
+    required this.onLogin,
     required this.onRegister,
   });
   final VoidCallback onBenefits;
@@ -458,6 +461,7 @@ class _MobileMenu extends StatelessWidget {
   final VoidCallback onProfile;
   final VoidCallback onRestaurants;
   final VoidCallback onFaq;
+  final VoidCallback onLogin;
   final VoidCallback onRegister;
 
   @override
@@ -479,6 +483,7 @@ class _MobileMenu extends StatelessWidget {
           _MobileLink('Tu perfil', onProfile),
           _MobileLink('Restaurantes', onRestaurants),
           _MobileLink('FAQ', onFaq),
+          _MobileLink('Iniciar sesión', onLogin),
           _MobileLink(
             'Registrar mi restaurante →',
             onRegister,
@@ -1438,7 +1443,7 @@ class _PanelSection extends StatelessWidget {
           const _Checks(
             items: [
               'Reservas del día, confirmadas y pendientes, en una pantalla',
-              'Notificaciones automáticas a cocina y personal de sala',
+              'Reservas actualizadas para cocina y personal de sala',
               'Ocupación y tiempos de espera siempre visibles',
               'Funciona en el celular, la tablet o la compu de la caja',
             ],
@@ -1832,7 +1837,7 @@ class _StepsSection extends StatelessWidget {
       'Recibe reservas',
       'Las reservas llegan confirmadas, en tiempo real, y tu equipo queda coordinado desde el primer día.',
       LucideIcons.bell,
-      'Notificaciones en vivo',
+      'Actualización en vivo',
     ),
   ];
 

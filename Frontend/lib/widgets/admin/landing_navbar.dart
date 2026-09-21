@@ -98,6 +98,16 @@ class _LandingNavbarState extends State<LandingNavbar> {
                           ),
                         ] else ...[
                           const Spacer(),
+                          TextButton(
+                            onPressed: widget.onLogin,
+                            style: TextButton.styleFrom(
+                              foregroundColor: LandingPalette.ink,
+                              textStyle: LandingType.bodyText(size: 14, weight: FontWeight.w600),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                            ),
+                            child: const Text('Entrar'),
+                          ),
+                          const SizedBox(width: 4),
                           FilledButton(
                             onPressed: widget.onRegister,
                             style: FilledButton.styleFrom(
