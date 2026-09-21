@@ -42,7 +42,7 @@ class LandingFooter extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.asset(
-                  'assets/icon_app.png',
+                  'assets/icon_app.webp',
                   width: 38,
                   height: 38,
                   fit: BoxFit.cover,

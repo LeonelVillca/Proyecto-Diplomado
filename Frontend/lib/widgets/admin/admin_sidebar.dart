@@ -49,7 +49,7 @@ class _BentoSidebar extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(14),
                     child: Image.asset(
-                      'assets/icon_app.png',
+                      'assets/icon_app.webp',
                       fit: BoxFit.cover,
                     ),
                   ),

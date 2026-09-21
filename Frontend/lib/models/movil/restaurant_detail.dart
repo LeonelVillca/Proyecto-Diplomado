@@ -54,20 +54,20 @@ class ScheduleDay {
 // ── Mock data ─────────────────────────────────────────────────────────────────
 
 const List<String> mockGalleryImages = [
-  'assets/restaurant_hero.png',
-  'assets/tarija_food.png',
-  'assets/dining_couple.png',
-  'assets/restaurant_hero.png',
-  'assets/tarija_food.png',
+  'assets/restaurant_hero.webp',
+  'assets/tarija_food.webp',
+  'assets/dining_couple.webp',
+  'assets/restaurant_hero.webp',
+  'assets/tarija_food.webp',
 ];
 
 const List<DishItem> mockDishes = [
-  DishItem(id: 'd1', name: 'Sopa de Mani', price: 35, description: 'Caldo tarijeño con mani tostado y verduras de estacion.', category: 'Entradas', available: true, photoUrl: 'assets/tarija_food.png'),
-  DishItem(id: 'd2', name: 'Saice Tarijeño', price: 55, description: 'Plato tipico con carne molida, papa y maiz chapaco.', category: 'Platos Fuertes', available: true, photoUrl: 'assets/tarija_food.png'),
-  DishItem(id: 'd3', name: 'Costillar a la Brasa', price: 110, description: 'Costillar de cerdo al carbon con papa cocida y ensalada.', category: 'Platos Fuertes', available: true, photoUrl: 'assets/tarija_food.png'),
-  DishItem(id: 'd4', name: 'Vino Tinto Reserva', price: 80, description: 'Vino de los Cintis, cosecha 2021, varietal Cabernet Sauvignon.', category: 'Vinos y Bebidas', available: true, photoUrl: 'assets/tarija_food.png'),
-  DishItem(id: 'd5', name: 'Empanadas Salteñas', price: 20, description: 'Empanadas criollas de carne picada con pasas y aceituna.', category: 'Entradas', available: false, photoUrl: 'assets/tarija_food.png'),
-  DishItem(id: 'd6', name: 'Mousse de Chocolate', price: 30, description: 'Postre artesanal con cacao boliviano y crema chantilly.', category: 'Postres', available: true, photoUrl: 'assets/tarija_food.png'),
+  DishItem(id: 'd1', name: 'Sopa de Mani', price: 35, description: 'Caldo tarijeño con mani tostado y verduras de estacion.', category: 'Entradas', available: true, photoUrl: 'assets/tarija_food.webp'),
+  DishItem(id: 'd2', name: 'Saice Tarijeño', price: 55, description: 'Plato tipico con carne molida, papa y maiz chapaco.', category: 'Platos Fuertes', available: true, photoUrl: 'assets/tarija_food.webp'),
+  DishItem(id: 'd3', name: 'Costillar a la Brasa', price: 110, description: 'Costillar de cerdo al carbon con papa cocida y ensalada.', category: 'Platos Fuertes', available: true, photoUrl: 'assets/tarija_food.webp'),
+  DishItem(id: 'd4', name: 'Vino Tinto Reserva', price: 80, description: 'Vino de los Cintis, cosecha 2021, varietal Cabernet Sauvignon.', category: 'Vinos y Bebidas', available: true, photoUrl: 'assets/tarija_food.webp'),
+  DishItem(id: 'd5', name: 'Empanadas Salteñas', price: 20, description: 'Empanadas criollas de carne picada con pasas y aceituna.', category: 'Entradas', available: false, photoUrl: 'assets/tarija_food.webp'),
+  DishItem(id: 'd6', name: 'Mousse de Chocolate', price: 30, description: 'Postre artesanal con cacao boliviano y crema chantilly.', category: 'Postres', available: true, photoUrl: 'assets/tarija_food.webp'),
 ];
 
 const List<ReviewItem> mockReviews = [

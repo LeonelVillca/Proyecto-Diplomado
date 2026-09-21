@@ -39,7 +39,7 @@ class LandingShowcase extends StatelessWidget {
                 children: [
                   _ShowcaseCard(
                     width: cardWidth,
-                    image: 'assets/tarija_food_optimized.jpg',
+                    image: 'assets/tarija_food_optimized.webp',
                     label: 'Tu propuesta',
                     title: 'Haz visible lo que te hace especial.',
                     icon: Icons.restaurant_menu_rounded,
@@ -53,7 +53,7 @@ class LandingShowcase extends StatelessWidget {
                   ),
                   _ShowcaseCard(
                     width: cardWidth,
-                    image: 'assets/aaa.jpg',
+                    image: 'assets/aaa.webp',
                     label: 'Tu operación',
                     title: 'Coordina cada servicio con claridad.',
                     icon: Icons.event_available_rounded,

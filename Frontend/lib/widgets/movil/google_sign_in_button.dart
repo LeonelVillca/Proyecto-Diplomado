@@ -103,7 +103,7 @@ class _GoogleLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/google_icon.png',
+      'assets/google_icon.webp',
       width: size,
       height: size,
       errorBuilder: (context, _, _) => GoogleGLogo(size: size),

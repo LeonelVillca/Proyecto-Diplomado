@@ -171,7 +171,7 @@ class _LocationCard extends StatelessWidget {
                 Positioned.fill(
                   child: Opacity(
                     opacity: 0.3,
-                    child: Image.asset('assets/tarija_food.png', fit: BoxFit.cover, color: AppColors.terracotta, colorBlendMode: BlendMode.color),
+                    child: Image.asset('assets/tarija_food.webp', fit: BoxFit.cover, color: AppColors.terracotta, colorBlendMode: BlendMode.color),
                   ),
                 ),
                 // Pin

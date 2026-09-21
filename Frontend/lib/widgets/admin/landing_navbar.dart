@@ -180,7 +180,7 @@ class _Brand extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: Image.asset(
-            'assets/icon_app.png',
+            'assets/icon_app.webp',
             width: compact ? 36 : 42,
             height: compact ? 36 : 42,
             fit: BoxFit.cover,

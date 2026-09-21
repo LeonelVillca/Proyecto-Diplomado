@@ -116,7 +116,7 @@ class PageOneView extends StatelessWidget {
                   child: Container(
                     constraints:
                         const BoxConstraints(maxWidth: 300, maxHeight: 280),
-                    child: Image.asset('assets/uno.png', fit: BoxFit.contain),
+                    child: Image.asset('assets/uno.webp', fit: BoxFit.contain),
                   ),
                 ),
               ),
@@ -242,7 +242,7 @@ class PageTwoView extends StatelessWidget {
           title: 'Tu mesa,\na un toque',
           subtitle:
               'Reserva en segundos. Elige fecha, hora y personas. Sin filas ni llamadas.',
-          imagePath: 'assets/2.png',
+          imagePath: 'assets/2.webp',
           accentColor: AppColors.terracotta,
           imageSlide: imageOut,
         ),
@@ -294,7 +294,7 @@ class PageThreeView extends StatelessWidget {
           title: 'Vive momentos\nque perduran',
           subtitle:
               'Comparte una velada perfecta con los mejores vinos y platillos de la región.',
-          imagePath: 'assets/tres.png',
+          imagePath: 'assets/tres.webp',
           accentColor: AppColors.gold,
           imageSlide: imageOut,
         ),

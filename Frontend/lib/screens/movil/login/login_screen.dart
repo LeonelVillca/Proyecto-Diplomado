@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen>
           children: [
             // ── 1. Foto hero de Tarija ────────────────────────
             Image.asset(
-              'assets/fondo_tarija.jpg',
+              'assets/fondo_tarija.webp',
               fit: BoxFit.cover,
               alignment: const Alignment(0, -0.3),
             ),
@@ -345,7 +345,7 @@ class _LogoWithHalo extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Image.asset(
-                'assets/icon_app.png',
+                'assets/icon_app.webp',
                 fit: BoxFit.contain,
               ),
             ),

@@ -337,7 +337,7 @@ class _FoodVisual extends StatelessWidget {
             bottomRight: Radius.circular(80),
           ),
           child: Image.asset(
-            'assets/tarija_food_optimized.jpg',
+            'assets/tarija_food_optimized.webp',
             fit: BoxFit.cover,
             width: 640,
             height: 640,

@@ -524,7 +524,7 @@ class _Brand extends StatelessWidget {
       ClipRRect(
         borderRadius: BorderRadius.circular(11),
         child: Image.asset(
-          'assets/icon_app.png',
+          'assets/icon_app.webp',
           width: 36,
           height: 36,
           fit: BoxFit.cover,

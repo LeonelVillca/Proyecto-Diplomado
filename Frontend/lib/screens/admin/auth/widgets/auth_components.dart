@@ -39,7 +39,7 @@ class AuthLeftVisual extends StatelessWidget {
             colorFilter: ColorFilter.mode(authWine.withValues(alpha: 0.14), BlendMode.multiply),
             child: FadeTransition(
               opacity: fadeIn,
-              child: Image.asset('assets/fondoTarija.jpg', fit: BoxFit.cover, alignment: Alignment.topCenter),
+              child: Image.asset('assets/fondoTarija.webp', fit: BoxFit.cover, alignment: Alignment.topCenter),
             ),
           ),
           Positioned(
@@ -77,7 +77,7 @@ class AuthLeftVisual extends StatelessWidget {
                     child: Row(
                       children: [
                         Image.asset(
-                          'assets/icon_app.png', 
+                          'assets/icon_app.webp',
                           height: 42, 
                           fit: BoxFit.contain
                           ),
