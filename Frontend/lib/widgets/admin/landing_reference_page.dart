@@ -345,10 +345,9 @@ class _LandingNavbar extends StatelessWidget {
                     ),
                   ] else ...[
                     const Spacer(),
-                    _TextButton(label: 'Entrar', onTap: onLogin),
                     _PrimaryButton(
-                      label: 'Registrar',
-                      onTap: onRegister,
+                      label: 'Iniciar sesión',
+                      onTap: onLogin,
                       compact: true,
                     ),
                     const SizedBox(width: 2),
@@ -483,7 +482,6 @@ class _MobileMenu extends StatelessWidget {
           _MobileLink('Tu perfil', onProfile),
           _MobileLink('Restaurantes', onRestaurants),
           _MobileLink('FAQ', onFaq),
-          _MobileLink('Iniciar sesión', onLogin),
           _MobileLink(
             'Registrar mi restaurante →',
             onRegister,
