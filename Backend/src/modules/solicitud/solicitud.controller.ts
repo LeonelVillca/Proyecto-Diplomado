@@ -130,6 +130,13 @@ export class SolicitudController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin_sistema')
+  @Post(':id/reenviar-invitacion')
+  reenviarInvitacion(@Param('id', ParseIntPipe) id: number) {
+    return this.solicitudService.reenviarInvitacion(id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin_sistema')
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.solicitudService.eliminar(id);

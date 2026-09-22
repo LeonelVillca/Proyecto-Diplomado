@@ -100,6 +100,22 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     }
   }
 
+  Future<void> _reenviarInvitacion(SolicitudAdminModel solicitud) async {
+    try {
+      final token = AuthScope.of(context).token;
+      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud/${solicitud.id}/reenviar-invitacion');
+      final res = await http.post(url, headers: {'Authorization': 'Bearer $token'});
+      if (!mounted) return;
+      if (res.statusCode == 200) {
+        AdminNotificationModal.success(context, 'Invitación reenviada al correo registrado.');
+      } else {
+        AdminNotificationModal.error(context, 'No se pudo reenviar la invitación (${res.statusCode}).');
+      }
+    } catch (_) {
+      if (mounted) AdminNotificationModal.error(context, 'Error al reenviar la invitación.');
+    }
+  }
+
   void _verDetalles(SolicitudAdminModel solicitud) {
     AdminModal.show(
       context: context,
@@ -145,6 +161,23 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
             child: Text('Aprobar Solicitud', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+          ),
+        ],
+        if (solicitud.estado == 'aprobada') ...[
+          const SizedBox(width: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _reenviarInvitacion(solicitud);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFBE4B24),
+              foregroundColor: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            ),
+            child: Text('Reenviar invitación', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
           ),
         ],
       ],
