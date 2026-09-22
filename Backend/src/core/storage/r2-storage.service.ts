@@ -37,7 +37,13 @@ export class R2StorageService {
 
   async upload(key: string, body: Buffer, contentType: string): Promise<void> {
     const { client, bucket } = this.requireStorage();
-    await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType }));
+    try {
+      await client.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType }));
+    } catch (error) {
+      const e = error as { name?: string; message?: string; $metadata?: { httpStatusCode?: number } };
+      this.logger.error(`R2 upload failed: name=${e.name ?? 'unknown'} status=${e.$metadata?.httpStatusCode ?? 'unknown'} message=${e.message ?? 'unknown'}`);
+      throw error;
+    }
   }
 
   async remove(key: string): Promise<void> {

@@ -165,6 +165,10 @@ export class SolicitudService {
       }
       return solicitud;
     } catch (error) {
+      this.logger.error(
+        'No se pudo crear la solicitud ni guardar sus documentos.',
+        error instanceof Error ? error.stack : String(error),
+      );
       await queryRunner.rollbackTransaction();
       await Promise.all(uploadedKeys.map((key) => this.r2Storage.remove(key).catch(() => undefined)));
       throw error;
