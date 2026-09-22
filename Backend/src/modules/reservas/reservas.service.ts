@@ -84,7 +84,9 @@ export class ReservasService {
       numeroPersonas: guardada.numeroPersonas,
       estado: guardada.estado,
     };
-    await this.reservasGateway.emitNuevaReserva(payload);
+    // La reserva ya fue confirmada en la base de datos. La notificación en
+    // tiempo real no debe bloquear la respuesta HTTP al comensal.
+    void this.reservasGateway.emitNuevaReserva(payload);
 
     return guardada;
   }

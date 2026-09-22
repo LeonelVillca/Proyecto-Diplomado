@@ -24,6 +24,7 @@ class _ReservationModalState extends State<ReservationModal> {
   final TextEditingController _commentCtrl = TextEditingController();
   bool _isLoading = false;
   int _maxGuests = 4;
+  List<dynamic> _availableTables = [];
 
   final List<String> _timeSlots = [
     '12:00', '12:30', '13:00', '13:30', '14:00',
@@ -61,15 +62,10 @@ class _ReservationModalState extends State<ReservationModal> {
     try {
       final token = AuthScope.of(context, listen: false).token;
       
-      // 1. Obtener mesas del restaurante
-      final urlMesas = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/mesa/restaurante/${widget.restaurant.id}');
-      final resMesas = await http.get(urlMesas, headers: {'Authorization': 'Bearer $token'});
-      
-      if (resMesas.statusCode != 200) {
-        throw Exception(_apiError(resMesas, 'No se pudieron consultar las mesas'));
-      }
-      
-      final List<dynamic> mesas = jsonDecode(utf8.decode(resMesas.bodyBytes));
+      // Las mesas se cargan al abrir el modal. Reutilizarlas evita una
+      // segunda petición antes de crear la reserva.
+      if (_availableTables.isEmpty) await _loadTables();
+      final mesas = _availableTables;
       if (mesas.isEmpty) {
         throw Exception('Este restaurante aún no tiene mesas registradas.');
       }
@@ -172,6 +168,7 @@ class _ReservationModalState extends State<ReservationModal> {
       );
       if (response.statusCode != 200) return;
       final mesas = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+      _availableTables = mesas;
       final capacidades = mesas
           .where((mesa) => mesa['estado'] != 'inactiva')
           .map((mesa) => (mesa['capacidad'] as num?)?.toInt() ?? 0)
@@ -184,6 +181,21 @@ class _ReservationModalState extends State<ReservationModal> {
       });
     } catch (_) {
       // La validación definitiva la realiza el backend al confirmar.
+    }
+  }
+
+  Future<void> _loadTables() async {
+    try {
+      final token = AuthScope.of(context, listen: false).token;
+      final response = await http.get(
+        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/mesa/restaurante/${widget.restaurant.id}'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        _availableTables = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+      }
+    } catch (_) {
+      // La creación mostrará un mensaje si no se pudo cargar el salón.
     }
   }
 

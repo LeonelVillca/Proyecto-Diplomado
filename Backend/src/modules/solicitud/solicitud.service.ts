@@ -8,8 +8,6 @@ import {
 import 'multer';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, IsNull } from 'typeorm';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import * as crypto from 'crypto';
 import { Solicitud } from './solicitud.entity';
 import { CrearSolicitudDto } from './dto/crear-solicitud.dto';
@@ -22,6 +20,7 @@ import { InvitacionToken } from '../invitacion-token/invitacion-token.entity';
 import { MailService } from '../mail/mail.service';
 import { Restaurante } from '../restaurante/restaurante.entity';
 import { validateDocument } from '../../core/security/uploads';
+import { R2StorageService } from '../../core/storage/r2-storage.service';
 
 @Injectable()
 export class SolicitudService {
@@ -34,6 +33,7 @@ export class SolicitudService {
     private readonly usuarioRepository: Repository<Usuario>,
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
+    private readonly r2Storage: R2StorageService,
   ) {}
 
   async crear(
@@ -72,7 +72,7 @@ export class SolicitudService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    let uploadDir: string | undefined;
+    const uploadedKeys: string[] = [];
 
     try {
       let usuario = await queryRunner.manager.findOne(Usuario, {
@@ -111,15 +111,6 @@ export class SolicitudService {
       });
       solicitud = await queryRunner.manager.save(solicitud);
 
-      uploadDir = path.join(
-        process.cwd(),
-        'storage',
-        'privado',
-        'solicitudes',
-        solicitud.id.toString(),
-      );
-      await fs.mkdir(uploadDir, { recursive: true });
-
       const extensionFor = (mimetype: string) => {
         if (mimetype === 'image/jpeg') return '.jpg';
         if (mimetype === 'image/png') return '.png';
@@ -131,8 +122,12 @@ export class SolicitudService {
       const nitFilename = `nit-${crypto.randomUUID()}${nitExt}`;
       const ciFilename = `ci-${crypto.randomUUID()}${ciExt}`;
 
-      await fs.writeFile(path.join(uploadDir, nitFilename), nitFile.buffer);
-      await fs.writeFile(path.join(uploadDir, ciFilename), ciFile.buffer);
+      const nitKey = `solicitudes/${solicitud.id}/${nitFilename}`;
+      const ciKey = `solicitudes/${solicitud.id}/${ciFilename}`;
+      await this.r2Storage.upload(nitKey, nitFile.buffer, nitFile.mimetype);
+      uploadedKeys.push(nitKey);
+      await this.r2Storage.upload(ciKey, ciFile.buffer, ciFile.mimetype);
+      uploadedKeys.push(ciKey);
 
       const docNit = queryRunner.manager.create(DocumentoAdjunto, {
         solicitud,
@@ -171,13 +166,7 @@ export class SolicitudService {
       return solicitud;
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      // Si la transacción falla después de guardar los archivos, evitar
-      // dejar documentos huérfanos en la carpeta privada.
-      if (uploadDir) {
-        await fs
-          .rm(uploadDir, { recursive: true, force: true })
-          .catch(() => undefined);
-      }
+      await Promise.all(uploadedKeys.map((key) => this.r2Storage.remove(key).catch(() => undefined)));
       throw error;
     } finally {
       await queryRunner.release();
@@ -405,21 +394,16 @@ export class SolicitudService {
     Object.assign(solicitud, dto);
     const guardada = await this.solicitudRepository.save(solicitud);
     if (estadoAnterior === 'pendiente' && dto.estado === 'rechazada') {
-      const uploadDir = path.join(
-        process.cwd(),
-        'storage',
-        'privado',
-        'solicitudes',
-        solicitud.id.toString(),
+      await Promise.all(
+        (solicitud.documentosAdjuntos ?? []).map((documento) => {
+          const filename = documento.url.split('/').pop();
+          return filename
+            ? this.r2Storage.remove(`solicitudes/${solicitud.id}/${filename}`).catch((error) =>
+                this.logger.error('Error al eliminar documento R2', (error as Error)?.message),
+              )
+            : Promise.resolve();
+        }),
       );
-      try {
-        await fs.rm(uploadDir, { recursive: true, force: true });
-      } catch (e) {
-        this.logger.error(
-          'Error al eliminar carpeta de solicitud rechazada',
-          (e as Error)?.message,
-        );
-      }
     }
 
     return guardada;

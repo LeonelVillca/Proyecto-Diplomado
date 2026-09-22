@@ -42,7 +42,8 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
 
   List<PlatformFile> _selectedGallery = [];
   List<Uint8List> _selectedGalleryBytes = [];
-  List<String> _existingGalleryUrls = [];
+  List<Map<String, dynamic>> _existingGallery = [];
+  final List<int> _deletedGalleryIds = [];
 
   List<Map<String, dynamic>> _horarios = [];
 
@@ -116,7 +117,10 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
           _horarios = List<Map<String, dynamic>>.from(_restaurante!.horarios!);
         }
         if (_restaurante!.imagenes != null) {
-          _existingGalleryUrls = _restaurante!.imagenes!.map((i) => i['url'].toString()).toList();
+          _existingGallery = _restaurante!.imagenes!
+              .whereType<Map>()
+              .map((i) => Map<String, dynamic>.from(i))
+              .toList();
         }
         
         if (_restaurante!.latitud != null && _restaurante!.longitud != null) {
@@ -293,7 +297,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
       return;
     }
 
-    if ((_existingGalleryUrls.length + _selectedGallery.length) < 5) {
+    if ((_existingGallery.length + _selectedGallery.length) < 5) {
       if (mounted) AdminNotificationModal.info(context, 'Sube al menos 5 fotografías en la galería.');
       return;
     }
@@ -326,9 +330,18 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
         selectedLogo: _selectedLogo,
         selectedGalleryBytes: _selectedGalleryBytes,
         selectedGallery: _selectedGallery,
+        deletedImageIds: _deletedGalleryIds,
       );
 
       if (exito) {
+        await _cargarPerfil();
+        _selectedImage = null;
+        _selectedImageBytes = null;
+        _selectedLogo = null;
+        _selectedLogoBytes = null;
+        _selectedGallery = [];
+        _selectedGalleryBytes = [];
+        _deletedGalleryIds.clear();
         if (mounted) {
           AdminNotificationModal.success(context, '¡Perfil actualizado con éxito!');
         }
@@ -398,7 +411,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
                                 child: _selectedImageBytes != null
                                     ? Image.memory(_selectedImageBytes!, fit: BoxFit.cover)
                                     : (_restaurante!.fotoPortada != null
-                                        ? Image.network('${ApiEndpoints.baseUrl}${_restaurante!.fotoPortada}', fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholder())
+                                    ? Image.network(_mediaUrl(_restaurante!.fotoPortada!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholder())
                                         : _buildPlaceholder()),
                               ),
                             ),
@@ -420,7 +433,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
                                   child: _selectedLogoBytes != null
                                     ? Image.memory(_selectedLogoBytes!, fit: BoxFit.cover)
                                     : (_restaurante!.logo != null
-                                        ? Image.network('${ApiEndpoints.baseUrl}${_restaurante!.logo}', fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.store, color: Color(0xFFA39C98), size: 40)))
+                                        ? Image.network(_mediaUrl(_restaurante!.logo!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.store, color: Color(0xFFA39C98), size: 40)))
                                         : const Center(child: Icon(Icons.add_a_photo, color: Color(0xFFA39C98), size: 40))),
                                 ),
                               ),
@@ -668,7 +681,10 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
           spacing: 12,
           runSpacing: 12,
           children: [
-            ..._existingGalleryUrls.map((url) => _buildGaleriaItem(networkUrl: url)),
+            ..._existingGallery.map((image) => _buildGaleriaItem(
+              networkUrl: image['url']?.toString(),
+              imageId: (image['id'] as num?)?.toInt(),
+            )),
             ..._selectedGalleryBytes.asMap().entries.map((e) => _buildGaleriaItem(bytes: e.value, index: e.key)),
             InkWell(
               onTap: _pickGallery,
@@ -686,7 +702,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
     );
   }
 
-  Widget _buildGaleriaItem({String? networkUrl, Uint8List? bytes, int? index}) {
+  Widget _buildGaleriaItem({String? networkUrl, Uint8List? bytes, int? index, int? imageId}) {
     return Stack(
       children: [
         Container(
@@ -695,14 +711,25 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
           clipBehavior: Clip.antiAlias,
           child: networkUrl != null 
-             ? Image.network('${ApiEndpoints.baseUrl}$networkUrl', fit: BoxFit.cover)
+             ? Image.network(_mediaUrl(networkUrl!), fit: BoxFit.cover)
              : Image.memory(bytes!, fit: BoxFit.cover),
         ),
-        if (index != null)
+        if (index != null || imageId != null)
           Positioned(
             top: 4, right: 4,
-            child: InkWell(
-              onTap: () => setState(() { _selectedGallery.removeAt(index); _selectedGalleryBytes.removeAt(index); }),
+            child: IconButton(
+              tooltip: 'Quitar fotografía',
+              constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+              padding: EdgeInsets.zero,
+              onPressed: () => setState(() {
+                if (index != null) {
+                  _selectedGallery.removeAt(index);
+                  _selectedGalleryBytes.removeAt(index);
+                } else if (imageId != null) {
+                  _existingGallery.removeWhere((image) => (image['id'] as num?)?.toInt() == imageId);
+                  if (!_deletedGalleryIds.contains(imageId)) _deletedGalleryIds.add(imageId);
+                }
+              }),
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
@@ -713,6 +740,8 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
       ],
     );
   }
+
+  String _mediaUrl(String url) => url.startsWith('http') ? url : '${ApiEndpoints.baseUrl}$url';
 
   Widget _buildBentoCard({required String title, required IconData icon, required Widget child}) {
     return Container(

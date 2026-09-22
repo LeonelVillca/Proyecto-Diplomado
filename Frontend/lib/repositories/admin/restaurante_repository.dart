@@ -53,6 +53,7 @@ class RestauranteRepository {
     PlatformFile? selectedLogo,
     List<Uint8List> selectedGalleryBytes = const [],
     List<PlatformFile> selectedGallery = const [],
+    List<int> deletedImageIds = const [],
   }) async {
     try {
       final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/$restauranteId');
@@ -67,6 +68,7 @@ class RestauranteRepository {
       );
 
       if (res.statusCode == 200) {
+        final uploads = <Future<void>>[];
         if (selectedImageBytes != null && selectedImage != null) {
           final photoUrl = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/$restauranteId/portada');
           final request = http.MultipartRequest('POST', photoUrl);
@@ -82,10 +84,7 @@ class RestauranteRepository {
             contentType: MediaType('image', mimeType),
           ));
           
-          final photoRes = await request.send();
-          if (photoRes.statusCode != 200 && photoRes.statusCode != 201) {
-            throw Exception('Error al subir la portada');
-          }
+          uploads.add(_sendMultipart(request, 'Error al subir la portada'));
         }
 
         if (selectedLogoBytes != null && selectedLogo != null) {
@@ -95,7 +94,7 @@ class RestauranteRepository {
           final ext = selectedLogo.name.split('.').last.toLowerCase();
           final mimeType = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
           request.files.add(http.MultipartFile.fromBytes('file', selectedLogoBytes, filename: selectedLogo.name, contentType: MediaType('image', mimeType)));
-          await request.send();
+          uploads.add(_sendMultipart(request, 'Error al subir el logo'));
         }
 
         if (selectedGalleryBytes.isNotEmpty) {
@@ -107,8 +106,11 @@ class RestauranteRepository {
              final mimeType = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
              request.files.add(http.MultipartFile.fromBytes('files', selectedGalleryBytes[i], filename: selectedGallery[i].name, contentType: MediaType('image', mimeType)));
           }
-          await request.send();
+          uploads.add(_sendMultipart(request, 'Error al subir la galería'));
         }
+
+        await Future.wait(uploads);
+        await Future.wait(deletedImageIds.map((id) => eliminarImagen(token: token, imagenId: id)));
         
         return true;
       }
@@ -116,6 +118,23 @@ class RestauranteRepository {
     } catch (e) {
       debugPrint('Error en actualizarPerfil: $e');
       rethrow;
+    }
+  }
+
+  Future<void> _sendMultipart(http.MultipartRequest request, String message) async {
+    final response = await request.send();
+    if (response.statusCode != 200 && response.statusCode != 201 && response.statusCode != 204) {
+      throw Exception(message);
+    }
+  }
+
+  Future<void> eliminarImagen({required String token, required int imagenId}) async {
+    final response = await http.delete(
+      Uri.parse('${ApiEndpoints.baseUrl}/api/v1/imagen/$imagenId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      throw Exception('No se pudo eliminar la fotografía');
     }
   }
 }

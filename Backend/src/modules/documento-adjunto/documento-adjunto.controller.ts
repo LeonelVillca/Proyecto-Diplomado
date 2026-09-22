@@ -10,8 +10,6 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import * as path from 'path';
-import * as fs from 'fs';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
@@ -19,12 +17,16 @@ import { DocumentoAdjuntoService } from './documento-adjunto.service';
 import { CrearDocumentoAdjuntoDto } from './dto/crear-documento-adjunto.dto';
 import { ActualizarDocumentoAdjuntoDto } from './dto/actualizar-documento-adjunto.dto';
 import { DocumentoAdjunto } from './documento-adjunto.entity';
+import { R2StorageService } from '../../core/storage/r2-storage.service';
 
 @Controller('documento-adjunto')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_sistema')
 export class DocumentoAdjuntoController {
-  constructor(private readonly documentoAdjuntoService: DocumentoAdjuntoService) {}
+  constructor(
+    private readonly documentoAdjuntoService: DocumentoAdjuntoService,
+    private readonly r2Storage: R2StorageService,
+  ) {}
 
   @Post()
   crear(@Body() dto: CrearDocumentoAdjuntoDto): Promise<DocumentoAdjunto> {
@@ -44,26 +46,18 @@ export class DocumentoAdjuntoController {
   }
 
   @Get('privado/:idSolicitud/:filename')
-  servirDocumentoPrivado(
+  async servirDocumentoPrivado(
     @Param('idSolicitud', ParseIntPipe) idSolicitud: number,
     @Param('filename') filename: string,
     @Res() res: any,
-  ) {
-    console.log(`[DocumentoAdjunto] Solicitud de archivo: ${filename} para solicitud ${idSolicitud}`);
-    const solicitudDir = path.resolve(process.cwd(), 'storage', 'privado', 'solicitudes', idSolicitud.toString());
-    const safeFilename = path.basename(filename);
-    const filePath = path.resolve(solicitudDir, safeFilename);
-    if (safeFilename !== filename || !filePath.startsWith(`${solicitudDir}${path.sep}`)) {
+  ): Promise<any> {
+    if (filename !== filename.replace(/[^a-zA-Z0-9._-]/g, '') || filename.includes('..')) {
       return res.status(400).json({ message: 'Nombre de archivo no válido' });
     }
-    if (!fs.existsSync(filePath)) {
-      console.log(`[DocumentoAdjunto] Archivo no encontrado en disco: ${filePath}`);
-      return res.status(404).json({ message: 'El documento solicitado no existe' });
-    }
-    res.setHeader('Content-Disposition', 'attachment');
-    res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
     res.setHeader('Cache-Control', 'private, no-store');
-    return res.sendFile(filePath);
+    res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
+    const url = await this.r2Storage.signedDownloadUrl(`solicitudes/${idSolicitud}/${filename}`);
+    return res.redirect(url);
   }
 
   @Get(':id')
