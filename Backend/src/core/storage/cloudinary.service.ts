@@ -12,6 +12,9 @@ export class CloudinaryService {
     const apiKey = config.get<string>('CLOUDINARY_API_KEY');
     const apiSecret = config.get<string>('CLOUDINARY_API_SECRET');
     this.configured = Boolean(cloudName && apiKey && apiSecret);
+    this.logger.log(
+      `Cloudinary config: cloudName=${Boolean(cloudName)} apiKey=${Boolean(apiKey)} apiSecret=${Boolean(apiSecret)}`,
+    );
 
     if (this.configured) {
       cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
