@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
@@ -6,7 +6,8 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/solicitud_admin_model.dart';
 import 'package:universal_html/html.dart' as html;
-import 'package:frontend/core/utils/web_helpers/platform_view_registry.dart' as ui_web;
+import 'package:frontend/core/utils/web_helpers/platform_view_registry.dart'
+    as ui_web;
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -45,16 +46,21 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
 
     try {
       final token = AuthScope.of(context).token;
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud?estado=$_filtroEstado');
-      
-      final res = await http.get(url, headers: {
-        'Authorization': 'Bearer $token',
-      });
+      final url = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/solicitud?estado=$_filtroEstado',
+      );
+
+      final res = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
         setState(() {
-          _solicitudes = data.map((e) => SolicitudAdminModel.fromJson(e)).toList();
+          _solicitudes = data
+              .map((e) => SolicitudAdminModel.fromJson(e))
+              .toList();
         });
       }
     } catch (e) {
@@ -66,14 +72,33 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     }
   }
 
-  Future<void> _cambiarEstadoSolicitud(SolicitudAdminModel solicitud, String nuevoEstado) async {
+  String _mensajeDeErrorApi(String body, String fallback) {
+    try {
+      final payload = jsonDecode(body);
+      if (payload is Map) {
+        final message = payload['message'] ?? payload['mensaje'];
+        if (message is String && message.trim().isNotEmpty) return message;
+        if (message is List && message.isNotEmpty) {
+          return message.map((item) => item.toString()).join('\n');
+        }
+      }
+    } catch (_) {
+      // Conserva un mensaje seguro si el backend no respondió JSON válido.
+    }
+    return fallback;
+  }
+
+  Future<void> _cambiarEstadoSolicitud(
+    SolicitudAdminModel solicitud,
+    String nuevoEstado,
+  ) async {
     try {
       final token = AuthScope.of(context).token;
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud/${solicitud.id}');
-      
-      final body = {
-        'estado': nuevoEstado,
-      };
+      final url = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/solicitud/${solicitud.id}',
+      );
+
+      final body = {'estado': nuevoEstado};
 
       final res = await http.patch(
         url,
@@ -82,23 +107,45 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(body),
-        timeout: nuevoEstado == 'aprobada' ? const Duration(seconds: 120) : null,
+        timeout: nuevoEstado == 'aprobada'
+            ? const Duration(seconds: 120)
+            : null,
       );
 
       if (res.statusCode == 200) {
         _cargarSolicitudes();
         if (mounted) {
-          AdminNotificationModal.success(context, 'Solicitud marcada como $nuevoEstado');
+          AdminNotificationModal.success(
+            context,
+            'Solicitud marcada como $nuevoEstado',
+          );
         }
       } else {
+        final detalle = _mensajeDeErrorApi(
+          res.body,
+          'No se pudo cambiar el estado de la solicitud.',
+        );
+        if (res.statusCode == 409) {
+          await _cargarSolicitudes();
+        }
         if (mounted) {
-          AdminNotificationModal.error(context, 'Error del servidor (${res.statusCode}). Intenta nuevamente.');
+          final mensaje =
+              detalle.toLowerCase().contains('no confirmó su correo')
+              ? 'No se puede aprobar todavía: el solicitante debe confirmar su correo. $detalle'
+              : detalle.toLowerCase().contains('ya fue procesada') ||
+                    detalle.toLowerCase().contains('procesada no puede cambiar')
+              ? 'La solicitud ya fue procesada. Actualicé el listado para mostrar su estado actual.'
+              : '$detalle (código ${res.statusCode}).';
+          AdminNotificationModal.error(context, mensaje);
         }
       }
     } catch (e) {
       debugPrint('Error actualizando estado: $e');
       if (mounted) {
-        AdminNotificationModal.error(context, 'Error de red. Verifica tu conexión e inténtalo nuevamente.');
+        AdminNotificationModal.error(
+          context,
+          'Error de red. Verifica tu conexión e inténtalo nuevamente.',
+        );
       }
     }
   }
@@ -106,31 +153,50 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
   Future<void> _reenviarInvitacion(SolicitudAdminModel solicitud) async {
     try {
       final token = AuthScope.of(context).token;
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud/${solicitud.id}/reenviar-invitacion');
-      final res = await http.post(url, headers: {'Authorization': 'Bearer $token'}, timeout: const Duration(seconds: 120));
+      final url = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/solicitud/${solicitud.id}/reenviar-invitacion',
+      );
+      final res = await http.post(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+        timeout: const Duration(seconds: 120),
+      );
       if (!mounted) return;
       if (res.statusCode == 200) {
         if (_isSolicitudDialogOpen) Navigator.of(context).pop();
-        AdminNotificationModal.success(context, 'Invitación reenviada al correo registrado.');
+        AdminNotificationModal.success(
+          context,
+          'Invitación reenviada al correo registrado.',
+        );
       } else {
         if (_isSolicitudDialogOpen) Navigator.of(context).pop();
         var detail = '';
         try {
           final payload = jsonDecode(utf8.decode(res.bodyBytes));
-          if (payload is Map && payload['message'] is String) detail = ' ${payload['message']}';
+          if (payload is Map && payload['message'] is String)
+            detail = ' ${payload['message']}';
         } catch (_) {}
-        AdminNotificationModal.error(context, 'No se pudo reenviar la invitación.${detail.isEmpty ? ' Inténtalo nuevamente.' : detail}');
+        AdminNotificationModal.error(
+          context,
+          'No se pudo reenviar la invitación.${detail.isEmpty ? ' Inténtalo nuevamente.' : detail}',
+        );
       }
     } on TimeoutException {
       if (mounted) {
         if (_isSolicitudDialogOpen) Navigator.of(context).pop();
-        AdminNotificationModal.error(context, 'El servidor tardó demasiado en confirmar el envío. Verifica el correo antes de volver a intentarlo.');
+        AdminNotificationModal.error(
+          context,
+          'El servidor tardó demasiado en confirmar el envío. Verifica el correo antes de volver a intentarlo.',
+        );
       }
     } catch (error) {
       debugPrint('Error reenviando invitación: $error');
       if (mounted) {
         if (_isSolicitudDialogOpen) Navigator.of(context).pop();
-        AdminNotificationModal.error(context, 'No se pudo contactar al servidor para reenviar la invitación. Revisa tu conexión e inténtalo nuevamente.');
+        AdminNotificationModal.error(
+          context,
+          'No se pudo contactar al servidor para reenviar la invitación. Revisa tu conexión e inténtalo nuevamente.',
+        );
       }
     }
   }
@@ -161,10 +227,15 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
               backgroundColor: const Color(0xFFFEF2F2),
               foregroundColor: const Color(0xFFEF4444),
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
-            child: Text('Rechazar', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+            child: Text(
+              'Rechazar',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
           const SizedBox(width: 16),
           ElevatedButton(
@@ -177,10 +248,15 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
               foregroundColor: Colors.white,
               elevation: 4,
               shadowColor: const Color(0x336E1E39),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
-            child: Text('Aprobar Solicitud', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+            child: Text(
+              'Aprobar Solicitud',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
         if (solicitud.estado == 'aprobada') ...[
@@ -193,10 +269,15 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
               backgroundColor: const Color(0xFFBE4B24),
               foregroundColor: Colors.white,
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
-            child: Text('Reenviar invitación', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+            child: Text(
+              'Reenviar invitación',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ],
@@ -208,7 +289,10 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
             children: [
               Text(
                 'Estado Actual:',
-                style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16),
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               _buildBadge(solicitud.estado.toUpperCase()),
             ],
@@ -221,9 +305,16 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem('Restaurante', solicitud.nombreRestaurante),
+                    _buildDetailItem(
+                      'Restaurante',
+                      solicitud.nombreRestaurante,
+                    ),
                     const SizedBox(height: 16),
-                    _buildDetailItem('Solicitante', '${solicitud.usuario?['nombre'] ?? ''} ${solicitud.usuario?['apellido'] ?? ''}'.trim()),
+                    _buildDetailItem(
+                      'Solicitante',
+                      '${solicitud.usuario?['nombre'] ?? ''} ${solicitud.usuario?['apellido'] ?? ''}'
+                          .trim(),
+                    ),
                   ],
                 ),
               ),
@@ -232,7 +323,10 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailItem('NIT', solicitud.nitNegocio ?? 'No provisto'),
+                    _buildDetailItem(
+                      'NIT',
+                      solicitud.nitNegocio ?? 'No provisto',
+                    ),
                     const SizedBox(height: 16),
                     _buildDetailItem('Teléfono', solicitud.celularContacto),
                   ],
@@ -241,26 +335,63 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildDetailItem('Correo Electrónico', '${solicitud.usuario?['correo'] ?? ''}'),
+          _buildDetailItem(
+            'Correo Electrónico',
+            '${solicitud.usuario?['correo'] ?? ''}',
+          ),
           const SizedBox(height: 12),
-          _buildDetailItem('Correo registrado',
-              solicitud.usuario?['correo'] ?? 'No provisto'),
+          _buildDetailItem(
+            'Correo registrado',
+            solicitud.usuario?['correo'] ?? 'No provisto',
+          ),
           const SizedBox(height: 24),
-          Text('Descripción del Negocio', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
+          Text(
+            'Descripción del Negocio',
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: const Color(0xFFA39C98),
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(solicitud.descripcion ?? 'Sin descripción proporcionada.', style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF1E1B1A), height: 1.5)),
-          
+          Text(
+            solicitud.descripcion ?? 'Sin descripción proporcionada.',
+            style: GoogleFonts.manrope(
+              fontSize: 14,
+              color: const Color(0xFF1E1B1A),
+              height: 1.5,
+            ),
+          ),
+
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Divider(color: Color(0xFFF1EADD), height: 1),
           ),
-          
-          Text('Documentación Adjunta', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
+
+          Text(
+            'Documentación Adjunta',
+            style: GoogleFonts.manrope(
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: const Color(0xFFA39C98),
+              letterSpacing: 1,
+            ),
+          ),
           const SizedBox(height: 12),
-          if (solicitud.documentosAdjuntos != null && solicitud.documentosAdjuntos!.isNotEmpty)
-            ...solicitud.documentosAdjuntos!.map((doc) => _buildDocumentoBoton(doc, solicitud.id))
+          if (solicitud.documentosAdjuntos != null &&
+              solicitud.documentosAdjuntos!.isNotEmpty)
+            ...solicitud.documentosAdjuntos!.map(
+              (doc) => _buildDocumentoBoton(doc, solicitud.id),
+            )
           else
-            Text('No hay documentos adjuntos.', style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14)),
+            Text(
+              'No hay documentos adjuntos.',
+              style: GoogleFonts.manrope(
+                color: const Color(0xFF6B635E),
+                fontSize: 14,
+              ),
+            ),
         ],
       ),
     ).whenComplete(() => _isSolicitudDialogOpen = false);
@@ -281,8 +412,19 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(50)),
-      child: Text(text, style: GoogleFonts.manrope(color: fg, fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(50),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.manrope(
+          color: fg,
+          fontWeight: FontWeight.w800,
+          fontSize: 11,
+          letterSpacing: 1,
+        ),
+      ),
     );
   }
 
@@ -290,16 +432,31 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
+        Text(
+          label,
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+            color: const Color(0xFFA39C98),
+            letterSpacing: 1,
+          ),
+        ),
         const SizedBox(height: 4),
-        Text(value, style: GoogleFonts.manrope(fontWeight: FontWeight.w600, fontSize: 14, color: const Color(0xFF1E1B1A))),
+        Text(
+          value,
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: const Color(0xFF1E1B1A),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildDocumentoBoton(dynamic doc, int idSolicitud) {
     final tipo = doc['tipo'];
-    final urlPath = doc['url']; 
+    final urlPath = doc['url'];
     if (urlPath == null) return const SizedBox();
 
     final isPdf = urlPath.toString().toLowerCase().endsWith('.pdf');
@@ -326,20 +483,41 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
                     color: const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(isPdf ? Icons.picture_as_pdf_outlined : Icons.image_outlined, color: const Color(0xFFC9974F)),
+                  child: Icon(
+                    isPdf
+                        ? Icons.picture_as_pdf_outlined
+                        : Icons.image_outlined,
+                    color: const Color(0xFFC9974F),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Documento $tipo', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF1E1B1A))),
+                      Text(
+                        'Documento $tipo',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: const Color(0xFF1E1B1A),
+                        ),
+                      ),
                       const SizedBox(height: 2),
-                      Text(isPdf ? 'PDF' : 'Imagen', style: GoogleFonts.manrope(fontSize: 12, color: const Color(0xFFA39C98))),
+                      Text(
+                        isPdf ? 'PDF' : 'Imagen',
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          color: const Color(0xFFA39C98),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                const Icon(Icons.remove_red_eye_outlined, color: Color(0xFFA39C98)),
+                const Icon(
+                  Icons.remove_red_eye_outlined,
+                  color: Color(0xFFA39C98),
+                ),
               ],
             ),
           ),
@@ -374,29 +552,38 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
       final parts = pathUrl.split('/');
       final filename = parts.last;
       final idSolicitud = parts[parts.length - 2];
-      
-      final fullUrl = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/documento-adjunto/privado/$idSolicitud/$filename');
 
-      final res = await http.get(fullUrl, headers: {
-        'Authorization': 'Bearer $token',
-      });
+      final fullUrl = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/documento-adjunto/privado/$idSolicitud/$filename',
+      );
+
+      final res = await http.get(
+        fullUrl,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
       if (res.statusCode == 200) {
         final blob = html.Blob([res.bodyBytes], 'application/pdf');
         final blobUrl = html.Url.createObjectUrlFromBlob(blob);
-        
+
         // Redirigir la pestaña abierta al visor de PDF nativo del navegador.
         newWindow.location.href = blobUrl;
       } else {
         newWindow.close();
         if (mounted) {
-          AdminNotificationModal.error(context, 'Error al cargar el documento (${res.statusCode}).');
+          AdminNotificationModal.error(
+            context,
+            'Error al cargar el documento (${res.statusCode}).',
+          );
         }
       }
     } catch (e) {
       newWindow.close();
       if (mounted) {
-        AdminNotificationModal.error(context, 'Error de conexión al cargar el documento.');
+        AdminNotificationModal.error(
+          context,
+          'Error de conexión al cargar el documento.',
+        );
       }
     }
   }
@@ -406,47 +593,57 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
       child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const AdminPageHeader(
-          kicker: 'ALTAS',
-          titleBefore: 'Solicitudes de ',
-          titleEmphasis: 'Restaurantes',
-          description: 'Gestiona y revisa las peticiones de nuevos negocios.',
-        ),
-        const SizedBox(height: 24),
-        AdminSurface(
-          padding: const EdgeInsets.all(12),
-          radius: AdminTheme.mediumRadius,
-          child: Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _buildFilterTab('Pendientes', 'pendiente'),
-            _buildFilterTab('Aprobadas', 'aprobada'),
-            _buildFilterTab('Rechazadas', 'rechazada'),
-          ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AdminPageHeader(
+            kicker: 'ALTAS',
+            titleBefore: 'Solicitudes de ',
+            titleEmphasis: 'Restaurantes',
+            description: 'Gestiona y revisa las peticiones de nuevos negocios.',
           ),
-        ),
-        const SizedBox(height: 18),
-        Expanded(
-          child: AdminSurface(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor))
-                : _solicitudes.isEmpty
-                    ? Center(child: Text('No hay solicitudes en esta categoría.', style: AdminTheme.bodyStyle))
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _solicitudes.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) => _SolicitudCard(
-                          solicitud: _solicitudes[index],
-                          onTap: () => _verDetalles(_solicitudes[index]),
-                        ),
+          const SizedBox(height: 24),
+          AdminSurface(
+            padding: const EdgeInsets.all(12),
+            radius: AdminTheme.mediumRadius,
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _buildFilterTab('Pendientes', 'pendiente'),
+                _buildFilterTab('Aprobadas', 'aprobada'),
+                _buildFilterTab('Rechazadas', 'rechazada'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Expanded(
+            child: AdminSurface(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AdminTheme.primaryColor,
                       ),
+                    )
+                  : _solicitudes.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No hay solicitudes en esta categoría.',
+                        style: AdminTheme.bodyStyle,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: _solicitudes.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) => _SolicitudCard(
+                        solicitud: _solicitudes[index],
+                        onTap: () => _verDetalles(_solicitudes[index]),
+                      ),
+                    ),
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -468,9 +665,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           border: Border.all(
             color: isSelected ? AdminTheme.primaryColor : AdminTheme.border,
           ),
-          boxShadow: isSelected
-              ? AdminTheme.shadowSm
-              : [],
+          boxShadow: isSelected ? AdminTheme.shadowSm : [],
         ),
         child: Text(
           text,
@@ -500,8 +695,12 @@ class _SolicitudCardState extends State<_SolicitudCard> {
   @override
   Widget build(BuildContext context) {
     final nombre = widget.solicitud.nombreRestaurante;
-    final iniciales = nombre.length >= 2 ? nombre.substring(0, 2).toUpperCase() : nombre.toUpperCase();
-    final solicitante = '${widget.solicitud.usuario?['nombre'] ?? ''} ${widget.solicitud.usuario?['apellido'] ?? ''}'.trim();
+    final iniciales = nombre.length >= 2
+        ? nombre.substring(0, 2).toUpperCase()
+        : nombre.toUpperCase();
+    final solicitante =
+        '${widget.solicitud.usuario?['nombre'] ?? ''} ${widget.solicitud.usuario?['apellido'] ?? ''}'
+            .trim();
     final fecha = widget.solicitud.fechaSolicitud.split('T')[0];
 
     return MouseRegion(
@@ -517,10 +716,12 @@ class _SolicitudCardState extends State<_SolicitudCard> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1E293B).withValues(alpha: _hover ? 0.08 : 0.04),
+              color: const Color(
+                0xFF1E293B,
+              ).withValues(alpha: _hover ? 0.08 : 0.04),
               blurRadius: _hover ? 12 : 8,
               offset: const Offset(0, 4),
-            )
+            ),
           ],
           border: Border.all(color: const Color(0xFFF0F2F5)),
         ),
@@ -567,18 +768,36 @@ class _SolicitudCardState extends State<_SolicitudCard> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.person_outline, size: 14, color: Color(0xFFA39C98)),
+                            const Icon(
+                              Icons.person_outline,
+                              size: 14,
+                              color: Color(0xFFA39C98),
+                            ),
                             const SizedBox(width: 4),
                             Text(
-                              solicitante.isNotEmpty ? solicitante : 'Sin nombre',
-                              style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 13, fontWeight: FontWeight.w500),
+                              solicitante.isNotEmpty
+                                  ? solicitante
+                                  : 'Sin nombre',
+                              style: GoogleFonts.manrope(
+                                color: const Color(0xFF6B635E),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                             const SizedBox(width: 12),
-                            const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFFA39C98)),
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 14,
+                              color: Color(0xFFA39C98),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               fecha,
-                              style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 13, fontWeight: FontWeight.w500),
+                              style: GoogleFonts.manrope(
+                                color: const Color(0xFF6B635E),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
@@ -586,9 +805,14 @@ class _SolicitudCardState extends State<_SolicitudCard> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: _hover ? const Color(0xFFBE4B24) : const Color(0xFFFAF5EC),
+                      color: _hover
+                          ? const Color(0xFFBE4B24)
+                          : const Color(0xFFFAF5EC),
                       borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(
@@ -651,26 +875,31 @@ class _VisorDocumentoDialogState extends State<_VisorDocumentoDialog> {
       final parts = widget.pathUrl.split('/');
       final filename = parts.last;
       final idSolicitud = parts[parts.length - 2];
-      
-      final fullUrl = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/documento-adjunto/privado/$idSolicitud/$filename');
 
-      final res = await http.get(fullUrl, headers: {
-        'Authorization': 'Bearer $token',
-      });
+      final fullUrl = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/documento-adjunto/privado/$idSolicitud/$filename',
+      );
+
+      final res = await http.get(
+        fullUrl,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
       if (res.statusCode == 200) {
         if (mounted) {
           setState(() {
             _bytes = res.bodyBytes;
             _isLoading = false;
-            
+
             if (widget.isPdf && kIsWeb) {
               final blob = html.Blob([_bytes], 'application/pdf');
               _blobUrl = html.Url.createObjectUrlFromBlob(blob);
               _viewId = 'pdf-view-${DateTime.now().millisecondsSinceEpoch}';
-              
+
               // ignore: undefined_prefixed_name
-              ui_web.platformViewRegistry.registerViewFactory(_viewId!, (int viewId) {
+              ui_web.platformViewRegistry.registerViewFactory(_viewId!, (
+                int viewId,
+              ) {
                 final iframe = html.IFrameElement()
                   ..src = _blobUrl
                   ..style.border = 'none'
@@ -682,10 +911,18 @@ class _VisorDocumentoDialogState extends State<_VisorDocumentoDialog> {
           });
         }
       } else {
-        if (mounted) setState(() { _error = 'Error al cargar documento (${res.statusCode})'; _isLoading = false; });
+        if (mounted)
+          setState(() {
+            _error = 'Error al cargar documento (${res.statusCode})';
+            _isLoading = false;
+          });
       }
     } catch (e) {
-      if (mounted) setState(() { _error = 'Error: $e'; _isLoading = false; });
+      if (mounted)
+        setState(() {
+          _error = 'Error: $e';
+          _isLoading = false;
+        });
       debugPrint('Error de conexion o parseo: $e');
     }
   }
@@ -707,17 +944,22 @@ class _VisorDocumentoDialogState extends State<_VisorDocumentoDialog> {
       confirmText: null, // Sin botón primario
       content: SizedBox(
         height: 600,
-        child: _isLoading 
+        child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _error != null 
-                ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-                : widget.isPdf 
-                    ? (kIsWeb && _viewId != null) 
-                        ? HtmlElementView(viewType: _viewId!)
-                        : const Center(child: Text('La visualización de PDF solo está soportada en Web.'))
-                    : Image.memory(_bytes!, fit: BoxFit.contain),
+            : _error != null
+            ? Center(
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              )
+            : widget.isPdf
+            ? (kIsWeb && _viewId != null)
+                  ? HtmlElementView(viewType: _viewId!)
+                  : const Center(
+                      child: Text(
+                        'La visualización de PDF solo está soportada en Web.',
+                      ),
+                    )
+            : Image.memory(_bytes!, fit: BoxFit.contain),
       ),
     );
   }
 }
-
