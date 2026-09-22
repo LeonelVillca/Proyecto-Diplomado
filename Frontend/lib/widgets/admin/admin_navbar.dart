@@ -1,34 +1,58 @@
-﻿part of 'admin_shell.dart';
+part of 'admin_shell.dart';
 
 class _BentoNavbar extends StatelessWidget {
-  final String nombreUsuario;
-  final String correoUsuario;
-  final String rolLabel;
-  final VoidCallback onLogout;
-
   const _BentoNavbar({
+    required this.currentSection,
     required this.nombreUsuario,
     required this.correoUsuario,
     required this.rolLabel,
     required this.onLogout,
   });
 
+  final String currentSection;
+  final String nombreUsuario;
+  final String correoUsuario;
+  final String rolLabel;
+  final VoidCallback onLogout;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 56,
+    return Container(
+      height: 65,
+      padding: const EdgeInsets.symmetric(horizontal: 34),
+      decoration: const BoxDecoration(
+        color: Color(0xD9FAF5EC),
+        border: Border(bottom: BorderSide(color: AdminTheme.border)),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _NavCircleBtn(
-            icon: Icons.notifications_outlined,
-            onTap: () {},
-            badge: false,
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Operaciones', style: TextStyle(color: AdminTheme.textMuted, fontSize: 13, fontWeight: FontWeight.w600)),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(LucideIcons.chevronRight, size: 16, color: AdminTheme.textMuted),
+                ),
+                Text(currentSection, style: const TextStyle(color: AdminTheme.textDark, fontSize: 13, fontWeight: FontWeight.w700)),
+              ],
+            ),
           ),
-          const SizedBox(width: 16),
-          Container(width: 1, height: 32, color: const Color(0xFFEEECEB)),
-          const SizedBox(width: 16),
+          Tooltip(
+            message: 'Notificaciones',
+            child: IconButton(
+              onPressed: () {},
+              icon: const Icon(LucideIcons.bell, size: 19),
+              style: IconButton.styleFrom(
+                foregroundColor: AdminTheme.textMuted,
+                backgroundColor: AdminTheme.surface,
+                side: const BorderSide(color: AdminTheme.border),
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           _ProfileCapsule(
             nombreUsuario: nombreUsuario,
             correoUsuario: correoUsuario,
@@ -41,12 +65,7 @@ class _BentoNavbar extends StatelessWidget {
   }
 }
 
-class _ProfileCapsule extends StatefulWidget {
-  final String nombreUsuario;
-  final String correoUsuario;
-  final String rolLabel;
-  final VoidCallback onLogout;
-
+class _ProfileCapsule extends StatelessWidget {
   const _ProfileCapsule({
     required this.nombreUsuario,
     required this.correoUsuario,
@@ -54,45 +73,41 @@ class _ProfileCapsule extends StatefulWidget {
     required this.onLogout,
   });
 
-  @override
-  State<_ProfileCapsule> createState() => _ProfileCapsuleState();
-}
-
-class _ProfileCapsuleState extends State<_ProfileCapsule> {
-  bool _hovered = false;
+  final String nombreUsuario;
+  final String correoUsuario;
+  final String rolLabel;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
-    final initials = widget.nombreUsuario.isNotEmpty ? widget.nombreUsuario[0].toUpperCase() : 'A';
-    final firstName = widget.nombreUsuario.split(' ').first;
-    final formattedName = firstName.isNotEmpty 
-        ? '${firstName[0].toUpperCase()}${firstName.substring(1).toLowerCase()}' 
-        : '';
-
-    const primaryTeal = Color(0xFF008080);
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        hoverColor: Colors.transparent,
+    final name = nombreUsuario.trim().isEmpty ? 'Administrador' : nombreUsuario.trim();
+    final initials = name.split(RegExp(r'\s+')).take(2).map((part) => part[0]).join().toUpperCase();
+    return PopupMenuButton<String>(
+      tooltip: 'Abrir menú de usuario',
+      offset: const Offset(0, 12),
+      padding: EdgeInsets.zero,
+      menuPadding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 0, maxWidth: 286),
+      onSelected: (value) {
+        if (value == 'logout') onLogout();
+      },
+      color: AdminTheme.surface,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(18)),
+        side: BorderSide(color: AdminTheme.border),
       ),
-      child: PopupMenuButton<String>(
-        offset: const Offset(0, 50),
-        tooltip: '',
-        color: _C.surface,
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        onSelected: (v) {
-          if (v == 'logout') widget.onLogout();
-        },
-        itemBuilder: (_) => [
-          PopupMenuItem(
-            enabled: false,
-            padding: EdgeInsets.zero,
-            child: Container(
-              width: 280,
-              padding: const EdgeInsets.all(16),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          enabled: false,
+          padding: EdgeInsets.zero,
+          height: 0,
+          child: SizedBox(
+            width: 260,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -100,285 +115,115 @@ class _ProfileCapsuleState extends State<_ProfileCapsule> {
                   Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _C.brandMain,
-                        ),
+                        width: 44,
+                        height: 44,
                         alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          color: AdminTheme.accentColor,
+                          shape: BoxShape.circle,
+                        ),
                         child: Text(
                           initials,
-                          style: GoogleFonts.inter(
+                          style: const TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18,
+                            fontFamily: 'Fraunces',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 11),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.nombreUsuario,
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: _C.brandDark,
-                              ),
-                            ),
+                            Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.subtitleStyle.copyWith(fontSize: 15)),
                             const SizedBox(height: 2),
-                            Text(
-                              'Sesión activa',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                color: _C.textMuted,
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            Text(correoUsuario, maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 12)),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  const Divider(height: 1, color: Color(0xFFEEECEB)),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _C.bgBody,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.shield_outlined, size: 20, color: _C.textMuted),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ROL',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: _C.textLight,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            Text(
-                              widget.rolLabel.toUpperCase(),
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: _C.textDark,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(color: AdminTheme.accentSoft, borderRadius: AdminTheme.pillRadius),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(LucideIcons.shieldCheck, size: 14, color: AdminTheme.accentColor),
+                        const SizedBox(width: 7),
+                        Text(rolLabel.toUpperCase(), style: const TextStyle(color: AdminTheme.accentColor, fontSize: 10.5, letterSpacing: .7, fontWeight: FontWeight.w700)),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _C.bgBody,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.email_outlined, size: 20, color: _C.textMuted),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'CORREO',
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: _C.textLight,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                            Text(
-                              widget.correoUsuario,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: _C.textDark,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  const Padding(
+                    padding: EdgeInsets.only(top: 14),
+                    child: Divider(height: 1),
                   ),
-                  const SizedBox(height: 16),
-                  const Divider(height: 1, color: Color(0xFFEEECEB)),
                 ],
               ),
             ),
           ),
-          PopupMenuItem(
-            value: 'logout',
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Row(
-              children: [
-                const Icon(Icons.logout_rounded, size: 20, color: _C.errorRed),
-                const SizedBox(width: 12),
-                Text(
-                  'Cerrar Sesión',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: _C.errorRed,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _hovered = true),
-          onExit:  (_) => setState(() => _hovered = false),
-          cursor: SystemMouseCursors.click,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
-            decoration: BoxDecoration(
-              color: _hovered ? const Color(0xFFF9FAFB) : Colors.transparent,
-              borderRadius: BorderRadius.circular(50.0),
-              border: Border.all(color: _hovered ? const Color(0xFFE5E7EB) : Colors.transparent),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 130),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        formattedName,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: const Color(0xFF1F2937),
-                          height: 1.0,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.rolLabel.toUpperCase(),
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF9CA3AF),
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: primaryTeal.withOpacity(0.10),
-                    border: Border.all(
-                      color: primaryTeal.withOpacity(0.20),
-                      width: 1,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: GoogleFonts.inter(
-                      color: primaryTeal,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF9CA3AF)),
-              ],
-            ),
-          ),
         ),
-      ),
-    );
-  }
-}
-
-class _NavCircleBtn extends StatefulWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool badge;
-
-  const _NavCircleBtn({
-    required this.icon,
-    required this.onTap,
-    this.badge = false,
-  });
-
-  @override
-  State<_NavCircleBtn> createState() => _NavCircleBtnState();
-}
-
-class _NavCircleBtnState extends State<_NavCircleBtn> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit:  (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: _hovered ? const Color(0xFFEFEDEC) : Colors.transparent,
-            shape: BoxShape.circle,
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
+        const PopupMenuItem(
+          value: 'logout',
+          height: 54,
+          padding: EdgeInsets.fromLTRB(10, 0, 10, 8),
+          child: Row(
             children: [
-              Icon(widget.icon, size: 24, color: _C.textMuted),
-              if (widget.badge)
-                Positioned(
-                  top: 7,
-                  right: 7,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: _C.errorRed,
-                      shape: BoxShape.circle,
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: AdminTheme.errorSoft, borderRadius: AdminTheme.pillRadius),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.logOut, color: AdminTheme.error, size: 17),
+                        SizedBox(width: 9),
+                        Text('Cerrar sesión', style: TextStyle(color: AdminTheme.error, fontSize: 13, fontWeight: FontWeight.w700)),
+                      ],
                     ),
                   ),
                 ),
+              ),
             ],
           ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(7, 7, 10, 7),
+        decoration: BoxDecoration(
+          color: AdminTheme.surface,
+          border: Border.all(color: AdminTheme.border),
+          borderRadius: AdminTheme.pillRadius,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: AdminTheme.accentColor, shape: BoxShape.circle),
+              child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(width: 9),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 134),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AdminTheme.textDark)),
+                  Text(rolLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: AdminTheme.textMuted)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(LucideIcons.chevronDown, size: 17, color: AdminTheme.textMuted),
+          ],
         ),
       ),
     );

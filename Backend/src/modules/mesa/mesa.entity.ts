@@ -7,14 +7,19 @@ import {
 } from 'typeorm';
 import { Restaurante } from '../restaurante/restaurante.entity';
 
-export const ESTADO_MESA = ['libre', 'ocupada', 'reservada', 'inactiva'] as const;
+export const ESTADO_MESA = [
+  'libre',
+  'ocupada',
+  'reservada',
+  'inactiva',
+] as const;
 
 @Entity('mesa')
 export class Mesa {
   @PrimaryGeneratedColumn({ name: 'id_mesa' })
   id: number;
 
-  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_restaurante' })
   restaurante: Restaurante;
 

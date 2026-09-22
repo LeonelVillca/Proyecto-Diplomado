@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
 
 class AdminModal extends StatelessWidget {
   final String title;
@@ -43,6 +44,7 @@ class AdminModal extends StatelessWidget {
     return showDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
+      barrierColor: const Color(0x6B26201A),
       builder: (ctx) => AdminModal(
         title: title,
         content: content,
@@ -66,16 +68,16 @@ class AdminModal extends StatelessWidget {
       child: Container(
         width: width,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AdminTheme.surface,
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x1A000000), // 10% black
-              blurRadius: 30,
-              offset: Offset(0, 15),
+              color: Color(0x1A26201A),
+              blurRadius: 34,
+              offset: Offset(0, 12),
             ),
           ],
-          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+          border: Border.all(color: AdminTheme.border, width: 1.5),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -85,9 +87,9 @@ class AdminModal extends StatelessWidget {
             Container(
               padding: const EdgeInsets.only(left: 32, right: 24, top: 24, bottom: 20),
               decoration: const BoxDecoration(
-                color: Color(0xFFFAF8F5), // Warm off-white header
+                color: AdminTheme.surfaceMuted,
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+                border: Border(bottom: BorderSide(color: AdminTheme.border, width: 1)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -95,23 +97,24 @@ class AdminModal extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: GoogleFonts.poppins(
+                      style: const TextStyle(
+                        fontFamily: 'Fraunces',
                         fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1E1B1A),
+                        fontWeight: FontWeight.w600,
+                        color: AdminTheme.textDark,
                         letterSpacing: -0.5,
                       ),
                     ),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AdminTheme.surface,
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: AdminTheme.border),
                       boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 4, offset: Offset(0, 2))],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Color(0xFF6B635E), size: 20),
+                      icon: const Icon(Icons.close, color: AdminTheme.textMuted, size: 20),
                       onPressed: onCancel ?? () => Navigator.pop(context),
                       splashRadius: 24,
                       tooltip: 'Cerrar',
@@ -143,9 +146,9 @@ class AdminModal extends StatelessWidget {
                       onPressed: onCancel ?? () => Navigator.pop(context),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-                        foregroundColor: const Color(0xFF6B635E),
+                        foregroundColor: AdminTheme.textMuted,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                        textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                       ),
                       child: Text(cancelText!),
                     ),
@@ -155,12 +158,12 @@ class AdminModal extends StatelessWidget {
                     ElevatedButton(
                       onPressed: onConfirm,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: confirmColor ?? const Color(0xFF28C76F), // Verde pastel por defecto como en el ejemplo
-                        foregroundColor: confirmColor == null ? const Color(0xFF0F5132) : Colors.white,
+                        backgroundColor: confirmColor ?? AdminTheme.primaryColor,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
-                        textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 14),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                       ),
                       child: Text(confirmText!),
                     ),
@@ -184,28 +187,28 @@ class AdminInputDecoration {
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
-      labelStyle: const TextStyle(color: Color(0xFF6B635E), fontFamily: 'Karla', fontWeight: FontWeight.w600, fontSize: 14),
+      labelStyle: const TextStyle(color: AdminTheme.textMuted, fontFamily: 'InstrumentSans', fontWeight: FontWeight.w600, fontSize: 14),
       alignLabelWithHint: true,
-      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: const Color(0xFF6E1E39), size: 20) : null,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AdminTheme.primaryColor, size: 20) : null,
       suffixIcon: suffixIcon,
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AdminTheme.border, width: 1.5),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF6E1E39), width: 2),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AdminTheme.primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AdminTheme.error, width: 1.5),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: AdminTheme.error, width: 2),
       ),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC), // Slight slate gray for input backgrounds
+      fillColor: AdminTheme.background,
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
     );
   }

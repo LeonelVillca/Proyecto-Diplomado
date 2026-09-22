@@ -19,9 +19,13 @@ export class SoporteService {
   ) {}
 
   async crear(dto: CrearSoporteDto): Promise<Soporte> {
-    const usuario = await this.usuarioRepository.findOneBy({ id: dto.idUsuario });
+    const usuario = await this.usuarioRepository.findOneBy({
+      id: dto.idUsuario,
+    });
     if (!usuario) {
-      throw new NotFoundException(`Usuario con id ${dto.idUsuario} no encontrado`);
+      throw new NotFoundException(
+        `Usuario con id ${dto.idUsuario} no encontrado`,
+      );
     }
 
     const categoria = await this.categoriaRepository.findOneBy({
@@ -33,9 +37,10 @@ export class SoporteService {
       );
     }
 
-    const { idUsuario, idCategoriaSoporte, ...datos } = dto;
     const soporte = this.soporteRepository.create({
-      ...datos,
+      asunto: dto.asunto,
+      descripcion: dto.descripcion,
+      estado: dto.estado,
       usuario,
       categoriaSoporte: categoria,
     });

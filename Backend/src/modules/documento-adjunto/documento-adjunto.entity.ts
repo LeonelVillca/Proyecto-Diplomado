@@ -12,7 +12,7 @@ export class DocumentoAdjunto {
   @PrimaryGeneratedColumn({ name: 'id_documento' })
   id: number;
 
-  @ManyToOne(() => Solicitud, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Solicitud, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_solicitud' })
   solicitud: Solicitud;
 

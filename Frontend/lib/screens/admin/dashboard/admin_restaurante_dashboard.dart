@@ -14,6 +14,7 @@ import 'package:frontend/screens/admin/reservas/gestion_reservas_screen.dart';
 import 'package:frontend/screens/admin/resenas/gestion_resenas_screen.dart';
 import 'package:frontend/screens/admin/perfil/perfil_restaurante_screen.dart';
 import 'package:frontend/screens/admin/admin_restaurante/soporte_restaurante_screen.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
 
 class AdminRestauranteDashboard extends StatefulWidget {
   const AdminRestauranteDashboard({super.key});
@@ -133,8 +134,8 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
   Widget build(BuildContext context) {
     if (_isLoadingStatus) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF0F2F5),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39))),
+        backgroundColor: AdminTheme.background,
+        body: Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor)),
       );
     }
 

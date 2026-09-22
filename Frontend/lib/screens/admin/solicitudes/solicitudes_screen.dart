@@ -11,6 +11,8 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
 
 class SolicitudesScreen extends StatefulWidget {
   const SolicitudesScreen({super.key});
@@ -135,7 +137,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
               _cambiarEstadoSolicitud(solicitud, 'aprobada');
             } : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6E1E39),
+              backgroundColor: const Color(0xFFBE4B24),
               foregroundColor: Colors.white,
               elevation: 4,
               shadowColor: const Color(0x336E1E39),
@@ -198,7 +200,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
-            child: Divider(color: Color(0xFFF0F2F5), height: 1),
+            child: Divider(color: Color(0xFFF1EADD), height: 1),
           ),
           
           Text('Documentación Adjunta', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
@@ -261,7 +263,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFF0F2F5)),
+              border: Border.all(color: const Color(0xFFEAE1D3)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -349,55 +351,51 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Solicitudes de Restaurantes',
-          style: GoogleFonts.inter(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF1E1B1A),
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Gestiona y revisa las peticiones de nuevos negocios.',
-          style: GoogleFonts.inter(color: const Color(0xFF6B635E), fontSize: 14),
+        const AdminPageHeader(
+          kicker: 'ALTAS',
+          titleBefore: 'Solicitudes de ',
+          titleEmphasis: 'Restaurantes',
+          description: 'Gestiona y revisa las peticiones de nuevos negocios.',
         ),
         const SizedBox(height: 24),
-        
-        // Filtros (Estilo Pestañas Píldora)
-        Row(
+        AdminSurface(
+          padding: const EdgeInsets.all(12),
+          radius: AdminTheme.mediumRadius,
+          child: Wrap(
+          spacing: 10,
+          runSpacing: 10,
           children: [
             _buildFilterTab('Pendientes', 'pendiente'),
-            const SizedBox(width: 12),
             _buildFilterTab('Aprobadas', 'aprobada'),
-            const SizedBox(width: 12),
             _buildFilterTab('Rechazadas', 'rechazada'),
           ],
+          ),
         ),
-        const SizedBox(height: 24),
-
-        // Tabla / Lista de Tarjetas Flotantes
+        const SizedBox(height: 18),
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39)))
-              : _solicitudes.isEmpty
-                  ? Center(child: Text('No hay solicitudes en esta categoría', style: GoogleFonts.manrope(color: const Color(0xFFA39C98), fontSize: 15)))
-                  : ListView.separated(
-                      itemCount: _solicitudes.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return _SolicitudCard(
+          child: AdminSurface(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor))
+                : _solicitudes.isEmpty
+                    ? Center(child: Text('No hay solicitudes en esta categoría.', style: AdminTheme.bodyStyle))
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: _solicitudes.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) => _SolicitudCard(
                           solicitud: _solicitudes[index],
                           onTap: () => _verDetalles(_solicitudes[index]),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+          ),
         ),
       ],
+      ),
     );
   }
 
@@ -413,13 +411,13 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6E1E39) : Colors.white,
+          color: isSelected ? AdminTheme.primaryColor : AdminTheme.surface,
           borderRadius: BorderRadius.circular(50),
           border: Border.all(
-            color: isSelected ? const Color(0xFF6E1E39) : const Color(0xFFE2E8F0),
+            color: isSelected ? AdminTheme.primaryColor : AdminTheme.border,
           ),
           boxShadow: isSelected
-              ? [const BoxShadow(color: Color(0x336E1E39), blurRadius: 8, offset: Offset(0, 4))]
+              ? AdminTheme.shadowSm
               : [],
         ),
         child: Text(
@@ -427,7 +425,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           style: GoogleFonts.manrope(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : const Color(0xFF6B635E),
+            color: isSelected ? Colors.white : AdminTheme.textMuted,
           ),
         ),
       ),
@@ -495,7 +493,7 @@ class _SolicitudCardState extends State<_SolicitudCard> {
                     child: Text(
                       iniciales,
                       style: GoogleFonts.manrope(
-                        color: const Color(0xFF6E1E39),
+                        color: const Color(0xFFBE4B24),
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       ),
@@ -538,7 +536,7 @@ class _SolicitudCardState extends State<_SolicitudCard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _hover ? const Color(0xFF6E1E39) : const Color(0xFFF0F2F5),
+                      color: _hover ? const Color(0xFFBE4B24) : const Color(0xFFFAF5EC),
                       borderRadius: BorderRadius.circular(50),
                     ),
                     child: Text(

@@ -23,6 +23,7 @@ class _ReservationModalState extends State<ReservationModal> {
   String? _selectedTime;
   final TextEditingController _commentCtrl = TextEditingController();
   bool _isLoading = false;
+  int _maxGuests = 4;
 
   final List<String> _timeSlots = [
     '12:00', '12:30', '13:00', '13:30', '14:00',
@@ -33,6 +34,7 @@ class _ReservationModalState extends State<ReservationModal> {
   void initState() {
     super.initState();
     _selectedDate = DateTime.now(); // Hoy por defecto
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadTableCapacity());
   }
 
   @override
@@ -42,6 +44,7 @@ class _ReservationModalState extends State<ReservationModal> {
   }
 
   Future<void> _submitReservation() async {
+    if (_isLoading) return;
     if (_selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -63,7 +66,7 @@ class _ReservationModalState extends State<ReservationModal> {
       final resMesas = await http.get(urlMesas, headers: {'Authorization': 'Bearer $token'});
       
       if (resMesas.statusCode != 200) {
-        throw Exception('Error al obtener mesas');
+        throw Exception(_apiError(resMesas, 'No se pudieron consultar las mesas'));
       }
       
       final List<dynamic> mesas = jsonDecode(utf8.decode(resMesas.bodyBytes));
@@ -73,12 +76,13 @@ class _ReservationModalState extends State<ReservationModal> {
       
       // Solo ofrecer una mesa cuya capacidad cubra el número de personas.
       int? idMesa;
-      for (var mesa in mesas) {
-        if (mesa['capacidad'] != null && mesa['capacidad'] >= _guests) {
-          idMesa = mesa['id'];
-          break;
-        }
-      }
+      final mesasValidas = mesas.where((mesa) {
+        final capacidad = (mesa['capacidad'] as num?)?.toInt() ?? 0;
+        return mesa['estado'] != 'inactiva' && capacidad >= _guests;
+      }).toList()
+        ..sort((a, b) => ((a['capacidad'] as num?) ?? 0)
+            .compareTo((b['capacidad'] as num?) ?? 0));
+      if (mesasValidas.isNotEmpty) idMesa = mesasValidas.first['id'];
       if (idMesa == null) {
         throw Exception('No hay una mesa disponible para $_guests personas.');
       }
@@ -104,7 +108,7 @@ class _ReservationModalState extends State<ReservationModal> {
       );
 
       if (resReserva.statusCode != 201) {
-        throw Exception('Error al crear la reserva');
+        throw Exception(_apiError(resReserva, 'No se pudo crear la reserva'));
       }
 
       if (!mounted) return;
@@ -159,11 +163,46 @@ class _ReservationModalState extends State<ReservationModal> {
     }
   }
 
+  Future<void> _loadTableCapacity() async {
+    try {
+      final token = AuthScope.of(context, listen: false).token;
+      final response = await http.get(
+        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/mesa/restaurante/${widget.restaurant.id}'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode != 200) return;
+      final mesas = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+      final capacidades = mesas
+          .where((mesa) => mesa['estado'] != 'inactiva')
+          .map((mesa) => (mesa['capacidad'] as num?)?.toInt() ?? 0)
+          .where((capacidad) => capacidad > 0);
+      final maximo = capacidades.isEmpty ? 0 : capacidades.reduce((a, b) => a > b ? a : b);
+      if (!mounted || maximo == 0) return;
+      setState(() {
+        _maxGuests = maximo;
+        if (_guests > maximo) _guests = maximo;
+      });
+    } catch (_) {
+      // La validación definitiva la realiza el backend al confirmar.
+    }
+  }
+
+  String _apiError(dynamic response, String fallback) {
+    try {
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final message = data['message'];
+      if (message is List) return message.join(', ');
+      if (message is String && message.isNotEmpty) return message;
+    } catch (_) {}
+    return fallback;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Calculo de dias proximos
     final today = DateTime.now();
     final dates = List.generate(7, (i) => today.add(Duration(days: i)));
+    final guestOptions = _maxGuests < 1 ? 1 : (_maxGuests > 8 ? 8 : _maxGuests);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
@@ -204,7 +243,7 @@ class _ReservationModalState extends State<ReservationModal> {
                     height: 48,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: 8,
+                      itemCount: guestOptions,
                       separatorBuilder: (_, __) => const SizedBox(width: 10),
                       itemBuilder: (_, i) {
                         final number = i + 1;
@@ -222,7 +261,7 @@ class _ReservationModalState extends State<ReservationModal> {
                               boxShadow: isSelected ? AppShadows.cardSoft : [],
                             ),
                             child: Text(
-                              number == 8 ? '8+' : '$number',
+                              '$number',
                               style: GoogleFonts.piazzolla(
                                 fontSize: 16,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
@@ -372,7 +411,7 @@ class _ReservationModalState extends State<ReservationModal> {
             child: SizedBox(
               height: 52,
               child: FilledButton(
-                onPressed: _submitReservation,
+                onPressed: _isLoading ? null : _submitReservation,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.wine,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

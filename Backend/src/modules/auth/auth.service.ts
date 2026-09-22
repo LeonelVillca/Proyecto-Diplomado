@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { DataSource, In } from 'typeorm';
@@ -13,7 +13,11 @@ import { FirebaseAdminService } from './firebase-admin.service';
 import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 import { InvitacionToken } from '../invitacion-token/invitacion-token.entity';
 import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
-import { SolicitarRecuperacionDto, RestablecerPasswordDto, VerificarPinDto } from './dto/recuperar-password.dto';
+import {
+  SolicitarRecuperacionDto,
+  RestablecerPasswordDto,
+  VerificarPinDto,
+} from './dto/recuperar-password.dto';
 import { MailService } from '../mail/mail.service';
 import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -51,14 +55,23 @@ export class AuthService {
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
-  private async emitirTokenAsync(usuario: Usuario, sessionStartedAt = Math.floor(Date.now() / 1000), expectedVersion?: number): Promise<{
+  private async emitirTokenAsync(
+    usuario: Usuario,
+    sessionStartedAt = Math.floor(Date.now() / 1000),
+    expectedVersion?: number,
+  ): Promise<{
     token: string;
     usuario: UsuarioPublico;
   }> {
     const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
-    if (!cuenta?.estado || usuario.estado !== 'activo' || (expectedVersion !== undefined && cuenta.sessionVersion !== expectedVersion)) {
+    if (
+      !cuenta?.estado ||
+      usuario.estado !== 'activo' ||
+      (expectedVersion !== undefined &&
+        cuenta.sessionVersion !== expectedVersion)
+    ) {
       throw new UnauthorizedException('La sesión no está autorizada');
     }
     const usuarioRoles = await this.dataSource.getRepository(UsuarioRol).find({
@@ -72,7 +85,9 @@ export class AuthService {
         where: { rol: { id: In(rolIds) } },
         relations: { permiso: true },
       });
-      permisos = Array.from(new Set(rolPermisos.map((rp) => rp.permiso.codigo)));
+      permisos = Array.from(
+        new Set(rolPermisos.map((rp) => rp.permiso.codigo)),
+      );
     }
 
     const token = this.jwtService.sign({
@@ -94,9 +109,12 @@ export class AuthService {
     };
   }
 
-  async login(dto: import('./dto/login.dto').LoginDto): Promise<{ token: string; usuario: UsuarioPublico }> {
+  async login(
+    dto: import('./dto/login.dto').LoginDto,
+  ): Promise<{ token: string; usuario: UsuarioPublico }> {
     const correoNormalizado = dto.correo.trim().toLowerCase();
-    const usuario = await this.usuariosService.buscarPorCorreo(correoNormalizado);
+    const usuario =
+      await this.usuariosService.buscarPorCorreo(correoNormalizado);
 
     if (!usuario) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -117,7 +135,7 @@ export class AuthService {
     if (cuenta.intentosFallidos >= MAX_INTENTOS) {
       throw new UnauthorizedException(
         'La cuenta está bloqueada temporalmente por múltiples intentos fallidos. ' +
-        'Utiliza la recuperación de contraseña para desbloquearla.',
+          'Utiliza la recuperación de contraseña para desbloquearla.',
       );
     }
 
@@ -129,7 +147,11 @@ export class AuthService {
     }
 
     await this.cuentasAuthService.registrarUltimoIngreso(usuario.id);
-    return await this.emitirTokenAsync(usuario, Math.floor(Date.now() / 1000), cuenta.sessionVersion);
+    return await this.emitirTokenAsync(
+      usuario,
+      Math.floor(Date.now() / 1000),
+      cuenta.sessionVersion,
+    );
   }
 
   /// Inicio de sesión con cuenta de Google.
@@ -222,8 +244,14 @@ export class AuthService {
     };
   }
 
-  renovarSesion(usuario: Usuario & { sessionStartedAt: number; sessionVersion: number }) {
-    return this.emitirTokenAsync(usuario, usuario.sessionStartedAt, usuario.sessionVersion);
+  renovarSesion(
+    usuario: Usuario & { sessionStartedAt: number; sessionVersion: number },
+  ) {
+    return this.emitirTokenAsync(
+      usuario,
+      usuario.sessionStartedAt,
+      usuario.sessionVersion,
+    );
   }
 
   async cerrarSesiones(idUsuario: number) {
@@ -246,10 +274,15 @@ export class AuthService {
     }
 
     if (invitacion.fechaExpiracion < new Date()) {
-      throw new BadRequestException('El token ha expirado. Por favor, solicita uno nuevo.');
+      throw new BadRequestException(
+        'El token ha expirado. Por favor, solicita uno nuevo.',
+      );
     }
 
-    await this.cuentasAuthService.asegurarCuenta(invitacion.usuario.id, dto.password);
+    await this.cuentasAuthService.asegurarCuenta(
+      invitacion.usuario.id,
+      dto.password,
+    );
 
     invitacion.usado = true;
     await this.dataSource.manager.save(invitacion);
@@ -258,60 +291,108 @@ export class AuthService {
   }
 
   private hashPin(idUsuario: number, pin: string): string {
-    return createHmac('sha256', pinHmacSecret(this.configService)).update(`recuperacion:${idUsuario}:${pin}`).digest('hex');
+    return createHmac('sha256', pinHmacSecret(this.configService))
+      .update(`recuperacion:${idUsuario}:${pin}`)
+      .digest('hex');
   }
 
-  async solicitarRecuperacion(dto: SolicitarRecuperacionDto): Promise<{ mensaje: string }> {
-    const usuario = await this.usuariosService.buscarPorCorreo(dto.correo.trim().toLowerCase());
-    const respuesta = { mensaje: 'Si el correo existe en el sistema, recibirás un código PIN en los próximos minutos.' };
+  async solicitarRecuperacion(
+    dto: SolicitarRecuperacionDto,
+  ): Promise<{ mensaje: string }> {
+    const usuario = await this.usuariosService.buscarPorCorreo(
+      dto.correo.trim().toLowerCase(),
+    );
+    const respuesta = {
+      mensaje:
+        'Si el correo existe en el sistema, recibirás un código PIN en los próximos minutos.',
+    };
     if (!usuario || usuario.estado !== 'activo') return respuesta;
     const cuenta = await this.cuentasAuthService.buscarPorUsuario(usuario.id);
     if (!cuenta?.estado) return respuesta;
     const pin = randomInt(100000, 1000000).toString();
     const created = await this.dataSource.transaction(async (manager) => {
       // Bloquear la cuenta serializa solicitudes desde distintas IP/procesos.
-      await manager.findOne(CuentaAuth, { where: { id: cuenta.id }, lock: { mode: 'pessimistic_write' } });
+      await manager.findOne(CuentaAuth, {
+        where: { id: cuenta.id },
+        lock: { mode: 'pessimistic_write' },
+      });
       const repo = manager.getRepository(InvitacionToken);
-      const last = await repo.findOne({ where: { usuario: { id: usuario.id }, tipo: 'recuperacion' }, order: { id: 'DESC' } });
-      if (last && Date.now() - last.fechaCreacion.getTime() < 60_000) return false;
-      await repo.update({ usuario: { id: usuario.id }, tipo: 'recuperacion', usado: false }, { usado: true });
-      await repo.save(repo.create({
-        usuario: { id: usuario.id }, token: this.hashPin(usuario.id, pin), tipo: 'recuperacion',
-        fechaExpiracion: new Date(Date.now() + 15 * 60_000),
-      }));
+      const last = await repo.findOne({
+        where: { usuario: { id: usuario.id }, tipo: 'recuperacion' },
+        order: { id: 'DESC' },
+      });
+      if (last && Date.now() - last.fechaCreacion.getTime() < 60_000)
+        return false;
+      await repo.update(
+        { usuario: { id: usuario.id }, tipo: 'recuperacion', usado: false },
+        { usado: true },
+      );
+      await repo.save(
+        repo.create({
+          usuario: { id: usuario.id },
+          token: this.hashPin(usuario.id, pin),
+          tipo: 'recuperacion',
+          fechaExpiracion: new Date(Date.now() + 15 * 60_000),
+        }),
+      );
       return true;
     });
-    if (created) await this.mailService.enviarRecuperacionPassword(usuario.correo, pin);
+    if (created)
+      await this.mailService.enviarRecuperacionPassword(usuario.correo, pin);
     return respuesta;
   }
 
-  async verificarPinRecuperacion(dto: VerificarPinDto): Promise<{ valido: boolean }> {
+  async verificarPinRecuperacion(
+    dto: VerificarPinDto,
+  ): Promise<{ valido: boolean }> {
     await this.validarRecuperacion(dto);
     return { valido: true };
   }
 
-  async restablecerPassword(dto: RestablecerPasswordDto): Promise<{ mensaje: string }> {
+  async restablecerPassword(
+    dto: RestablecerPasswordDto,
+  ): Promise<{ mensaje: string }> {
     await this.validarRecuperacion(dto, dto.nuevaContrasena);
     return { mensaje: 'Contraseña actualizada exitosamente' };
   }
 
-  private async validarRecuperacion(dto: VerificarPinDto, password?: string): Promise<void> {
-    const usuario = await this.usuariosService.buscarPorCorreo(dto.correo.trim().toLowerCase());
-    if (!usuario || usuario.estado !== 'activo') throw new BadRequestException('El PIN es inválido o ha expirado.');
+  private async validarRecuperacion(
+    dto: VerificarPinDto,
+    password?: string,
+  ): Promise<void> {
+    const usuario = await this.usuariosService.buscarPorCorreo(
+      dto.correo.trim().toLowerCase(),
+    );
+    if (!usuario || usuario.estado !== 'activo')
+      throw new BadRequestException('El PIN es inválido o ha expirado.');
     const accepted = await this.dataSource.transaction(async (manager) => {
       const cuenta = await manager.findOne(CuentaAuth, {
-        where: { usuario: { id: usuario.id } }, lock: { mode: 'pessimistic_write' },
+        where: { usuario: { id: usuario.id } },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!cuenta?.estado) return false;
       const repo = manager.getRepository(InvitacionToken);
       const record = await repo.findOne({
-        where: { usuario: { id: usuario.id }, tipo: 'recuperacion', usado: false },
-        order: { id: 'DESC' }, lock: { mode: 'pessimistic_write' },
+        where: {
+          usuario: { id: usuario.id },
+          tipo: 'recuperacion',
+          usado: false,
+        },
+        order: { id: 'DESC' },
+        lock: { mode: 'pessimistic_write' },
       });
-      if (!record || record.fechaExpiracion <= new Date() || record.intentosVerificacion >= 5) return false;
+      if (
+        !record ||
+        record.fechaExpiracion <= new Date() ||
+        record.intentosVerificacion >= 5
+      )
+        return false;
       const stored = Buffer.from(record.token);
       const supplied = Buffer.from(this.hashPin(usuario.id, dto.pin));
-      if (stored.length !== supplied.length || !timingSafeEqual(stored, supplied)) {
+      if (
+        stored.length !== supplied.length ||
+        !timingSafeEqual(stored, supplied)
+      ) {
         record.intentosVerificacion++;
         if (record.intentosVerificacion >= 5) record.usado = true;
         await repo.save(record);
@@ -319,7 +400,8 @@ export class AuthService {
       }
       if (password !== undefined) {
         await manager.update(CuentaAuth, cuenta.id, {
-          passwordHash: await bcrypt.hash(password, 12), intentosFallidos: 0,
+          passwordHash: await bcrypt.hash(password, 12),
+          intentosFallidos: 0,
           sessionVersion: () => 'session_version + 1',
         });
         record.usado = true;
@@ -327,7 +409,7 @@ export class AuthService {
       }
       return true;
     });
-    if (!accepted) throw new BadRequestException('El PIN es inválido o ha expirado.');
+    if (!accepted)
+      throw new BadRequestException('El PIN es inválido o ha expirado.');
   }
 }
-

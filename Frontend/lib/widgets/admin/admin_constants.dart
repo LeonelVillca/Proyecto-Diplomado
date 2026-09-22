@@ -22,18 +22,18 @@ class SidebarSection {
 }
 
 abstract class _C {
-  static const bgBody   = Color(0xFFF0F2F5);
+  static const bgBody   = Color(0xFFFAF5EC);
   static const surface  = Color(0xFFFFFFFF);
 
-  static const brandMain = Color(0xFF6E1E39);
-  static const brandDark = Color(0xFF2D0A14);
-  static const goldMain  = Color(0xFFC9974F);
+  static const brandMain = Color(0xFFBE4B24);
+  static const brandDark = Color(0xFF9E3A18);
+  static const goldMain  = Color(0xFFC08A2D);
 
-  static const textDark  = Color(0xFF1E1B1A);
-  static const textMuted = Color(0xFF6B635E);
-  static const textLight = Color(0xFFA39C98);
+  static const textDark  = Color(0xFF26201A);
+  static const textMuted = Color(0xFF6F6259);
+  static const textLight = Color(0xFFA99D91);
 
-  static const errorRed  = Color(0xFFE74C3C);
+  static const errorRed  = Color(0xFFC0341B);
 
   static const shadowFloat = [
     BoxShadow(

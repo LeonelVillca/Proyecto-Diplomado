@@ -19,21 +19,20 @@ import { randomUUID } from 'crypto';
 import { imageUploadOptions, sanitizeImage } from '../../core/security/uploads';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
-import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
+import {
+  OwnershipGuard,
+  CheckOwnership,
+} from '../../core/guards/ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { PlatoService } from './plato.service';
 import { CrearPlatoDto } from './dto/crear-plato.dto';
 import { ActualizarPlatoDto } from './dto/actualizar-plato.dto';
 import { Plato } from './plato.entity';
-import { ImagenService } from '../imagen/imagen.service';
 
 @Controller('plato')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class PlatoController {
-  constructor(
-    private readonly platoService: PlatoService,
-    private readonly imagenService: ImagenService
-  ) { }
+  constructor(private readonly platoService: PlatoService) {}
 
   @Roles('admin_restaurante', 'admin_sistema')
   @Post('restaurante/:idRestaurante/foto')
@@ -41,22 +40,36 @@ export class PlatoController {
   @UseInterceptors(FileInterceptor('file', imageUploadOptions))
   async uploadFoto(
     @UploadedFile() file: Express.Multer.File,
-    @Param('idRestaurante', ParseIntPipe) idRestaurante: number
+    @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
   ): Promise<{ url: string }> {
-    if (!idRestaurante) throw new BadRequestException('idRestaurante is required');
+    if (!idRestaurante)
+      throw new BadRequestException('idRestaurante is required');
     if (!file) throw new BadRequestException('Se requiere una imagen');
-    
+
     if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('El archivo debe ser una imagen válida (JPG/PNG/WEBP)');
+      throw new BadRequestException(
+        'El archivo debe ser una imagen válida (JPG/PNG/WEBP)',
+      );
     }
-    
-    if (!Number.isSafeInteger(idRestaurante) || idRestaurante < 1) throw new BadRequestException('Restaurante inválido');
+
+    if (!Number.isSafeInteger(idRestaurante) || idRestaurante < 1)
+      throw new BadRequestException('Restaurante inválido');
     const fileName = `${randomUUID()}.webp`;
-    const uploadDir = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', idRestaurante.toString(), 'platos');
-    
+    const uploadDir = path.join(
+      process.cwd(),
+      'storage',
+      'publico',
+      'restaurantes',
+      idRestaurante.toString(),
+      'platos',
+    );
+
     await fs.mkdir(uploadDir, { recursive: true });
-    await fs.writeFile(path.join(uploadDir, fileName), await sanitizeImage(file));
-    
+    await fs.writeFile(
+      path.join(uploadDir, fileName),
+      await sanitizeImage(file),
+    );
+
     const url = `/publico/restaurantes/${idRestaurante}/platos/${fileName}`;
     return { url };
   }

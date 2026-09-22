@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
 
 enum AdminNotificationType { success, error, info }
 
@@ -147,7 +148,7 @@ class _NotificationCardState extends State<_NotificationCard> {
               border: Border.all(color: scheme.color.withValues(alpha: 0.16)),
               boxShadow: const [
                 BoxShadow(
-                  color: Color(0x40000000),
+              color: Color(0x4026201A),
                   blurRadius: 36,
                   offset: Offset(0, 18),
                 ),
@@ -179,7 +180,7 @@ class _NotificationCardState extends State<_NotificationCard> {
                             Text(
                               widget.title,
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFF241F1D),
+                                color: AdminTheme.textDark,
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -188,7 +189,7 @@ class _NotificationCardState extends State<_NotificationCard> {
                             Text(
                               widget.message,
                               style: GoogleFonts.poppins(
-                                color: const Color(0xFF756B66),
+                                color: AdminTheme.textMuted,
                                 fontSize: 14,
                                 height: 1.45,
                               ),
@@ -201,7 +202,7 @@ class _NotificationCardState extends State<_NotificationCard> {
                         tooltip: 'Cerrar',
                         splashRadius: 20,
                         icon: const Icon(Icons.close_rounded, size: 20),
-                        color: const Color(0xFF9A918C),
+                        color: AdminTheme.textLight,
                       ),
                     ],
                   ),
@@ -236,11 +237,11 @@ class _NotificationScheme {
   factory _NotificationScheme.fromType(AdminNotificationType type) {
     switch (type) {
       case AdminNotificationType.success:
-        return const _NotificationScheme(Color(0xFF2EAF72), Icons.check_rounded);
+        return const _NotificationScheme(AdminTheme.success, Icons.check_rounded);
       case AdminNotificationType.error:
-        return const _NotificationScheme(Color(0xFFD95C5C), Icons.priority_high_rounded);
+        return const _NotificationScheme(AdminTheme.error, Icons.priority_high_rounded);
       case AdminNotificationType.info:
-        return const _NotificationScheme(Color(0xFF4F82C2), Icons.info_outline_rounded);
+        return const _NotificationScheme(AdminTheme.accentColor, Icons.info_outline_rounded);
     }
   }
 }

@@ -1,4 +1,10 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Usuario } from '../usuarios/usuario.entity';
 
 @Entity('cuentas_auth')
@@ -6,11 +12,16 @@ export class CuentaAuth {
   @PrimaryGeneratedColumn({ name: 'id_cuenta' })
   id: number;
 
-  @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Usuario, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 
-  @Column({ name: 'password_hash', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'password_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   passwordHash: string | null;
 
   @Column({ name: 'ultimo_ingreso', type: 'timestamp', nullable: true })

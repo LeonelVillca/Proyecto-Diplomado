@@ -1,12 +1,16 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
-import 'package:frontend/core/utils/network/api_endpoints.dart';
+
 import 'package:frontend/controllers/movil/auth_controller.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/models/admin/restaurante_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
-import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_modal.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
+import 'package:frontend/widgets/admin/admin_restaurant_detail_modal.dart';
 
 class RestaurantesScreen extends StatefulWidget {
   const RestaurantesScreen({super.key});
@@ -35,34 +39,80 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
       );
       if (response.statusCode != 200) throw Exception('No se pudo cargar el listado');
       final data = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
-      if (mounted) {
-        setState(() {
-          _restaurantes = data
-              .map((item) => RestauranteAdminModel.fromJson(item as Map<String, dynamic>))
-              .toList();
-          _cargando = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _restaurantes = data
+            .map((item) => RestauranteAdminModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+        _cargando = false;
+      });
     } catch (_) {
-      if (mounted) {
-        setState(() => _cargando = false);
-        AdminNotificationModal.error(context, 'No se pudo cargar la gestión de restaurantes.');
-      }
+      if (!mounted) return;
+      setState(() => _cargando = false);
+      AdminNotificationModal.error(context, 'No se pudo cargar la gestión de restaurantes.');
     }
   }
 
   Future<void> _cambiarEstado(RestauranteAdminModel restaurante) async {
     final activar = !restaurante.estado;
-    final confirmar = await showDialog<bool>(
+    final confirmar = await AdminModal.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(activar ? 'Reactivar restaurante' : 'Suspender restaurante'),
-        content: Text(activar
-            ? '¿Deseas reactivar ${restaurante.nombre}?'
-            : '¿Deseas suspender ${restaurante.nombre}? Dejará de mostrarse públicamente.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(activar ? 'Reactivar' : 'Suspender')),
+      title: activar ? 'Reactivar restaurante' : 'Suspender restaurante',
+      width: 420,
+      confirmText: activar ? 'Reactivar' : 'Suspender',
+      confirmColor: activar ? AdminTheme.success : AdminTheme.warning,
+      onCancel: () => Navigator.pop(context, false),
+      onConfirm: () => Navigator.pop(context, true),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: (activar ? AdminTheme.successSoft : AdminTheme.warningSoft),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: Icon(
+              activar ? Icons.play_arrow_rounded : Icons.warning_amber_rounded,
+              color: activar ? AdminTheme.success : AdminTheme.warning,
+              size: 27,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            activar
+                ? '¿Deseas reactivar ${restaurante.nombre}?'
+                : '¿Deseas suspender ${restaurante.nombre}?',
+            style: AdminTheme.subtitleStyle.copyWith(fontSize: 16),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AdminTheme.background,
+              border: Border.all(color: AdminTheme.border),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded, size: 16, color: activar ? AdminTheme.success : AdminTheme.warning),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    activar
+                        ? 'El restaurante volverá a estar disponible públicamente.'
+                        : 'El restaurante dejará de mostrarse públicamente hasta que lo reactives.',
+                    style: AdminTheme.bodyStyle.copyWith(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -77,97 +127,228 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
       );
       if (response.statusCode != 200) throw Exception();
       await _cargarRestaurantes();
-      if (mounted) AdminNotificationModal.success(context, activar ? 'Restaurante reactivado.' : 'Restaurante suspendido.');
+      if (mounted) {
+        AdminNotificationModal.success(
+          context,
+          activar ? 'Restaurante reactivado.' : 'Restaurante suspendido.',
+        );
+      }
     } catch (_) {
       if (mounted) AdminNotificationModal.error(context, 'No se pudo actualizar el estado.');
     }
   }
 
   void _mostrarDetalles(RestauranteAdminModel restaurante) {
-    final admin = restaurante.administrador;
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(restaurante.nombre),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _detalle('Tipo de comida', restaurante.tipoComida ?? 'No registrado'),
-            _detalle('Correo', restaurante.correo ?? 'No registrado'),
-            _detalle('Teléfono', restaurante.telefono ?? 'No registrado'),
-            _detalle('Solicitud', restaurante.solicitudEstado ?? 'Sin solicitud'),
-            _detalle('Administrador', admin == null ? 'No asignado' : '${admin['nombre'] ?? ''} ${admin['apellido'] ?? ''}'.trim()),
-          ],
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cerrar'))],
-      ),
-    );
+    AdminRestaurantDetailModal.show(context, restaurante);
   }
 
-  Widget _detalle(String label, String valor) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: RichText(text: TextSpan(style: AdminTheme.bodyStyle, children: [
-          TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.w700, color: AdminTheme.textDark)),
-          TextSpan(text: valor),
-        ])),
-      );
 
   @override
   Widget build(BuildContext context) {
     final lista = _restaurantes.where((restaurante) {
       final query = _busqueda.toLowerCase();
-      return query.isEmpty || restaurante.nombre.toLowerCase().contains(query) || (restaurante.correo ?? '').toLowerCase().contains(query);
+      return query.isEmpty ||
+          restaurante.nombre.toLowerCase().contains(query) ||
+          (restaurante.correo ?? '').toLowerCase().contains(query);
     }).toList();
 
     return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Gestión de Restaurantes', style: AdminTheme.titleStyle),
-        const SizedBox(height: 8),
-        Text('Consulta, revisa y administra las cuentas de restaurantes.', style: GoogleFonts.inter(color: AdminTheme.textMuted, fontSize: 14)),
-        const SizedBox(height: 24),
-        TextField(
-          onChanged: (value) => setState(() => _busqueda = value),
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search_rounded, color: AdminTheme.textMuted),
-            hintText: 'Buscar por restaurante o correo...',
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AdminPageHeader(
+            kicker: 'CATÁLOGO',
+            titleBefore: 'Gestión de ',
+            titleEmphasis: 'Restaurantes',
+            description: 'Consulta, revisa y administra las cuentas de restaurantes.',
           ),
-        ),
-        const SizedBox(height: 24),
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 4))]),
-            child: _cargando
-                ? const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor))
-                : lista.isEmpty
-                    ? Center(child: Text('No se encontraron restaurantes', style: AdminTheme.bodyStyle))
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: lista.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final restaurante = lista[index];
-                          final color = restaurante.estado ? Colors.green : Colors.redAccent;
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                            leading: CircleAvatar(backgroundColor: AdminTheme.primaryColor.withOpacity(.1), child: const Icon(Icons.restaurant_rounded, color: AdminTheme.primaryColor)),
-                            title: Text(restaurante.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AdminTheme.textDark)),
-                            subtitle: Text('${restaurante.tipoComida ?? 'Sin categoría'} · ${restaurante.correo ?? 'Sin correo'}', style: AdminTheme.bodyStyle),
-                            trailing: Wrap(spacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                              Chip(label: Text(restaurante.estado ? 'Activo' : 'Suspendido'), labelStyle: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700), backgroundColor: color.withOpacity(.1), side: BorderSide.none),
-                              IconButton(tooltip: 'Ver detalles', icon: const Icon(Icons.visibility_outlined), onPressed: () => _mostrarDetalles(restaurante)),
-                              IconButton(tooltip: restaurante.estado ? 'Suspender' : 'Reactivar', icon: Icon(restaurante.estado ? Icons.pause_circle_outline : Icons.play_circle_outline, color: restaurante.estado ? Colors.redAccent : Colors.green), onPressed: () => _cambiarEstado(restaurante)),
-                            ]),
-                          );
-                        },
-                      ),
+          const SizedBox(height: 24),
+          AdminSurface(
+            padding: const EdgeInsets.all(14),
+            radius: AdminTheme.mediumRadius,
+            child: AdminSearchField(
+              onChanged: (value) => setState(() => _busqueda = value),
+              hintText: 'Buscar por restaurante o correo...',
+            ),
           ),
-        ),
-      ]),
+          const SizedBox(height: 18),
+          Expanded(
+            child: AdminSurface(
+              child: _cargando
+                  ? const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor))
+                  : lista.isEmpty
+                      ? const _RestaurantsEmptyState()
+                      : LayoutBuilder(
+                          builder: (context, constraints) => SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: SizedBox(
+                              width: constraints.maxWidth < 860 ? 860 : constraints.maxWidth,
+                              child: Column(
+                                children: [
+                                  const _RestaurantTableHeader(),
+                                  Expanded(
+                                    child: ListView.separated(
+                                      itemCount: lista.length,
+                                      separatorBuilder: (_, __) => const Divider(height: 1),
+                                      itemBuilder: (context, index) => _RestaurantTableRow(
+                                        restaurant: lista[index],
+                                        onDetails: () => _mostrarDetalles(lista[index]),
+                                        onChangeStatus: () => _cambiarEstado(lista[index]),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+class _RestaurantTableHeader extends StatelessWidget {
+  const _RestaurantTableHeader();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        decoration: const BoxDecoration(
+          color: AdminTheme.surfaceMuted,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          border: Border(bottom: BorderSide(color: AdminTheme.border)),
+        ),
+        child: const Row(
+          children: [
+            Expanded(flex: 3, child: _TableLabel('RESTAURANTE')),
+            Expanded(flex: 3, child: _TableLabel('CORREO')),
+            Expanded(flex: 2, child: _TableLabel('CATEGORÍA')),
+            Expanded(flex: 2, child: _TableLabel('ESTADO')),
+            SizedBox(width: 112, child: _TableLabel('ACCIÓN', textAlign: TextAlign.right)),
+          ],
+        ),
+      );
+}
+
+class _RestaurantTableRow extends StatelessWidget {
+  const _RestaurantTableRow({
+    required this.restaurant,
+    required this.onDetails,
+    required this.onChangeStatus,
+  });
+
+  final RestauranteAdminModel restaurant;
+  final VoidCallback onDetails;
+  final VoidCallback onChangeStatus;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onDetails,
+        hoverColor: AdminTheme.rowHover,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    AdminInitialAvatar(label: restaurant.nombre),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(restaurant.nombre, maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.subtitleStyle.copyWith(fontSize: 14)),
+                          const SizedBox(height: 2),
+                          Text('Cuenta de restaurante', style: AdminTheme.bodyStyle.copyWith(fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Row(
+                  children: [
+                    const Icon(Icons.mail_outline_rounded, size: 15, color: AdminTheme.textMuted),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(restaurant.correo ?? 'Sin correo', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 13))),
+                  ],
+                ),
+              ),
+              Expanded(flex: 2, child: Text(restaurant.tipoComida ?? 'Sin categoría', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontWeight: FontWeight.w600))),
+              Expanded(
+                flex: 2,
+                child: AdminStatusChip(
+                  status: restaurant.estado ? AdminStatus.active : AdminStatus.suspended,
+                  label: restaurant.estado ? 'Activo' : 'Suspendido',
+                ),
+              ),
+              SizedBox(
+                width: 112,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: 'Ver detalles',
+                      onPressed: onDetails,
+                      icon: const Icon(Icons.visibility_outlined, size: 18),
+                      color: AdminTheme.textMuted,
+                    ),
+                    IconButton(
+                      tooltip: restaurant.estado ? 'Suspender' : 'Reactivar',
+                      onPressed: onChangeStatus,
+                      icon: Icon(restaurant.estado ? Icons.pause_circle_outline : Icons.play_circle_outline, size: 19),
+                      color: restaurant.estado ? AdminTheme.error : AdminTheme.success,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _TableLabel extends StatelessWidget {
+  const _TableLabel(this.label, {this.textAlign = TextAlign.left});
+
+  final String label;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) => Text(
+        label,
+        textAlign: textAlign,
+        style: const TextStyle(color: AdminTheme.textMuted, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1),
+      );
+}
+
+class _RestaurantsEmptyState extends StatelessWidget {
+  const _RestaurantsEmptyState();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(color: AdminTheme.background, border: Border.all(color: AdminTheme.border), borderRadius: BorderRadius.circular(20)),
+              child: const Icon(Icons.search_off_rounded, color: AdminTheme.textLight, size: 28),
+            ),
+            const SizedBox(height: 14),
+            Text('Sin resultados', style: AdminTheme.titleStyle.copyWith(fontSize: 20)),
+            const SizedBox(height: 4),
+            Text('No se encontraron restaurantes con esa búsqueda.', style: AdminTheme.bodyStyle),
+          ],
+        ),
+      );
 }

@@ -25,7 +25,33 @@ class SessionHttp {
   }
 }
 
+// Evita que varios taps sobre el mismo botón creen varias peticiones idénticas
+// mientras la primera todavía está en curso. Las peticiones diferentes siguen
+// siendo independientes.
+final Map<String, Future<base.Response>> _inFlightRequests = {};
+
+String _requestKey(String method, Uri url, Map<String, String>? headers, Object? body) {
+  final safeHeaders = (headers ?? {}).entries
+      .where((entry) => entry.key.toLowerCase() != 'authorization')
+      .map((entry) => '${entry.key}:${entry.value}')
+      .join('|');
+  return '$method|$url|$safeHeaders|${body ?? ''}';
+}
+
 Future<base.Response> _request(String method, Uri url, Map<String, String>? headers, Object? body, Encoding? encoding) async {
+  final key = _requestKey(method, url, headers, body);
+  final existing = _inFlightRequests[key];
+  if (existing != null) return existing;
+  final pending = _performRequest(method, url, headers, body, encoding);
+  _inFlightRequests[key] = pending;
+  try {
+    return await pending;
+  } finally {
+    if (identical(_inFlightRequests[key], pending)) _inFlightRequests.remove(key);
+  }
+}
+
+Future<base.Response> _performRequest(String method, Uri url, Map<String, String>? headers, Object? body, Encoding? encoding) async {
   final request = base.Request(method, url);
   if (headers != null) request.headers.addAll(headers);
   if (encoding != null) request.encoding = encoding;

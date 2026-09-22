@@ -14,7 +14,7 @@ export class Menu {
   @PrimaryGeneratedColumn({ name: 'id_menu' })
   id: number;
 
-  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_restaurante' })
   restaurante: Restaurante;
 
@@ -30,6 +30,6 @@ export class Menu {
   @Column({ name: 'disponibilidad', type: 'boolean', default: true })
   disponibilidad: boolean;
 
-  @OneToMany(() => Plato, plato => plato.menu)
+  @OneToMany(() => Plato, (plato) => plato.menu)
   platos: Plato[];
 }

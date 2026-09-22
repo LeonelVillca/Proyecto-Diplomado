@@ -1,5 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import 'package:frontend/core/admin/theme_admin.dart';
 
 part 'admin_constants.dart';
 part 'admin_sidebar.dart';
@@ -29,87 +32,80 @@ class AdminShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 900;
-    
+    final isDesktop = MediaQuery.of(context).size.width >= 1020;
+    final currentSection = sections
+        .expand((section) => section.items)
+        .map((item) => item.index == selectedIndex ? item.label : '')
+        .firstWhere((label) => label.isNotEmpty, orElse: () => 'Operaciones');
     final sidebar = _BentoSidebar(
       selectedIndex: selectedIndex,
       sections: sections,
       isMobile: !isDesktop,
-      onItemSelected: (i) {
-        onItemSelected(i);
-        if (!isDesktop) {
-          Navigator.of(context).pop(); // Close drawer on selection
-        }
+      onItemSelected: (index) {
+        onItemSelected(index);
+        if (!isDesktop) Navigator.of(context).pop();
       },
       onLogout: onLogout,
     );
 
-    if (isDesktop) {
-      return Scaffold(
-        backgroundColor: _C.bgBody,
-        body: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            sidebar,
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16, left: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _BentoNavbar(
-                      nombreUsuario: nombreUsuario,
-                      correoUsuario: correoUsuario,
-                      rolLabel: rolLabel,
-                      onLogout: onLogout,
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(child: body),
-                  ],
-                ),
+    return Theme(
+      data: AdminTheme.webTheme,
+      child: Scaffold(
+        backgroundColor: AdminTheme.background,
+        appBar: isDesktop
+            ? null
+            : AppBar(
+                title: Text('Mesa Chapaca', style: AdminTheme.titleStyle.copyWith(fontSize: 20)),
+                iconTheme: const IconThemeData(color: AdminTheme.textDark),
+                actions: [
+                  _ProfileCapsule(
+                    nombreUsuario: nombreUsuario,
+                    correoUsuario: correoUsuario,
+                    rolLabel: rolLabel,
+                    onLogout: onLogout,
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Scaffold(
-        backgroundColor: _C.bgBody,
-        appBar: AppBar(
-          backgroundColor: _C.surface,
-          elevation: 0,
-          scrolledUnderElevation: 0, // Prevent color change on scroll in M3
-          iconTheme: const IconThemeData(color: _C.textDark),
-          title: Text(
-            'Mesa Chapaca',
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF2D0A14),
-            ),
-          ),
-          actions: [
-            _ProfileCapsule(
-              nombreUsuario: nombreUsuario,
-              correoUsuario: correoUsuario,
-              rolLabel: rolLabel,
-              onLogout: onLogout,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        drawer: Drawer(
-          backgroundColor: _C.surface,
-          child: sidebar,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(12),
-          child: body,
-        ),
-      );
-    }
+        drawer: isDesktop
+            ? null
+            : Drawer(
+                backgroundColor: AdminTheme.sidebar,
+                child: sidebar,
+              ),
+        body: isDesktop
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  sidebar,
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _BentoNavbar(
+                          currentSection: currentSection,
+                          nombreUsuario: nombreUsuario,
+                          correoUsuario: correoUsuario,
+                          rolLabel: rolLabel,
+                          onLogout: onLogout,
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 1240),
+                              child: body,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(18, 22, 18, 32),
+                child: body,
+              ),
+      ),
+    );
   }
 }
-
-
-

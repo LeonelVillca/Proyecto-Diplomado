@@ -12,34 +12,48 @@ export class MenuService {
   constructor(
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
-    @InjectRepository(Restaurante)
-    private readonly restauranteRepository: Repository<Restaurante>,
-    @InjectRepository(Plato)
-    private readonly platoRepository: Repository<Plato>,
   ) {}
 
   async crear(dto: CrearMenuDto): Promise<Menu> {
-    const restaurante = await this.restauranteRepository.findOneBy({
-      id: dto.idRestaurante,
-    });
-    if (!restaurante) {
-      throw new NotFoundException(`Restaurante con id ${dto.idRestaurante} no encontrado`);
-    }
+    const id = await this.menuRepository.manager.transaction(
+      async (manager) => {
+        const restaurante = await manager.findOneBy(Restaurante, {
+          id: dto.idRestaurante,
+        });
+        if (!restaurante) {
+          throw new NotFoundException(
+            `Restaurante con id ${dto.idRestaurante} no encontrado`,
+          );
+        }
 
-    const { idRestaurante, platos, ...datos } = dto;
-    const menu = this.menuRepository.create({ ...datos, restaurante });
-    const savedMenu = await this.menuRepository.save(menu);
-
-    if (platos && platos.length > 0) {
-      const platosEntities = platos.map(p => this.platoRepository.create({ ...p, menu: savedMenu }));
-      await this.platoRepository.save(platosEntities);
-    }
-
-    return this.buscarPorId(savedMenu.id);
+        const platos = dto.platos;
+        const datos = {
+          nombre: dto.nombre,
+          descripcion: dto.descripcion,
+          tipo: dto.tipo,
+          disponibilidad: dto.disponibilidad,
+        };
+        const savedMenu = await manager.save(
+          manager.create(Menu, { ...datos, restaurante }),
+        );
+        if (platos?.length) {
+          await manager.save(
+            Plato,
+            platos.map((plato) =>
+              manager.create(Plato, { ...plato, menu: savedMenu }),
+            ),
+          );
+        }
+        return savedMenu.id;
+      },
+    );
+    return this.buscarPorId(id);
   }
 
   listarTodos(): Promise<Menu[]> {
-    return this.menuRepository.find({ relations: { restaurante: true, platos: true } });
+    return this.menuRepository.find({
+      relations: { restaurante: true, platos: true },
+    });
   }
 
   async buscarPorId(id: number): Promise<Menu> {
@@ -61,21 +75,24 @@ export class MenuService {
   }
 
   async actualizar(id: number, dto: ActualizarMenuDto): Promise<Menu> {
-    const menu = await this.buscarPorId(id);
-    const { platos, ...datos } = dto as any;
-    
-    Object.assign(menu, datos);
-    await this.menuRepository.save(menu);
+    await this.menuRepository.manager.transaction(async (manager) => {
+      const menu = await manager.findOne(Menu, { where: { id } });
+      if (!menu) throw new NotFoundException(`Menú con id ${id} no encontrado`);
 
-    if (platos) {
-      // Very basic sync: delete existing and insert new
-      await this.platoRepository.delete({ menu: { id } });
-      if (platos.length > 0) {
-        const platosEntities = platos.map(p => this.platoRepository.create({ ...p, menu }));
-        await this.platoRepository.save(platosEntities);
+      const { platos, ...datos } = dto;
+      Object.assign(menu, datos);
+      await manager.save(menu);
+
+      if (platos !== undefined) {
+        await manager.delete(Plato, { menu: { id } });
+        if (platos.length) {
+          await manager.save(
+            Plato,
+            platos.map((plato) => manager.create(Plato, { ...plato, menu })),
+          );
+        }
       }
-    }
-
+    });
     return this.buscarPorId(id);
   }
 

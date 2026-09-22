@@ -20,11 +20,17 @@ export class MesaService {
       id: dto.idRestaurante,
     });
     if (!restaurante) {
-      throw new NotFoundException(`Restaurante con id ${dto.idRestaurante} no encontrado`);
+      throw new NotFoundException(
+        `Restaurante con id ${dto.idRestaurante} no encontrado`,
+      );
     }
 
-    const { idRestaurante, ...datos } = dto;
-    const mesa = this.mesaRepository.create({ ...datos, restaurante });
+    const mesa = this.mesaRepository.create({
+      numeroMesa: dto.numeroMesa,
+      capacidad: dto.capacidad,
+      estado: dto.estado,
+      restaurante,
+    });
     return this.mesaRepository.save(mesa);
   }
 

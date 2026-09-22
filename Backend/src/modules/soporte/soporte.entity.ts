@@ -15,11 +15,11 @@ export class Soporte {
   @PrimaryGeneratedColumn({ name: 'id_soporte' })
   id: number;
 
-  @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Usuario, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 
-  @ManyToOne(() => CategoriaSoporte, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => CategoriaSoporte, { onDelete: 'RESTRICT', nullable: false })
   @JoinColumn({ name: 'id_categoria_soporte' })
   categoriaSoporte: CategoriaSoporte;
 

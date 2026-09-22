@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:frontend/app.dart';
 import 'package:frontend/firebase_options.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
-import 'package:frontend/services/movil/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,10 +11,6 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  final notifications = NotificationService();
-  await notifications.init();
-  await notifications.requestPermissions();
-
   final auth = AuthController();
   await auth.initialize();
   // Restaura la sesión guardada (JWT en secure storage): si el token sigue

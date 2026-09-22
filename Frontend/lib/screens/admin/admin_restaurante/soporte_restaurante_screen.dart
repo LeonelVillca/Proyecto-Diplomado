@@ -7,6 +7,8 @@ import 'package:frontend/models/admin/soporte_admin_model.dart';
 import 'package:frontend/models/admin/categoria_soporte_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class SoporteRestauranteScreen extends StatefulWidget {
   const SoporteRestauranteScreen({super.key});
@@ -140,45 +142,38 @@ class _SoporteRestauranteScreenState extends State<SoporteRestauranteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Soporte y Ayuda', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Colors.black87)),
-                const SizedBox(height: 8),
-                Text('Gestiona tus tickets de soporte y contáctanos.', style: TextStyle(color: Colors.grey.shade600, fontFamily: 'Karla', fontSize: 14)),
-              ],
-            ),
-            ElevatedButton.icon(
-              onPressed: _abrirModalCrear,
-              icon: const Icon(Icons.add),
-              label: const Text('Nuevo Ticket'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B1A35), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-            ),
+        AdminPageHeader(
+          kicker: 'AYUDA',
+          titleBefore: 'Centro de ',
+          titleEmphasis: 'Soporte',
+          description: 'Consulta tus tickets y comunícate con el equipo de soporte.',
+          actions: [
+            FilledButton.icon(onPressed: _abrirModalCrear, icon: const Icon(Icons.add_rounded, size: 18), label: const Text('Nuevo ticket')),
           ],
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         Expanded(
-          child: _isLoading
+          child: AdminSurface(
+            child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : _tickets.isEmpty
-                  ? Center(child: Text('No tienes tickets de soporte.', style: TextStyle(color: Colors.grey.shade500)))
+                  ? Center(child: Text('No tienes tickets de soporte.', style: AdminTheme.bodyStyle))
                   : ListView.separated(
+                      padding: const EdgeInsets.all(12),
                       itemCount: _tickets.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 16),
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final t = _tickets[index];
                         final fecha = DateTime.tryParse(t.fechaCreacion);
                         final strFecha = fecha != null ? '${fecha.day.toString().padLeft(2,'0')}/${fecha.month.toString().padLeft(2,'0')}/${fecha.year}' : '';
                         final esRespondido = t.estado == 'respondida';
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade300)),
+                        return Container(
+                          decoration: BoxDecoration(color: AdminTheme.surface, borderRadius: AdminTheme.mediumRadius, border: Border.all(color: AdminTheme.border)),
                           child: Padding(
                             padding: const EdgeInsets.all(20),
                             child: Column(
@@ -187,30 +182,26 @@ class _SoporteRestauranteScreenState extends State<SoporteRestauranteScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(t.asunto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Karla')),
-                                    Chip(
-                                      label: Text(t.estado.toUpperCase(), style: TextStyle(color: esRespondido ? Colors.green.shade700 : Colors.orange.shade700, fontSize: 10, fontWeight: FontWeight.bold)),
-                                      backgroundColor: esRespondido ? Colors.green.shade50 : Colors.orange.shade50,
-                                      side: BorderSide.none,
-                                    ),
+                                    Text(t.asunto, style: AdminTheme.subtitleStyle.copyWith(fontSize: 16)),
+                                    AdminStatusChip(status: esRespondido ? AdminStatus.active : AdminStatus.pending, label: t.estado.toUpperCase()),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                Text(t.descripcion ?? '', style: const TextStyle(fontSize: 14)),
+                                Text(t.descripcion ?? '', style: AdminTheme.bodyStyle.copyWith(color: AdminTheme.textDark)),
                                 const SizedBox(height: 8),
-                                Text('Categoría: ${t.categoriaSoporte?['nombre'] ?? '-'} | Fecha: $strFecha', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                                Text('Categoría: ${t.categoriaSoporte?['nombre'] ?? '-'} · Fecha: $strFecha', style: AdminTheme.bodyStyle.copyWith(fontSize: 12)),
                                 if (esRespondido && t.respuesta != null) ...[
                                   const SizedBox(height: 16),
                                   Container(
                                     width: double.infinity,
                                     padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(color: Colors.blueGrey.shade50, borderRadius: BorderRadius.circular(8)),
+                                    decoration: BoxDecoration(color: AdminTheme.successSoft, borderRadius: BorderRadius.circular(14)),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Respuesta del Administrador:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+                                        const Text('RESPUESTA DEL ADMINISTRADOR', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 10, letterSpacing: 1, color: AdminTheme.success)),
                                         const SizedBox(height: 4),
-                                        Text(t.respuesta!, style: const TextStyle(fontSize: 14)),
+                                        Text(t.respuesta!, style: AdminTheme.bodyStyle.copyWith(color: AdminTheme.textDark)),
                                       ],
                                     ),
                                   ),
@@ -221,8 +212,10 @@ class _SoporteRestauranteScreenState extends State<SoporteRestauranteScreen> {
                         );
                       },
                     ),
+          ),
         ),
       ],
+      ),
     );
   }
 }

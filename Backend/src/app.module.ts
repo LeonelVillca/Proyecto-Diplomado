@@ -6,7 +6,10 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuditInterceptor } from './core/security/audit.interceptor';
 
 import databaseConfig from './core/config/database.config';
-import { AUTH_RATE_LIMITS, validateSecurityEnvironment } from './core/config/security.config';
+import {
+  AUTH_RATE_LIMITS,
+  validateSecurityEnvironment,
+} from './core/config/security.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
@@ -25,8 +28,6 @@ import { PlatoModule } from './modules/plato/plato.module';
 import { ImagenModule } from './modules/imagen/imagen.module';
 import { CategoriaSoporteModule } from './modules/categoria-soporte/categoria-soporte.module';
 import { SoporteModule } from './modules/soporte/soporte.module';
-import { NotificacionModule } from './modules/notificacion/notificacion.module';
-import { VisitaModule } from './modules/visita/visita.module';
 import { ReservasModule } from './modules/reservas/reservas.module';
 import { ResenasModule } from './modules/resenas/resenas.module';
 import { RespuestaResenaModule } from './modules/respuesta-resena/respuesta-resena.module';
@@ -61,8 +62,6 @@ import { MailModule } from './modules/mail/mail.module';
     ImagenModule,
     CategoriaSoporteModule,
     SoporteModule,
-    NotificacionModule,
-    VisitaModule,
     ReservasModule,
     ResenasModule,
     RespuestaResenaModule,

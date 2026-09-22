@@ -287,16 +287,6 @@ class _HomeHeader extends StatelessWidget {
               ],
             ),
           ),
-          // Notificaciones
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: _C.surface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(Icons.notifications_none_rounded, color: _C.text, size: 22),
-          ),
         ],
       ),
     );

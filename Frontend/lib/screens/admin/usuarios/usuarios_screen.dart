@@ -9,6 +9,7 @@ import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class UsuariosScreen extends StatefulWidget {
   const UsuariosScreen({super.key});
@@ -158,6 +159,21 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              width: 52,
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AdminTheme.primaryLight,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.person_add_alt_1_rounded, color: AdminTheme.primaryColor, size: 24),
+            ),
+            const SizedBox(height: 12),
+            Text('Datos de la cuenta', style: AdminTheme.subtitleStyle.copyWith(fontSize: 16)),
+            const SizedBox(height: 4),
+            Text('Completa los campos para crear el acceso local.', style: AdminTheme.bodyStyle.copyWith(fontSize: 13)),
+            const SizedBox(height: 22),
             Row(
               children: [
                 Expanded(
@@ -165,6 +181,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                     label: 'Nombre',
                     hint: 'ej. Leonel',
                     controller: nombreCtrl,
+                    icon: Icons.person_outline_rounded,
                     validator: (v) => v!.isEmpty ? 'Requerido' : null,
                   ),
                 ),
@@ -174,6 +191,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                     label: 'Apellido',
                     hint: 'ej. Villca',
                     controller: apellidoCtrl,
+                    icon: Icons.badge_outlined,
                   ),
                 ),
               ],
@@ -183,6 +201,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
               label: 'Correo Electrónico',
               hint: 'ej. leonel.v@empresa.com',
               controller: correoCtrl,
+              icon: Icons.mail_outline_rounded,
               validator: (v) => v!.isEmpty || !v.contains('@') ? 'Correo inválido' : null,
             ),
             const SizedBox(height: 20),
@@ -193,6 +212,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                     label: 'Teléfono',
                     hint: 'ej. +591 71234567',
                     controller: telefonoCtrl,
+                    icon: Icons.phone_outlined,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -201,6 +221,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                     label: 'Contraseña Provisional',
                     hint: 'Mínimo 6 caracteres',
                     controller: passwordCtrl,
+                    icon: Icons.lock_outline_rounded,
                     obscure: true,
                     validator: (v) => v!.length < 6 ? 'Mínimo 6 caracteres' : null,
                   ),
@@ -217,6 +238,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
     required String label,
     required String hint,
     required TextEditingController controller,
+    IconData? icon,
     bool obscure = false,
     String? Function(String?)? validator,
   }) {
@@ -225,32 +247,14 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF495057)),
+          style: AdminTheme.subtitleStyle.copyWith(fontSize: 13),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscure,
-          style: GoogleFonts.poppins(fontSize: 14, color: AdminTheme.textDark),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFFADB5BD)),
-            filled: true,
-            fillColor: const Color(0xFFF8F9FA),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AdminTheme.primaryColor),
-            ),
-          ),
+          style: AdminTheme.bodyStyle.copyWith(color: AdminTheme.textDark),
+          decoration: AdminInputDecoration.get(labelText: label, hintText: hint, prefixIcon: icon),
           validator: validator,
         ),
       ],
@@ -274,61 +278,46 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
     final paginatedUsuarios = startIndex < totalItems ? filtrados.sublist(startIndex, endIndex) : <UsuarioAdminModel>[];
 
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Gestión de Usuarios', style: AdminTheme.titleStyle),
+          AdminPageHeader(
+            kicker: 'EQUIPO',
+            titleBefore: 'Gestión de ',
+            titleEmphasis: 'Usuarios',
+            description: 'Administra las cuentas, visualiza detalles y orígenes de registro.',
+            actions: [
               FilledButton.icon(
                 onPressed: _mostrarCrearUsuario,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Nuevo Usuario Local'),
-                style: FilledButton.styleFrom(backgroundColor: AdminTheme.primaryColor),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Administra las cuentas, visualiza detalles y orígenes de registro.',
-            style: GoogleFonts.inter(color: AdminTheme.textMuted, fontSize: 14),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 1; }),
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search_rounded, color: AdminTheme.textMuted),
-                    hintText: 'Buscar por nombre o correo...',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  ),
-                ),
+                icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                label: const Text('Nuevo usuario local'),
               ),
             ],
           ),
           const SizedBox(height: 24),
+          AdminSurface(
+            padding: const EdgeInsets.all(14),
+            radius: AdminTheme.mediumRadius,
+            child: AdminSearchField(
+              onChanged: (value) => setState(() {
+                _searchQuery = value;
+                _currentPage = 1;
+              }),
+              hintText: 'Buscar por nombre o correo...',
+            ),
+          ),
+          const SizedBox(height: 18),
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 10, offset: const Offset(0, 4))],
-              ),
+            child: AdminSurface(
               child: Column(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     decoration: const BoxDecoration(
-                      color: Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                      border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                      color: AdminTheme.surfaceMuted,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+                      border: Border(bottom: BorderSide(color: AdminTheme.border)),
                     ),
                     child: Row(
                       children: [
@@ -354,7 +343,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
                   if (totalItems > 0)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      decoration: const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFE2E8F0)))),
+                      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AdminTheme.border))),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -384,7 +373,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
     );
   }
 
-  TextStyle _headerStyle() => GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AdminTheme.textMuted);
+  TextStyle _headerStyle() => const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: AdminTheme.textMuted);
 
   Widget _buildTableRow(UsuarioAdminModel user) {
     return Padding(
@@ -395,11 +384,7 @@ class _UsuariosScreenState extends State<UsuariosScreen> {
             flex: 2,
             child: Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: AdminTheme.primaryColor.withOpacity(0.1),
-                  foregroundColor: AdminTheme.primaryColor,
-                  child: Text(user.nombre[0].toUpperCase(), style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
-                ),
+                AdminInitialAvatar(label: '${user.nombre} ${user.apellido ?? ''}', round: true, size: 38),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(

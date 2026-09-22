@@ -12,7 +12,7 @@ export class InvitacionToken {
   @PrimaryGeneratedColumn({ name: 'id_token' })
   id: number;
 
-  @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Usuario, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 

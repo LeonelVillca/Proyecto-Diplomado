@@ -68,23 +68,21 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   icon: Icons.arrow_back_rounded,
                   onTap: () => Navigator.pop(context),
                 ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: _RoundBtn(icon: Icons.share_rounded, onTap: () {}),
-                  ),
-                ],
                 flexibleSpace: FlexibleSpaceBar(
-                  title: Text(
-                    widget.restaurant.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: innerBoxIsScrolled ? AppColors.ink : Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  titlePadding: const EdgeInsetsDirectional.only(start: 58, end: 54, bottom: 14),
+                  // El nombre vive debajo de la foto; solo reaparece en la
+                  // barra compacta cuando el usuario ya empezó a desplazarse.
+                  title: innerBoxIsScrolled
+                      ? Text(
+                          widget.restaurant.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppColors.ink,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        )
+                      : null,
+                  titlePadding: const EdgeInsetsDirectional.only(start: 58, end: 24, bottom: 16),
                   background: _HeroSection(restaurant: widget.restaurant),
                 ),
               ),
@@ -112,6 +110,42 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                               color: Colors.grey.shade300,
                               borderRadius: BorderRadius.circular(2),
                             ),
+                          ),
+                        ),
+
+                        // Título editorial fuera de la imagen: más legible y
+                        // sin competir con las miniaturas de la galería.
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(22, 0, 22, 18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.restaurant.name,
+                                style: GoogleFonts.piazzolla(
+                                  fontSize: 30,
+                                  height: 1.05,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 7),
+                              Row(
+                                children: [
+                                  const Icon(Icons.place_outlined, size: 15, color: AppColors.wine),
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      widget.restaurant.zone,
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppColors.inkSoft,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                         
@@ -349,12 +383,19 @@ class _RoundBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.4), shape: BoxShape.circle),
-        child: Icon(icon, color: Colors.white, size: 22),
+    return Material(
+      color: AppColors.paper.withOpacity(0.92),
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: AppColors.wine.withOpacity(0.22),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(icon, color: AppColors.wine, size: 23),
+        ),
       ),
     );
   }

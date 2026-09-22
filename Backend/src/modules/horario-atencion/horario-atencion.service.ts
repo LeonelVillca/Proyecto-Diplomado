@@ -20,11 +20,17 @@ export class HorarioAtencionService {
       id: dto.idRestaurante,
     });
     if (!restaurante) {
-      throw new NotFoundException(`Restaurante con id ${dto.idRestaurante} no encontrado`);
+      throw new NotFoundException(
+        `Restaurante con id ${dto.idRestaurante} no encontrado`,
+      );
     }
 
-    const { idRestaurante, ...datos } = dto;
-    const horario = this.horarioRepository.create({ ...datos, restaurante });
+    const horario = this.horarioRepository.create({
+      diaSemana: dto.diaSemana,
+      horaInicio: dto.horaInicio,
+      horaFin: dto.horaFin,
+      restaurante,
+    });
     return this.horarioRepository.save(horario);
   }
 
@@ -50,7 +56,10 @@ export class HorarioAtencionService {
     });
   }
 
-  async actualizar(id: number, dto: ActualizarHorarioAtencionDto): Promise<HorarioAtencion> {
+  async actualizar(
+    id: number,
+    dto: ActualizarHorarioAtencionDto,
+  ): Promise<HorarioAtencion> {
     const horario = await this.buscarPorId(id);
     Object.assign(horario, dto);
     return this.horarioRepository.save(horario);

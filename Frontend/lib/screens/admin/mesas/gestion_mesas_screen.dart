@@ -7,6 +7,8 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/mesa_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class GestionMesasScreen extends StatefulWidget {
   const GestionMesasScreen({super.key});
@@ -251,77 +253,65 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     int ocupadas = _mesas.where((m) => m.estado == 'ocupada').length;
     int reservadas = _mesas.where((m) => m.estado == 'reservada').length;
 
-    return Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header Superior
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Salón y Mesas', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF2D0A14))),
-                const SizedBox(height: 6),
-                Text('Administra en tiempo real la disponibilidad de tu restaurante.', style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF6B635E))),
-              ],
-            ),
-            ElevatedButton.icon(
-              onPressed: () => _abrirModalMesa(),
-              icon: const Icon(Icons.add, size: 20),
-              label: Text('Nueva Mesa', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6E1E39),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-            ),
+        AdminPageHeader(
+          kicker: 'SALÓN',
+          titleBefore: 'Gestión de ',
+          titleEmphasis: 'Mesas',
+          description: 'Administra la disponibilidad y capacidad de tu restaurante.',
+          actions: [
+            FilledButton.icon(onPressed: () => _abrirModalMesa(), icon: const Icon(Icons.add_rounded, size: 18), label: const Text('Nueva mesa')),
           ],
         ),
         const SizedBox(height: 24),
 
         // Barra de Resumen Métrico
-        Row(
+        LayoutBuilder(builder: (context, constraints) => Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            _buildResumenCard('Capacidad Total', '$capacidadTotal', Icons.people_alt, const Color(0xFF6E1E39)),
-            const SizedBox(width: 16),
-            _buildResumenCard('Mesas Libres', '$libres', Icons.check_circle, const Color(0xFF2ECC71)),
-            const SizedBox(width: 16),
-            _buildResumenCard('Mesas Ocupadas', '$ocupadas', Icons.restaurant, const Color(0xFF3498DB)),
-            const SizedBox(width: 16),
-            _buildResumenCard('Reservadas', '$reservadas', Icons.event_seat, const Color(0xFFF39C12)),
+            _buildResumenCard('Capacidad Total', '$capacidadTotal', Icons.people_alt_outlined, AdminTheme.primaryColor, constraints.maxWidth),
+            _buildResumenCard('Mesas Libres', '$libres', Icons.check_circle_outline, AdminTheme.success, constraints.maxWidth),
+            _buildResumenCard('Mesas Ocupadas', '$ocupadas', Icons.restaurant_outlined, AdminTheme.accentColor, constraints.maxWidth),
+            _buildResumenCard('Reservadas', '$reservadas', Icons.event_seat_outlined, AdminTheme.warning, constraints.maxWidth),
           ],
-        ),
+        )),
         const SizedBox(height: 24),
 
         // Pestañas / Filtros
-        Row(
+        AdminSurface(
+          padding: const EdgeInsets.all(10),
+          radius: AdminTheme.mediumRadius,
+          child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             _buildFiltroPill('Todas', 'todas'),
-            const SizedBox(width: 12),
             _buildFiltroPill('Libres', 'libre'),
-            const SizedBox(width: 12),
             _buildFiltroPill('Ocupadas', 'ocupada'),
-            const SizedBox(width: 12),
             _buildFiltroPill('Reservadas', 'reservada'),
           ],
+          ),
         ),
         const SizedBox(height: 24),
 
         // Grid
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39)))
+          child: AdminSurface(
+            child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor))
               : mesasFiltradas.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.table_restaurant, size: 64, color: const Color(0xFFE2E8F0)),
+                          const Icon(Icons.table_restaurant_outlined, size: 64, color: AdminTheme.border),
                           const SizedBox(height: 16),
-                          Text('No hay mesas para mostrar.', style: GoogleFonts.manrope(fontSize: 16, color: const Color(0xFFA39C98))),
+                          Text('No hay mesas para mostrar.', style: AdminTheme.bodyStyle),
                         ],
                       ),
                     )
@@ -338,19 +328,23 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
                         return _buildMesaCard(mesa);
                       },
                     ),
+          ),
         ),
       ],
+      ),
     );
   }
 
-  Widget _buildResumenCard(String titulo, String valor, IconData icon, Color color) {
-    return Expanded(
+  Widget _buildResumenCard(String titulo, String valor, IconData icon, Color color, double availableWidth) {
+    return SizedBox(
+      width: availableWidth < 760 ? (availableWidth - 12) / 2 : (availableWidth - 36) / 4,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 5))],
+          color: AdminTheme.surface,
+          borderRadius: AdminTheme.mediumRadius,
+          border: Border.all(color: AdminTheme.border),
+          boxShadow: AdminTheme.shadowSm,
         ),
         child: Row(
           children: [
@@ -363,8 +357,8 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(valor, style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A))),
-                Text(titulo, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF6B635E))),
+                Text(valor, style: AdminTheme.titleStyle.copyWith(fontSize: 24)),
+                Text(titulo, style: AdminTheme.bodyStyle.copyWith(fontSize: 12)),
               ],
             )
           ],
@@ -382,17 +376,17 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF6E1E39) : Colors.white,
+          color: active ? AdminTheme.primaryColor : AdminTheme.surface,
           borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: active ? const Color(0xFF6E1E39) : const Color(0xFFE2E8F0)),
-          boxShadow: active ? const [BoxShadow(color: Color(0x336E1E39), blurRadius: 8, offset: Offset(0, 4))] : [],
+          border: Border.all(color: active ? AdminTheme.primaryColor : AdminTheme.border),
+          boxShadow: active ? AdminTheme.shadowSm : [],
         ),
         child: Text(
           label,
           style: GoogleFonts.manrope(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: active ? Colors.white : const Color(0xFF6B635E),
+            color: active ? Colors.white : AdminTheme.textMuted,
           ),
         ),
       ),
@@ -405,10 +399,10 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 5))],
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        color: AdminTheme.surface,
+        borderRadius: AdminTheme.mediumRadius,
+        boxShadow: AdminTheme.shadowSm,
+        border: Border.all(color: AdminTheme.border),
       ),
       child: Material(
         color: Colors.transparent,

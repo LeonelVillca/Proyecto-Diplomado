@@ -20,11 +20,16 @@ export class DocumentoAdjuntoService {
       id: dto.idSolicitud,
     });
     if (!solicitud) {
-      throw new NotFoundException(`Solicitud con id ${dto.idSolicitud} no encontrada`);
+      throw new NotFoundException(
+        `Solicitud con id ${dto.idSolicitud} no encontrada`,
+      );
     }
 
-    const { idSolicitud, ...datos } = dto;
-    const documento = this.documentoRepository.create({ ...datos, solicitud });
+    const documento = this.documentoRepository.create({
+      tipo: dto.tipo,
+      url: dto.url,
+      solicitud,
+    });
     return this.documentoRepository.save(documento);
   }
 
@@ -38,7 +43,9 @@ export class DocumentoAdjuntoService {
       relations: { solicitud: true },
     });
     if (!documento) {
-      throw new NotFoundException(`Documento adjunto con id ${id} no encontrado`);
+      throw new NotFoundException(
+        `Documento adjunto con id ${id} no encontrado`,
+      );
     }
     return documento;
   }

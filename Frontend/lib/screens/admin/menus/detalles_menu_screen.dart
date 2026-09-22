@@ -4,17 +4,17 @@ import 'package:frontend/models/admin/menu_admin_model.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'formulario_menu_screen.dart';
 
-const Color kBurgundy900 = Color(0xFF42101F);
-const Color kBurgundy700 = Color(0xFF6E1E39);
-const Color kBurgundy600 = Color(0xFF872A4C);
-const Color kBurgundy100 = Color(0xFFF6E9EE);
-const Color kGoldDeep = Color(0xFFA5793A);
-const Color kGoldSoft = Color(0xFFF3E6C9);
-const Color kCream = Color(0xFFF7F2EA);
+const Color kBurgundy900 = Color(0xFF26201A);
+const Color kBurgundy700 = Color(0xFFBE4B24);
+const Color kBurgundy600 = Color(0xFF9E3A18);
+const Color kBurgundy100 = Color(0xFFF8E7DC);
+const Color kGoldDeep = Color(0xFFC08A2D);
+const Color kGoldSoft = Color(0xFFFBF0D9);
+const Color kCream = Color(0xFFFAF5EC);
 const Color kCard = Color(0xFFFFFFFF);
-const Color kLine = Color(0xFFE9E0D1);
-const Color kInk = Color(0xFF2A2320);
-const Color kInkSoft = Color(0xFF8C8074);
+const Color kLine = Color(0xFFEAE1D3);
+const Color kInk = Color(0xFF26201A);
+const Color kInkSoft = Color(0xFF6F6259);
 
 final List<BoxShadow> kShadow = [
   BoxShadow(color: const Color(0xFF42101F).withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),

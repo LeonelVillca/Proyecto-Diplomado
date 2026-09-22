@@ -17,7 +17,10 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
-import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
+import {
+  OwnershipGuard,
+  CheckOwnership,
+} from '../../core/guards/ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { RestauranteService } from './restaurante.service';
 import { CrearRestauranteDto } from './dto/crear-restaurante.dto';
@@ -30,20 +33,16 @@ import { imageUploadOptions } from '../../core/security/uploads';
 export class RestauranteController {
   constructor(private readonly restauranteService: RestauranteService) {}
 
-  @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('restaurante')
+  @Roles('admin_sistema')
   @Post()
   crear(@Body() dto: CrearRestauranteDto): Promise<Restaurante> {
     return this.restauranteService.crear(dto);
   }
 
   @Get('ranking')
-  obtenerRanking(
-    @Query('orden') orden: 'calificacion' | 'visitas' = 'calificacion',
-    @Query('limite') limite?: string,
-  ): Promise<any[]> {
+  obtenerRanking(@Query('limite') limite?: string): Promise<any[]> {
     const limiteNumero = limite === undefined ? undefined : Number(limite);
-    return this.restauranteService.obtenerRanking(orden, limiteNumero);
+    return this.restauranteService.obtenerRanking(limiteNumero);
   }
 
   @Roles('admin_sistema')

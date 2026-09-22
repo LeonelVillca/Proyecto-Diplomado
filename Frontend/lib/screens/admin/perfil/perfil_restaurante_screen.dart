@@ -9,6 +9,8 @@ import 'package:frontend/models/admin/perfil_restaurante_model.dart';
 import 'package:frontend/repositories/admin/restaurante_repository.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class PerfilRestauranteScreen extends StatefulWidget {
   const PerfilRestauranteScreen({super.key});
@@ -344,30 +346,27 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39)));
+      return const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor));
     }
 
     if (_restaurante == null) {
-      return Center(child: Text('No tienes un restaurante asociado.', style: GoogleFonts.manrope(fontSize: 16)));
+      return Center(child: Text('No tienes un restaurante asociado.', style: AdminTheme.bodyStyle));
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Perfil del Restaurante',
-              style: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A)),
+            const AdminPageHeader(
+              kicker: 'NEGOCIO',
+              titleBefore: 'Perfil del ',
+              titleEmphasis: 'Restaurante',
+              description: 'Configura la información pública, ubicación y medios de tu restaurante.',
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Configura la información pública y ubicación de tu restaurante.',
-              style: GoogleFonts.manrope(fontSize: 15, color: const Color(0xFF6B635E)),
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -719,18 +718,19 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 20, offset: Offset(0, 10))],
+        color: AdminTheme.surface,
+        borderRadius: AdminTheme.cardRadius,
+        border: Border.all(color: AdminTheme.border),
+        boxShadow: AdminTheme.shadowSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFF6E1E39), size: 20),
+              Icon(icon, color: AdminTheme.primaryColor, size: 20),
               const SizedBox(width: 8),
-              Text(title, style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A))),
+              Text(title, style: AdminTheme.subtitleStyle),
             ],
           ),
           const SizedBox(height: 20),
@@ -744,19 +744,13 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF6B635E))),
+        Text(label, style: AdminTheme.subtitleStyle.copyWith(fontSize: 13)),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           maxLines: maxLines,
-          style: GoogleFonts.manrope(fontSize: 14),
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF6E1E39))),
-          ),
+          style: AdminTheme.bodyStyle.copyWith(color: AdminTheme.textDark),
+          decoration: AdminInputDecoration.get(labelText: label),
           validator: (v) => v == null || v.isEmpty ? 'Campo requerido' : null,
         ),
       ],

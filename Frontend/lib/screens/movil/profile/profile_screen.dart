@@ -176,8 +176,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(context, MaterialPageRoute(builder: (_) => const UserReviewsScreen()));
                     }
                   ),
-                  _buildSettingRow(context, Icons.notifications_rounded, 'Notificaciones'),
-
                   const SizedBox(height: 24),
 
                   // Sección: Ayuda

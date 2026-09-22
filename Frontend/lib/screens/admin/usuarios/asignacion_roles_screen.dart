@@ -8,6 +8,8 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class AsignacionRolesScreen extends StatefulWidget {
   const AsignacionRolesScreen({super.key});
@@ -129,16 +131,16 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: hasRole ? const Color(0xFF6E1E39).withOpacity(0.04) : Colors.white,
+                    color: hasRole ? const Color(0xFFF8E7DC) : Colors.white,
                     border: Border.all(
-                      color: hasRole ? const Color(0xFF6E1E39).withOpacity(0.3) : const Color(0xFFE2E8F0),
+                      color: hasRole ? const Color(0xFFBE4B24).withOpacity(0.3) : const Color(0xFFEAE1D3),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: SwitchListTile(
-                      activeColor: const Color(0xFF6E1E39),
+                      activeColor: const Color(0xFFBE4B24),
                     title: Text(rol.nombre, style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: const Color(0xFF1E1B1A))),
                     subtitle: Text(rol.descripcion ?? 'Sin descripción', style: GoogleFonts.inter(color: const Color(0xFFA39C98), fontSize: 13)),
                     value: hasRole,
@@ -208,46 +210,39 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
     final endIndex = math.min(startIndex + _itemsPerPage, totalItems);
     final paginatedUsuarios = startIndex < totalItems ? filtrados.sublist(startIndex, endIndex) : <UsuarioAdminModel>[];
 
-    return Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. Cabecera y Botón
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Asignación de Roles',
-                  style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A)),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Asigna los roles del sistema a los usuarios.',
-                  style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14),
-                ),
-              ],
-            ),
-          ],
+        const AdminPageHeader(
+          kicker: 'SISTEMA',
+          titleBefore: 'Asignación de ',
+          titleEmphasis: 'Roles',
+          description: 'Asigna los roles del sistema a los usuarios.',
         ),
         const SizedBox(height: 24),
 
         // 2. Barra de Filtros
-        Row(
+        AdminSurface(
+          padding: const EdgeInsets.all(12),
+          radius: AdminTheme.mediumRadius,
+          child: Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
             Container(
               width: 400,
               height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
+                color: AdminTheme.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AdminTheme.border),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.search, color: Color(0xFFA39C98), size: 20),
+                  const Icon(Icons.search, color: AdminTheme.textMuted, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
@@ -270,9 +265,9 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AdminTheme.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: AdminTheme.border),
                 boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 4, offset: Offset(0, 2))],
               ),
               child: DropdownButtonHideUnderline(
@@ -289,25 +284,21 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
               ),
             ),
           ],
+          ),
         ),
         const SizedBox(height: 24),
 
         // 3. Tabla Corporativa
         Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 4))],
-            ),
+          child: AdminSurface(
             child: Column(
               children: [
                 // Cabeceras (th)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFFAF8F5),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    color: AdminTheme.surfaceMuted,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
                   ),
                   child: Row(
                     children: [
@@ -321,7 +312,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
                 // Filas
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39)))
+                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFBE4B24)))
                       : paginatedUsuarios.isEmpty
                           ? Center(child: Text('No se encontraron usuarios', style: GoogleFonts.manrope(color: const Color(0xFFA39C98))))
                           : ListView.builder(
@@ -337,7 +328,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     decoration: const BoxDecoration(
-                      border: Border(top: BorderSide(color: Color(0xFFF0F2F5))),
+                      border: Border(top: BorderSide(color: Color(0xFFF1EADD))),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -380,6 +371,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -396,7 +388,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
               children: [
                 CircleAvatar(
                   backgroundColor: const Color(0xFFFCF4F7),
-                  foregroundColor: const Color(0xFF6E1E39),
+                  foregroundColor: const Color(0xFFBE4B24),
                   child: Text(user.nombre[0].toUpperCase(), style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(width: 12),
@@ -428,7 +420,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
                   cursor: SystemMouseCursors.click,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: const Color(0xFFF0F2F5), borderRadius: BorderRadius.circular(50)),
+                    decoration: BoxDecoration(color: const Color(0xFFFAF5EC), borderRadius: BorderRadius.circular(50)),
                     child: Text('Ver roles', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF6B635E))),
                   ),
                 ),
@@ -468,7 +460,7 @@ class _AsignacionRolesScreenState extends State<AsignacionRolesScreen> {
         width: 32, height: 32,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF6E1E39) : Colors.transparent,
+          color: isActive ? const Color(0xFFBE4B24) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
@@ -501,7 +493,7 @@ class _TableRowHoverState extends State<_TableRowHover> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
           color: _hover ? const Color(0xFFF8FAFC) : Colors.white,
-          border: widget.showDivider ? const Border(bottom: BorderSide(color: Color(0xFFF0F2F5))) : null,
+          border: widget.showDivider ? const Border(bottom: BorderSide(color: Color(0xFFF1EADD))) : null,
         ),
         child: widget.child,
       ),
@@ -526,10 +518,10 @@ class _ActionIconState extends State<_ActionIcon> {
   Widget build(BuildContext context) {
     final fg = widget.isDanger 
         ? (_hover ? Colors.white : const Color(0xFFEF4444)) 
-        : (_hover ? const Color(0xFF6E1E39) : const Color(0xFF6B635E));
+        : (_hover ? const Color(0xFFBE4B24) : const Color(0xFF6F6259));
     final bg = widget.isDanger
         ? (_hover ? const Color(0xFFEF4444) : const Color(0xFFFEF2F2))
-        : (_hover ? const Color(0xFFFCF4F7) : const Color(0xFFF0F2F5));
+        : (_hover ? const Color(0xFFF8E7DC) : const Color(0xFFFAF5EC));
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),

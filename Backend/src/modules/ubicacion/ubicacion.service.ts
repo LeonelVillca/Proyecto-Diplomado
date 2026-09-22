@@ -20,11 +20,17 @@ export class UbicacionService {
       id: dto.idRestaurante,
     });
     if (!restaurante) {
-      throw new NotFoundException(`Restaurante con id ${dto.idRestaurante} no encontrado`);
+      throw new NotFoundException(
+        `Restaurante con id ${dto.idRestaurante} no encontrado`,
+      );
     }
 
-    const { idRestaurante, ...datos } = dto;
-    const ubicacion = this.ubicacionRepository.create({ ...datos, restaurante });
+    const ubicacion = this.ubicacionRepository.create({
+      direccion: dto.direccion,
+      latitud: dto.latitud,
+      longitud: dto.longitud,
+      restaurante,
+    });
     return this.ubicacionRepository.save(ubicacion);
   }
 
@@ -50,7 +56,10 @@ export class UbicacionService {
     });
   }
 
-  async actualizar(id: number, dto: ActualizarUbicacionDto): Promise<Ubicacion> {
+  async actualizar(
+    id: number,
+    dto: ActualizarUbicacionDto,
+  ): Promise<Ubicacion> {
     const ubicacion = await this.buscarPorId(id);
     Object.assign(ubicacion, dto);
     return this.ubicacionRepository.save(ubicacion);

@@ -45,21 +45,13 @@ class _DetailHeroState extends State<DetailHero> {
             ),
           ),
 
-          // Botones flotantes superiores (atras y compartir)
+          // Control flotante de navegación
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _GlassButton(icon: Icons.arrow_back_ios_new_rounded, onTap: () => Navigator.pop(context)),
-                  Row(
-                    children: [
-                      _GlassButton(icon: Icons.share_rounded, onTap: () {}),
-                      const SizedBox(width: 8),
-                    ],
-                  ),
-                ],
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _GlassButton(icon: Icons.arrow_back_ios_new_rounded, onTap: () => Navigator.pop(context)),
               ),
             ),
           ),

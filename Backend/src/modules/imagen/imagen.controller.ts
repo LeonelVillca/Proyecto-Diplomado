@@ -11,7 +11,10 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
-import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
+import {
+  OwnershipGuard,
+  CheckOwnership,
+} from '../../core/guards/ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { ImagenService } from './imagen.service';
 import { CrearImagenDto } from './dto/crear-imagen.dto';
@@ -34,15 +37,6 @@ export class ImagenController {
   @Get()
   listarTodos(): Promise<Imagen[]> {
     return this.imagenService.listarTodos();
-  }
-
-  @Roles('admin_restaurante', 'admin_sistema')
-  @CheckOwnership('imagen')
-  @Get('plato/:idPlato')
-  listarPorPlato(
-    @Param('idPlato', ParseIntPipe) idPlato: number,
-  ): Promise<Imagen[]> {
-    return this.imagenService.listarPorPlato(idPlato);
   }
 
   @Roles('admin_restaurante', 'admin_sistema')

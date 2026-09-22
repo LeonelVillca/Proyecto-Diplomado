@@ -192,13 +192,13 @@ class RestauranteClienteService {
       if (dia == null) return '';
       final int? d = int.tryParse(dia.toString());
       switch(d) {
-        case 1: return 'Lunes';
-        case 2: return 'Martes';
-        case 3: return 'Miércoles';
-        case 4: return 'Jueves';
-        case 5: return 'Viernes';
-        case 6: return 'Sábado';
-        case 7: return 'Domingo';
+        case 0: return 'Lunes';
+        case 1: return 'Martes';
+        case 2: return 'Miércoles';
+        case 3: return 'Jueves';
+        case 4: return 'Viernes';
+        case 5: return 'Sábado';
+        case 6: return 'Domingo';
         default: return dia.toString();
       }
     }

@@ -6,7 +6,6 @@ import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/reserva_admin_model.dart';
-import 'package:frontend/services/movil/notification_service.dart';
 
 class ReservationsScreen extends StatefulWidget {
   const ReservationsScreen({super.key});
@@ -21,8 +20,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   io.Socket? _socket;
   String? _socketToken;
   
-  List<ReservaAdminModel> get proximas => _reservas.where((r) => r.estado == 'pendiente' || r.estado == 'confirmada' || r.estado == 'aprobada').toList();
-  List<ReservaAdminModel> get historial => _reservas.where((r) => r.estado != 'pendiente' && r.estado != 'confirmada' && r.estado != 'aprobada').toList();
+  List<ReservaAdminModel> get proximas => _reservas.where((r) => r.estado == 'pendiente' || r.estado == 'confirmada').toList();
+  List<ReservaAdminModel> get historial => _reservas.where((r) => r.estado != 'pendiente' && r.estado != 'confirmada').toList();
 
   @override
   void initState() {
@@ -79,15 +78,6 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
        bool belongsToUser = _reservas.any((r) => r.id == data['id']);
        if (belongsToUser) {
          if (mounted) _cargarDatos();
-         
-         // Lanzar notificacion
-         final status = data['estado']?.toString() ?? 'actualizada';
-         final notif = NotificationService();
-         notif.showNotification(
-           id: data['id'] ?? 0,
-           title: 'Reserva $status',
-           body: 'El estado de tu reserva ha cambiado a $status.',
-         );
        }
     });
   }
@@ -110,23 +100,6 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
         _reservas = data.map((e) => ReservaAdminModel.fromJson(e)).toList();
         _reservas.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
-
-        // Programar notificaciones para reservas próximas
-        final notif = NotificationService();
-        final now = DateTime.now();
-        for (var r in _reservas) {
-          if (r.estado == 'aprobada' || r.estado == 'confirmada') {
-            final scheduleTime = r.fechaHora.subtract(const Duration(minutes: 30));
-            if (scheduleTime.isAfter(now)) {
-              notif.scheduleNotification(
-                id: r.id, 
-                title: 'Reserva próxima en ${r.restauranteNombre}',
-                body: 'Tu reserva es en 30 minutos. ¡Prepárate!', 
-                scheduledDate: scheduleTime
-              );
-            }
-          }
-        }
       }
     } catch (e) {
       debugPrint('Error cargando reservas cliente: $e');
@@ -222,7 +195,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     Color bg = Colors.grey.shade200;
     Color fg = Colors.grey.shade700;
     
-    if (reserva.estado == 'aprobada' || reserva.estado == 'confirmada') {
+    if (reserva.estado == 'confirmada') {
       bg = Colors.green.shade50;
       fg = Colors.green.shade700;
     } else if (reserva.estado == 'pendiente') {

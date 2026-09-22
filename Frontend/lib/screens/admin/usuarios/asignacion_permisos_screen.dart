@@ -6,6 +6,7 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 
 class PermisoModel {
@@ -149,13 +150,16 @@ class _AsignacionPermisosScreenState extends State<AsignacionPermisosScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Asignación de Permisos', style: AdminTheme.titleStyle),
-          const SizedBox(height: 8),
-          Text('Configura los accesos del sistema por cada Rol.', style: GoogleFonts.inter(color: AdminTheme.textMuted, fontSize: 14)),
+          const AdminPageHeader(
+            kicker: 'SISTEMA',
+            titleBefore: 'Asignación de ',
+            titleEmphasis: 'Permisos',
+            description: 'Configura los accesos del sistema para cada rol.',
+          ),
           const SizedBox(height: 24),
           
           Expanded(

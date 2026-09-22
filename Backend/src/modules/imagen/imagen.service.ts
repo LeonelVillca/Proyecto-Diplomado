@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,7 +6,6 @@ import { Repository } from 'typeorm';
 import { Imagen } from './imagen.entity';
 import { CrearImagenDto } from './dto/crear-imagen.dto';
 import { ActualizarImagenDto } from './dto/actualizar-imagen.dto';
-import { Plato } from '../plato/plato.entity';
 import { Restaurante } from '../restaurante/restaurante.entity';
 
 @Injectable()
@@ -15,73 +14,42 @@ export class ImagenService {
   constructor(
     @InjectRepository(Imagen)
     private readonly imagenRepository: Repository<Imagen>,
-    @InjectRepository(Plato)
-    private readonly platoRepository: Repository<Plato>,
     @InjectRepository(Restaurante)
     private readonly restauranteRepository: Repository<Restaurante>,
   ) {}
 
-  private validarExclusividad(idPlato?: number, idRestaurante?: number): void {
-    const tienePlato = idPlato !== undefined;
-    const tieneRestaurante = idRestaurante !== undefined;
-    if (tienePlato === tieneRestaurante) {
-      throw new BadRequestException(
-        'Una imagen debe pertenecer exactamente a un plato o a un restaurante, no a ambos ni a ninguno',
+  async crear(dto: CrearImagenDto): Promise<Imagen> {
+    const restaurante = await this.restauranteRepository.findOneBy({
+      id: dto.idRestaurante,
+    });
+    if (!restaurante) {
+      throw new NotFoundException(
+        `Restaurante con id ${dto.idRestaurante} no encontrado`,
       );
     }
-  }
 
-  async crear(dto: CrearImagenDto): Promise<Imagen> {
-    this.validarExclusividad(dto.idPlato, dto.idRestaurante);
-
-    if (dto.idPlato !== undefined) {
-      const plato = await this.platoRepository.findOneBy({ id: dto.idPlato });
-      if (!plato) {
-        throw new NotFoundException(`Plato con id ${dto.idPlato} no encontrado`);
-      }
-    }
-    if (dto.idRestaurante !== undefined) {
-      const restaurante = await this.restauranteRepository.findOneBy({
-        id: dto.idRestaurante,
-      });
-      if (!restaurante) {
-        throw new NotFoundException(
-          `Restaurante con id ${dto.idRestaurante} no encontrado`,
-        );
-      }
-    }
-
-    const { idPlato, idRestaurante, ...datos } = dto;
     const imagen = this.imagenRepository.create({
-      ...datos,
-      plato: idPlato ? { id: idPlato } : null,
-      restaurante: idRestaurante ? { id: idRestaurante } : null,
+      url: dto.url,
+      restaurante,
     });
     return this.imagenRepository.save(imagen);
   }
 
   listarTodos(): Promise<Imagen[]> {
     return this.imagenRepository.find({
-      relations: { plato: true, restaurante: true },
+      relations: { restaurante: true },
     });
   }
 
   async buscarPorId(id: number): Promise<Imagen> {
     const imagen = await this.imagenRepository.findOne({
       where: { id },
-      relations: { plato: true, restaurante: true },
+      relations: { restaurante: true },
     });
     if (!imagen) {
       throw new NotFoundException(`Imagen con id ${id} no encontrada`);
     }
     return imagen;
-  }
-
-  listarPorPlato(idPlato: number): Promise<Imagen[]> {
-    return this.imagenRepository.find({
-      where: { plato: { id: idPlato } },
-      relations: { plato: true },
-    });
   }
 
   listarPorRestaurante(idRestaurante: number): Promise<Imagen[]> {
@@ -94,20 +62,6 @@ export class ImagenService {
   async actualizar(id: number, dto: ActualizarImagenDto): Promise<Imagen> {
     const imagen = await this.buscarPorId(id);
 
-    const idPlatoNuevo = dto.idPlato !== undefined ? dto.idPlato : imagen.plato?.id;
-    const idRestNuevo =
-      dto.idRestaurante !== undefined
-        ? dto.idRestaurante
-        : imagen.restaurante?.id;
-    this.validarExclusividad(idPlatoNuevo, idRestNuevo);
-
-    if (dto.idPlato !== undefined) {
-      const plato = await this.platoRepository.findOneBy({ id: dto.idPlato });
-      if (!plato) {
-        throw new NotFoundException(`Plato con id ${dto.idPlato} no encontrado`);
-      }
-      imagen.plato = plato;
-    }
     if (dto.idRestaurante !== undefined) {
       const restaurante = await this.restauranteRepository.findOneBy({
         id: dto.idRestaurante,
@@ -120,8 +74,7 @@ export class ImagenService {
       imagen.restaurante = restaurante;
     }
 
-    const { idPlato: _p, idRestaurante: _r, ...datos } = dto;
-    Object.assign(imagen, datos);
+    if (dto.url !== undefined) imagen.url = dto.url;
     return this.imagenRepository.save(imagen);
   }
 
@@ -129,14 +82,28 @@ export class ImagenService {
     const imagen = await this.buscarPorId(id);
     await this.imagenRepository.delete(imagen.id);
     // Solo archivos locales con el formato que genera el servidor.
-    const match = /^\/publico\/restaurantes\/(\d+)\/(galeria|platos)\/([0-9a-f-]{36}\.webp)$/i.exec(imagen.url);
+    const match =
+      /^\/publico\/restaurantes\/(\d+)\/galeria\/([0-9a-f-]{36}\.webp)$/i.exec(
+        imagen.url,
+      );
     if (match) {
-      const file = path.join(process.cwd(), 'storage', 'publico', 'restaurantes', match[1], match[2], match[3]);
+      const file = path.join(
+        process.cwd(),
+        'storage',
+        'publico',
+        'restaurantes',
+        match[1],
+        'galeria',
+        match[2],
+      );
       try {
         await fs.unlink(file);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-          this.logger.error('No se pudo borrar el archivo de imagen local.', (error as Error).message);
+          this.logger.error(
+            'No se pudo borrar el archivo de imagen local.',
+            (error as Error).message,
+          );
         }
       }
     }

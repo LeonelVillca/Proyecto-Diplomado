@@ -14,11 +14,11 @@ export class Reserva {
   @PrimaryGeneratedColumn({ name: 'id_reserva' })
   id: number;
 
-  @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Usuario, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 
-  @ManyToOne(() => Mesa, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Mesa, { onDelete: 'RESTRICT', nullable: false })
   @JoinColumn({ name: 'id_mesa' })
   mesa: Mesa;
 

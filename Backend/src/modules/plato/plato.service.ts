@@ -21,8 +21,13 @@ export class PlatoService {
       throw new NotFoundException(`Menú con id ${dto.idMenu} no encontrado`);
     }
 
-    const { idMenu, ...datos } = dto;
-    const plato = this.platoRepository.create({ ...datos, menu });
+    const plato = this.platoRepository.create({
+      nombre: dto.nombre,
+      precio: dto.precio,
+      descripcion: dto.descripcion,
+      disponible: dto.disponible,
+      menu,
+    });
     return this.platoRepository.save(plato);
   }
 

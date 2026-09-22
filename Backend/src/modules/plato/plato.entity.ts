@@ -12,7 +12,7 @@ export class Plato {
   @PrimaryGeneratedColumn({ name: 'id_plato' })
   id: number;
 
-  @ManyToOne(() => Menu, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Menu, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_menu' })
   menu: Menu;
 

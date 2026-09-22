@@ -4,10 +4,9 @@ import { PlatoService } from './plato.service';
 import { PlatoController } from './plato.controller';
 import { Plato } from './plato.entity';
 import { Menu } from '../menu/menu.entity';
-import { ImagenModule } from '../imagen/imagen.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Plato, Menu]), ImagenModule],
+  imports: [TypeOrmModule.forFeature([Plato, Menu])],
   controllers: [PlatoController],
   providers: [PlatoService],
   exports: [PlatoService],

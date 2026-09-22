@@ -7,6 +7,8 @@ import 'package:frontend/models/admin/resena_admin_model.dart';
 import 'package:frontend/models/admin/respuesta_resena_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class GestionResenasScreen extends StatefulWidget {
   const GestionResenasScreen({super.key});
@@ -194,29 +196,29 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Gestión de Reseñas',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Color(0xFF1A0A00)),
+        const AdminPageHeader(
+          kicker: 'EXPERIENCIA',
+          titleBefore: 'Gestión de ',
+          titleEmphasis: 'Reseñas',
+          description: 'Revisa los comentarios de tus clientes y responde cuando sea necesario.',
         ),
-        const SizedBox(height: 8),
-        const Text(
-          'Revisa el feedback de tus clientes y dales una respuesta profesional.',
-          style: TextStyle(color: Color(0xFF6B5A4A), fontFamily: 'Karla', fontSize: 16),
-        ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
 
         Expanded(
-          child: _isLoading
+          child: AdminSurface(
+            child: _isLoading
               ? const Center(child: CircularProgressIndicator(color: Color(0xFF6E1F35)))
               : _resenas.isEmpty
-                  ? const Center(child: Text('No has recibido reseñas todavía.', style: TextStyle(color: Color(0xFF6B5A4A), fontFamily: 'Karla', fontSize: 16)))
+                  ? Center(child: Text('No has recibido reseñas todavía.', style: AdminTheme.bodyStyle))
                   : ListView.separated(
-                      padding: const EdgeInsets.only(bottom: 32, right: 16),
+                      padding: const EdgeInsets.all(12),
                       itemCount: _resenas.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 24),
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final resena = _resenas[index];
                         final respuesta = _respuestas[resena.id];
@@ -225,16 +227,10 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
 
                         return Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.03),
-                                blurRadius: 15,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                            border: Border.all(color: const Color(0xFFF0EBE1)),
+                            color: AdminTheme.surface,
+                            borderRadius: AdminTheme.mediumRadius,
+                            boxShadow: AdminTheme.shadowSm,
+                            border: Border.all(color: AdminTheme.border),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(28),
@@ -348,8 +344,10 @@ class _GestionResenasScreenState extends State<GestionResenasScreen> {
                         );
                       },
                     ),
+          ),
         ),
       ],
+      ),
     );
   }
 }

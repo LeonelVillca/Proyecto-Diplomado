@@ -16,7 +16,7 @@ export class Solicitud {
   @PrimaryGeneratedColumn({ name: 'id_solicitud' })
   id: number;
 
-  @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Usuario, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 
@@ -46,15 +46,30 @@ export class Solicitud {
   @Column({ name: 'nit_negocio', type: 'varchar', length: 30, nullable: true })
   nitNegocio: string | null;
 
-  @Column({ name: 'celular_contacto', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'celular_contacto',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   celularContacto: string | null;
 
   @Column({ name: 'descripcion', type: 'text', nullable: true })
   descripcion: string | null;
 
-  @Column({ name: 'horarios_atencion', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'horarios_atencion',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   horariosAtencion: string | null;
 
-  @Column({ name: 'motivo_rechazo', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'motivo_rechazo',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   motivoRechazo: string | null;
 }

@@ -12,7 +12,7 @@ export class HorarioAtencion {
   @PrimaryGeneratedColumn({ name: 'id_horario' })
   id: number;
 
-  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_restaurante' })
   restaurante: Restaurante;
 

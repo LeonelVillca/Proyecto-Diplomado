@@ -8,6 +8,7 @@ import 'package:frontend/models/admin/usuario_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
 import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class RolesCrudScreen extends StatefulWidget {
   const RolesCrudScreen({super.key});
@@ -154,41 +155,28 @@ class _RolesCrudScreenState extends State<RolesCrudScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Gestión de Roles', style: AdminTheme.titleStyle),
+          AdminPageHeader(
+            kicker: 'SISTEMA',
+            titleBefore: 'Gestión de ',
+            titleEmphasis: 'Roles',
+            description: 'Crea y administra los roles disponibles en el sistema.',
+            actions: [
               FilledButton.icon(
                 onPressed: () => _mostrarModalRol(),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Nuevo Rol'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AdminTheme.primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+                label: const Text('Nuevo rol'),
               ),
             ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Crea y administra los roles disponibles en el sistema.',
-            style: GoogleFonts.inter(color: AdminTheme.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 24),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor))
-                : Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AdminTheme.border),
-                    ),
+                : AdminSurface(
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: _roles.length,

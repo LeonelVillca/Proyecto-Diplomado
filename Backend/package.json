@@ -13,6 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main.js",
     "preflight:prod": "node scripts/preflight-production.cjs",
+    "migrate:normalize": "node scripts/apply-security-migration.cjs --normalize",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

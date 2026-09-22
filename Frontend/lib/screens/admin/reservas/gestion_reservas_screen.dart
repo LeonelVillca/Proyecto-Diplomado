@@ -7,6 +7,8 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/reserva_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class GestionReservasScreen extends StatefulWidget {
   const GestionReservasScreen({super.key});
@@ -117,6 +119,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
   }
 
   Future<void> _cambiarEstadoReserva(ReservaAdminModel reserva, String nuevoEstado) async {
+    if (_isLoading) return;
     setState(() => _isLoading = true);
     try {
       final token = AuthScope.of(context).token;
@@ -135,7 +138,6 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
 
   Color _getColorEstado(String estado) {
     switch (estado) {
-      case 'aprobada':
       case 'confirmada':
         return const Color(0xFF2ECC71);
       case 'pendiente':
@@ -150,7 +152,6 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
 
   IconData _getIconEstado(String estado) {
     switch (estado) {
-      case 'aprobada':
       case 'confirmada':
         return Icons.check_circle_rounded;
       case 'pendiente':
@@ -172,17 +173,17 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF6E1E39) : Colors.white,
+          color: active ? AdminTheme.primaryColor : AdminTheme.surface,
           borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: active ? const Color(0xFF6E1E39) : const Color(0xFFE2E8F0)),
-          boxShadow: active ? const [BoxShadow(color: Color(0x336E1E39), blurRadius: 8, offset: Offset(0, 4))] : [],
+          border: Border.all(color: active ? AdminTheme.primaryColor : AdminTheme.border),
+          boxShadow: active ? AdminTheme.shadowSm : [],
         ),
         child: Text(
           label,
           style: GoogleFonts.manrope(
             fontSize: 13,
             fontWeight: FontWeight.bold,
-            color: active ? Colors.white : const Color(0xFF6B635E),
+            color: active ? Colors.white : AdminTheme.textMuted,
           ),
         ),
       ),
@@ -190,13 +191,13 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
   }
 
   Widget _buildResumenCard(String titulo, String valor, IconData icon, Color color) {
-    return Expanded(
-      child: Container(
+    return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 5))],
+          color: AdminTheme.surface,
+          borderRadius: AdminTheme.mediumRadius,
+          border: Border.all(color: AdminTheme.border),
+          boxShadow: AdminTheme.shadowSm,
         ),
         child: Row(
           children: [
@@ -209,14 +210,13 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(valor, style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: const Color(0xFF1E1B1A))),
-                Text(titulo, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF6B635E))),
+                Text(valor, style: AdminTheme.titleStyle.copyWith(fontSize: 24)),
+                Text(titulo, style: AdminTheme.bodyStyle.copyWith(fontSize: 12)),
               ],
             )
           ],
         ),
-      ),
-    );
+      );
   }
 
   @override
@@ -224,78 +224,66 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
     final reservasFiltradas = _filtroEstado == 'todas' 
         ? _reservas 
         : _reservas.where((r) => 
-            (_filtroEstado == 'confirmada' && (r.estado == 'confirmada' || r.estado == 'aprobada')) ||
+            (_filtroEstado == 'confirmada' && r.estado == 'confirmada') ||
             (_filtroEstado == 'rechazada' && (r.estado == 'rechazada' || r.estado == 'cancelada')) ||
             (r.estado == _filtroEstado)
           ).toList();
 
     int totalPendientes = _reservas.where((r) => r.estado == 'pendiente').length;
-    int totalConfirmadas = _reservas.where((r) => r.estado == 'confirmada' || r.estado == 'aprobada').length;
+    int totalConfirmadas = _reservas.where((r) => r.estado == 'confirmada').length;
     int totalPersonasHoy = _reservas
-        .where((r) => (r.estado == 'confirmada' || r.estado == 'aprobada') && 
+        .where((r) => r.estado == 'confirmada' &&
                        r.fechaHora.day == DateTime.now().day &&
                        r.fechaHora.month == DateTime.now().month)
         .fold(0, (sum, r) => sum + r.cantidadPersonas);
 
-    return Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header Superior
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Reservas en Tiempo Real', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: const Color(0xFF2D0A14))),
-                const SizedBox(height: 6),
-                Text('Administra las reservas entrantes. Actualización en vivo activada.', style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF6B635E))),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(color: const Color(0xFF2ECC71).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF2ECC71).withValues(alpha: 0.3))),
-              child: Row(
-                children: [
-                  Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF2ECC71), shape: BoxShape.circle)),
-                  const SizedBox(width: 8),
-                  Text('Conectado', style: GoogleFonts.manrope(color: const Color(0xFF2ECC71), fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ],
+        AdminPageHeader(
+          kicker: 'OPERACIÓN',
+          titleBefore: 'Gestión de ',
+          titleEmphasis: 'Reservas',
+          description: 'Administra las reservas entrantes y sus estados.',
+          actions: const [AdminStatusChip(status: AdminStatus.active, label: 'Conectado')],
         ),
         const SizedBox(height: 24),
 
         // Barra de Resumen Métrico
-        Row(
+        LayoutBuilder(builder: (context, constraints) => Wrap(
+          spacing: 12,
+          runSpacing: 12,
           children: [
-            _buildResumenCard('Nuevas Pendientes', '$totalPendientes', Icons.access_time_filled, const Color(0xFFF39C12)),
-            const SizedBox(width: 16),
-            _buildResumenCard('Confirmadas Total', '$totalConfirmadas', Icons.check_circle, const Color(0xFF2ECC71)),
-            const SizedBox(width: 16),
-            _buildResumenCard('Personas (Hoy)', '$totalPersonasHoy', Icons.people_alt, const Color(0xFF3498DB)),
+            SizedBox(width: constraints.maxWidth < 760 ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 24) / 3, child: _buildResumenCard('Nuevas Pendientes', '$totalPendientes', Icons.access_time_filled, AdminTheme.warning)),
+            SizedBox(width: constraints.maxWidth < 760 ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 24) / 3, child: _buildResumenCard('Confirmadas Total', '$totalConfirmadas', Icons.check_circle_outline, AdminTheme.success)),
+            SizedBox(width: constraints.maxWidth < 760 ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 24) / 3, child: _buildResumenCard('Personas (Hoy)', '$totalPersonasHoy', Icons.people_alt_outlined, AdminTheme.accentColor)),
           ],
-        ),
+        )),
         const SizedBox(height: 24),
 
         // Pestañas / Filtros
-        Row(
+        AdminSurface(
+          padding: const EdgeInsets.all(10),
+          radius: AdminTheme.mediumRadius,
+          child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
             _buildFiltroPill('Todas', 'todas'),
-            const SizedBox(width: 12),
             _buildFiltroPill('Pendientes', 'pendiente'),
-            const SizedBox(width: 12),
             _buildFiltroPill('Confirmadas', 'confirmada'),
-            const SizedBox(width: 12),
             _buildFiltroPill('Rechazadas', 'rechazada'),
           ],
+          ),
         ),
         const SizedBox(height: 24),
 
         // Grid
         Expanded(
-          child: _isLoading && _reservas.isEmpty
+          child: AdminSurface(
+            child: _isLoading && _reservas.isEmpty
               ? const Center(child: CircularProgressIndicator(color: Color(0xFF6E1E39)))
               : reservasFiltradas.isEmpty
                   ? Center(
@@ -384,7 +372,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
                                 const SizedBox(width: 24),
                                 if (reserva.estado == 'pendiente') ...[
                                   ElevatedButton.icon(
-                                    onPressed: () => _cambiarEstadoReserva(reserva, 'confirmada'),
+                                    onPressed: _isLoading ? null : () => _cambiarEstadoReserva(reserva, 'confirmada'),
                                     icon: const Icon(Icons.check, size: 18),
                                     label: Text('Confirmar', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
                                     style: ElevatedButton.styleFrom(
@@ -397,7 +385,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
                                   ),
                                   const SizedBox(width: 12),
                                   OutlinedButton.icon(
-                                    onPressed: () => _cambiarEstadoReserva(reserva, 'rechazada'),
+                                    onPressed: _isLoading ? null : () => _cambiarEstadoReserva(reserva, 'rechazada'),
                                     icon: const Icon(Icons.close, size: 18),
                                     label: Text('Rechazar', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
                                     style: OutlinedButton.styleFrom(
@@ -414,8 +402,10 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
                         );
                       },
                     ),
+          ),
         ),
       ],
+      ),
     );
   }
 }

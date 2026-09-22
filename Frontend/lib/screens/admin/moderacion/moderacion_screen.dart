@@ -1,11 +1,15 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
-import 'package:frontend/core/utils/network/api_endpoints.dart';
+
 import 'package:frontend/controllers/movil/auth_controller.dart';
+import 'package:frontend/core/admin/theme_admin.dart';
+import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/models/admin/resena_admin_model.dart';
 import 'package:frontend/widgets/admin/admin_modal.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/widgets/admin/admin_ui.dart';
 
 class ModeracionScreen extends StatefulWidget {
   const ModeracionScreen({super.key});
@@ -31,20 +35,18 @@ class _ModeracionScreenState extends State<ModeracionScreen> {
   Future<void> _cargarResenas() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-
     try {
       final token = AuthScope.of(context).token;
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/resenas');
-      final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
-
+      final res = await http.get(
+        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/resenas'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
       if (res.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
-        setState(() {
-          _resenas = data.map((e) => ResenaAdminModel.fromJson(e)).toList();
-        });
+        final data = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
+        if (mounted) setState(() => _resenas = data.map((item) => ResenaAdminModel.fromJson(item)).toList());
       }
-    } catch (e) {
-      debugPrint('Error cargando reseñas: $e');
+    } catch (error) {
+      debugPrint('Error cargando reseñas: $error');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -53,123 +55,121 @@ class _ModeracionScreenState extends State<ModeracionScreen> {
   Future<void> _eliminarResena(int id) async {
     final confirmar = await AdminModal.show<bool>(
       context: context,
-      title: 'Eliminar Reseña',
+      title: 'Eliminar reseña',
       confirmText: 'Eliminar',
-      confirmColor: Colors.redAccent,
+      confirmColor: AdminTheme.error,
       onConfirm: () => Navigator.pop(context, true),
-      content: const Text('¿Estás seguro de que deseas eliminar esta reseña permanentemente?', style: TextStyle(fontFamily: 'Karla')),
+      content: const Text('¿Estás seguro de que deseas eliminar esta reseña permanentemente?'),
     );
-
     if (confirmar != true) return;
 
     try {
       final token = AuthScope.of(context).token;
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/resenas/$id');
-      final res = await http.delete(url, headers: {'Authorization': 'Bearer $token'});
-
-      if (res.statusCode == 200) {
-        setState(() {
-          _resenas.removeWhere((r) => r.id == id);
-        });
-        if (mounted) {
-          AdminNotificationModal.success(context, 'Reseña eliminada correctamente');
-        }
+      final res = await http.delete(
+        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/resenas/$id'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (res.statusCode == 200 && mounted) {
+        setState(() => _resenas.removeWhere((review) => review.id == id));
+        AdminNotificationModal.success(context, 'Reseña eliminada correctamente');
       }
-    } catch (e) {
-      debugPrint('Error eliminando reseña: $e');
+    } catch (error) {
+      debugPrint('Error eliminando reseña: $error');
     }
   }
 
-  Widget _buildStars(int rating) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        return Icon(
-          index < rating ? Icons.star : Icons.star_border,
-          color: Colors.amber,
-          size: 16,
-        );
-      }),
-    );
-  }
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const AdminPageHeader(
+              kicker: 'CALIDAD',
+              titleBefore: 'Moderación de ',
+              titleEmphasis: 'Reseñas',
+              description: 'Revisa y elimina comentarios inapropiados de la plataforma.',
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: AdminSurface(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AdminTheme.primaryColor))
+                    : _resenas.isEmpty
+                        ? const _EmptyReviews()
+                        : ListView.separated(
+                            itemCount: _resenas.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) => _ReviewRow(
+                              review: _resenas[index],
+                              onDelete: () => _eliminarResena(_resenas[index].id),
+                            ),
+                          ),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _ReviewRow extends StatelessWidget {
+  const _ReviewRow({required this.review, required this.onDelete});
+
+  final ResenaAdminModel review;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Moderación de Reseñas',
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, fontFamily: 'BodoniModa', color: Colors.black87),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Revisa y elimina comentarios inapropiados de la plataforma.',
-          style: TextStyle(color: Colors.grey.shade600, fontFamily: 'Karla', fontSize: 14),
-        ),
-        const SizedBox(height: 32),
-
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _resenas.isEmpty
-                  ? Center(child: Text('No hay reseñas registradas', style: TextStyle(fontFamily: 'Karla', color: Colors.grey.shade500)))
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey.shade200),
-                        borderRadius: BorderRadius.circular(8),
+    final restaurant = review.restaurante?['nombre'] ?? 'Restaurante';
+    final user = review.usuario?['nombre'] ?? 'Usuario';
+    final date = review.fecha.split('T').first;
+    return InkWell(
+      hoverColor: AdminTheme.rowHover,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AdminInitialAvatar(label: restaurant, size: 42),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: Text(restaurant, style: AdminTheme.subtitleStyle.copyWith(fontSize: 14))),
+                      ...List.generate(
+                        5,
+                        (index) => Icon(index < review.calificacion ? Icons.star_rounded : Icons.star_border_rounded, color: AdminTheme.gold, size: 16),
                       ),
-                      child: ListView.separated(
-                        itemCount: _resenas.length,
-                        separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey.shade100),
-                        itemBuilder: (context, index) {
-                          final resena = _resenas[index];
-                          final nombreRestaurante = resena.restaurante?['nombre'] ?? 'Restaurante';
-                          final nombreUsuario = resena.usuario?['nombre'] ?? 'Usuario';
-
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            title: Row(
-                              children: [
-                                _buildStars(resena.calificacion),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    nombreRestaurante,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontFamily: 'Karla', fontSize: 15, color: Colors.black87),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    resena.comentario ?? '(Sin comentario)',
-                                    style: TextStyle(color: Colors.grey.shade800, fontFamily: 'Karla', fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Por: $nombreUsuario • ${resena.fecha.split('T')[0]}',
-                                    style: TextStyle(color: Colors.grey.shade500, fontFamily: 'Karla', fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                              tooltip: 'Eliminar reseña',
-                              onPressed: () => _eliminarResena(resena.id),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: 7),
+                  Text(review.comentario ?? '(Sin comentario)', style: AdminTheme.bodyStyle.copyWith(color: AdminTheme.textDark)),
+                  const SizedBox(height: 5),
+                  Text('Por: $user · $date', style: AdminTheme.bodyStyle.copyWith(fontSize: 12)),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Eliminar reseña',
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline_rounded),
+              color: AdminTheme.error,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
+}
+
+class _EmptyReviews extends StatelessWidget {
+  const _EmptyReviews();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Text('No hay reseñas registradas', style: AdminTheme.bodyStyle),
+      );
 }

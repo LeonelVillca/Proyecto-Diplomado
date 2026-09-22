@@ -14,11 +14,11 @@ export class Resena {
   @PrimaryGeneratedColumn({ name: 'id_resena' })
   id: number;
 
-  @ManyToOne(() => Usuario, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Usuario, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_usuario' })
   usuario: Usuario;
 
-  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Restaurante, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'id_restaurante' })
   restaurante: Restaurante;
 
