@@ -56,8 +56,15 @@ export class DocumentoAdjuntoController {
     }
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
-    const url = await this.r2Storage.signedDownloadUrl(`solicitudes/${idSolicitud}/${filename}`);
-    return res.redirect(url);
+    try {
+      const object = await this.r2Storage.download(`solicitudes/${idSolicitud}/${filename}`);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Content-Type', object.contentType ?? 'application/octet-stream');
+      if (object.contentLength !== undefined) res.setHeader('Content-Length', object.contentLength);
+      return object.body.pipe(res);
+    } catch {
+      return res.status(404).json({ message: 'El documento solicitado no existe' });
+    }
   }
 
   @Get(':id')

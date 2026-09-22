@@ -2,6 +2,7 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Readable } from 'node:stream';
 
 @Injectable()
 export class R2StorageService {
@@ -59,5 +60,16 @@ export class R2StorageService {
       ResponseContentDisposition: 'attachment',
       ResponseCacheControl: 'private, no-store',
     }), { expiresIn: 300 });
+  }
+
+  async download(key: string): Promise<{ body: Readable; contentType?: string; contentLength?: number }> {
+    const { client, bucket } = this.requireStorage();
+    const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    if (!result.Body) throw new ServiceUnavailableException('El documento no está disponible');
+    return {
+      body: result.Body as Readable,
+      contentType: result.ContentType,
+      contentLength: result.ContentLength,
+    };
   }
 }
