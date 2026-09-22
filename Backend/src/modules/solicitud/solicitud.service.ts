@@ -383,30 +383,40 @@ export class SolicitudService {
   }
 
   async reenviarInvitacion(id: number): Promise<{ mensaje: string }> {
-    const solicitud = await this.buscarPorId(id);
-    if (solicitud.estado !== 'aprobada') {
-      throw new ConflictException('Solo se puede reenviar la invitación de una solicitud aprobada.');
+    this.logger.log(`Reenvío de invitación solicitado para solicitud=${id}`);
+    try {
+      const solicitud = await this.buscarPorId(id);
+      if (solicitud.estado !== 'aprobada') {
+        throw new ConflictException('Solo se puede reenviar la invitación de una solicitud aprobada.');
+      }
+
+      const tokenStr = crypto.randomBytes(32).toString('hex');
+      await this.dataSource.transaction(async (manager) => {
+        await manager.update(
+          InvitacionToken,
+          { usuario: { id: solicitud.usuario.id }, tipo: 'invitacion', usado: false },
+          { usado: true },
+        );
+        await manager.save(
+          manager.create(InvitacionToken, {
+            usuario: { id: solicitud.usuario.id },
+            token: tokenStr,
+            tipo: 'invitacion',
+            fechaExpiracion: new Date(Date.now() + 48 * 60 * 60 * 1000),
+          }),
+        );
+      });
+
+      this.logger.log(`Token de invitación generado para solicitud=${id}`);
+      await this.mailService.enviarInvitacion(solicitud.usuario.correo, tokenStr);
+      this.logger.log(`Invitación enviada para solicitud=${id}`);
+      return { mensaje: 'Invitación reenviada correctamente.' };
+    } catch (error) {
+      this.logger.error(
+        `Falló reenvío de invitación solicitud=${id}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw error;
     }
-
-    const tokenStr = crypto.randomBytes(32).toString('hex');
-    await this.dataSource.transaction(async (manager) => {
-      await manager.update(
-        InvitacionToken,
-        { usuario: { id: solicitud.usuario.id }, tipo: 'invitacion', usado: false },
-        { usado: true },
-      );
-      await manager.save(
-        manager.create(InvitacionToken, {
-          usuario: { id: solicitud.usuario.id },
-          token: tokenStr,
-          tipo: 'invitacion',
-          fechaExpiracion: new Date(Date.now() + 48 * 60 * 60 * 1000),
-        }),
-      );
-    });
-
-    await this.mailService.enviarInvitacion(solicitud.usuario.correo, tokenStr);
-    return { mensaje: 'Invitación reenviada correctamente.' };
   }
 
   async eliminar(id: number): Promise<void> {
