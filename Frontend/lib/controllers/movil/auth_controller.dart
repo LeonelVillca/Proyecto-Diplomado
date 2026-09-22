@@ -204,6 +204,17 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
         return true;
       }
 
+      // El JWT del backend puede haber expirado mientras el sistema suspendía
+      // la app. Firebase conserva la sesión de Google y permite reconstruir
+      // el JWT sin mostrar nuevamente el login.
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        if (await _reautenticarBackendDesdeFirebase()) {
+          _status = AuthStatus.authenticated;
+          notifyListeners();
+          return true;
+        }
+      }
+
       // No borrar credenciales por una caída temporal del servidor.
       if (response.statusCode != 401 && response.statusCode != 403) return false;
       await _session.eliminarToken();
@@ -379,6 +390,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
     if (_token == null || _disposed) return null;
     final exp = _decodeJwt(_token!)['exp'];
     if (exp is! num || exp * 1000 <= DateTime.now().millisecondsSinceEpoch) {
+      if (await _reautenticarBackendDesdeFirebase()) return _token;
       await invalidateToken(_token!);
       return null;
     }
@@ -397,6 +409,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
       headers: {'Authorization': 'Bearer $previous'}).timeout(const Duration(seconds: 10));
     if (_disposed || generation != _sessionGeneration || previous != _token) return null;
     if (response.statusCode == 401 || response.statusCode == 403) {
+      if (await _reautenticarBackendDesdeFirebase()) return _token;
       await invalidateToken(previous!);
       return null;
     }
@@ -410,6 +423,57 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
     _permisos = (_decodeJwt(renewed)['permisos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
     notifyListeners();
     return renewed;
+  }
+
+  /// Recupera la sesión del backend usando la sesión persistente de Firebase.
+  /// Esto evita enviar al usuario al login cuando el móvil suspendió la app y
+  /// el JWT propio ya expiró.
+  Future<bool> _reautenticarBackendDesdeFirebase() async {
+    final generation = _sessionGeneration;
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null || _disposed) return false;
+
+    try {
+      final idToken = await firebaseUser.getIdToken(true);
+      if (idToken == null || idToken.isEmpty) return false;
+
+      final response = await http
+          .post(
+            Uri.parse(ApiConfig.authGoogle),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'idToken': idToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (_disposed || generation != _sessionGeneration) return false;
+      if (response.statusCode != 200 && response.statusCode != 201) return false;
+
+      final data = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      final usuario =
+          (data['usuario'] as Map?)?.cast<String, dynamic>() ?? {};
+      final renewed = data['token'];
+      if (renewed is! String || renewed.isEmpty || usuario['id'] == null) {
+        return false;
+      }
+
+      _token = renewed;
+      _backendNombre = (usuario['nombre'] as String?)?.trim();
+      _backendApellido = usuario['apellido'] as String?;
+      _backendEmail = usuario['correo'] as String?;
+      _backendId = usuario['id'] as int? ??
+          usuario['idUsuario'] as int? ??
+          usuario['id_usuario'] as int?;
+      final jwtData = _decodeJwt(renewed);
+      _permisos = (jwtData['permisos'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+      await _session.guardarToken(renewed);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> invalidateToken(String rejected) async {

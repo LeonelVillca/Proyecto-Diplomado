@@ -13,10 +13,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { imageUploadOptions, sanitizeImage } from '../../core/security/uploads';
+import { CloudinaryService } from '../../core/storage/cloudinary.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import {
@@ -32,7 +31,10 @@ import { Plato } from './plato.entity';
 @Controller('plato')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class PlatoController {
-  constructor(private readonly platoService: PlatoService) {}
+  constructor(
+    private readonly platoService: PlatoService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Roles('admin_restaurante', 'admin_sistema')
   @Post('restaurante/:idRestaurante/foto')
@@ -54,24 +56,12 @@ export class PlatoController {
 
     if (!Number.isSafeInteger(idRestaurante) || idRestaurante < 1)
       throw new BadRequestException('Restaurante inválido');
-    const fileName = `${randomUUID()}.webp`;
-    const uploadDir = path.join(
-      process.cwd(),
-      'storage',
-      'publico',
-      'restaurantes',
-      idRestaurante.toString(),
-      'platos',
-    );
-
-    await fs.mkdir(uploadDir, { recursive: true });
-    await fs.writeFile(
-      path.join(uploadDir, fileName),
+    const uploaded = await this.cloudinaryService.uploadWebp(
       await sanitizeImage(file),
+      `mesachapaca/restaurantes/${idRestaurante}/platos`,
+      randomUUID(),
     );
-
-    const url = `/publico/restaurantes/${idRestaurante}/platos/${fileName}`;
-    return { url };
+    return { url: uploaded.secure_url };
   }
 
   @Roles('admin_restaurante', 'admin_sistema')

@@ -3,10 +3,9 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import * as crypto from 'crypto';
 import { sanitizeImage } from '../../core/security/uploads';
+import { CloudinaryService } from '../../core/storage/cloudinary.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Restaurante } from './restaurante.entity';
@@ -36,6 +35,7 @@ export class RestauranteService {
     private readonly imagenRepository: Repository<Imagen>,
     @InjectRepository(Resena)
     private readonly resenaRepository: Repository<Resena>,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async crear(dto: CrearRestauranteDto): Promise<Restaurante> {
@@ -456,26 +456,13 @@ export class RestauranteService {
       throw new BadRequestException('El archivo debe ser una imagen');
     }
 
-    const uploadDir = path.join(
-      process.cwd(),
-      'storage',
-      'publico',
-      'restaurantes',
-      id.toString(),
-      'portada',
-    );
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    const ext = '.webp';
-    const filename = `${crypto.randomUUID()}${ext}`;
-
-    await fs.writeFile(
-      path.join(uploadDir, filename),
+    const publicId = crypto.randomUUID();
+    const uploaded = await this.cloudinaryService.uploadWebp(
       await sanitizeImage(file),
+      `mesachapaca/restaurantes/${id}/portada`,
+      publicId,
     );
-
-    const url = `/publico/restaurantes/${id}/portada/${filename}`;
-    restaurante.fotoPortada = url;
+    restaurante.fotoPortada = uploaded.secure_url;
     const guardado = await this.restauranteRepository.save(restaurante);
     await this.activarSiPerfilCompleto(id);
     return guardado;
@@ -490,25 +477,12 @@ export class RestauranteService {
       throw new BadRequestException('El archivo debe ser una imagen');
     }
 
-    const uploadDir = path.join(
-      process.cwd(),
-      'storage',
-      'publico',
-      'restaurantes',
-      id.toString(),
-      'logo',
-    );
-    await fs.mkdir(uploadDir, { recursive: true });
-
-    const ext = '.webp';
-    const filename = `${crypto.randomUUID()}${ext}`;
-
-    await fs.writeFile(
-      path.join(uploadDir, filename),
+    const uploaded = await this.cloudinaryService.uploadWebp(
       await sanitizeImage(file),
+      `mesachapaca/restaurantes/${id}/logo`,
+      crypto.randomUUID(),
     );
-
-    restaurante.logo = `/publico/restaurantes/${id}/logo/${filename}`;
+    restaurante.logo = uploaded.secure_url;
     const guardado = await this.restauranteRepository.save(restaurante);
     await this.activarSiPerfilCompleto(id);
     return guardado;
@@ -522,16 +496,6 @@ export class RestauranteService {
       throw new BadRequestException('Se requieren imágenes para la galería');
 
     const restaurante = await this.buscarPorId(id);
-    const uploadDir = path.join(
-      process.cwd(),
-      'storage',
-      'publico',
-      'restaurantes',
-      id.toString(),
-      'galeria',
-    );
-    await fs.mkdir(uploadDir, { recursive: true });
-
     const count = await this.imagenRepository.count({
       where: { restaurante: { id } },
     });
@@ -541,17 +505,16 @@ export class RestauranteService {
     for (const file of files) {
       if (!file.mimetype.startsWith('image/'))
         throw new BadRequestException('Los archivos deben ser imágenes');
-      const ext = '.webp';
-      const filename = `${crypto.randomUUID()}${ext}`;
-      await fs.writeFile(
-        path.join(uploadDir, filename),
+      const uploaded = await this.cloudinaryService.uploadWebp(
         await sanitizeImage(file),
+        `mesachapaca/restaurantes/${id}/galeria`,
+        crypto.randomUUID(),
       );
 
       nuevasImagenes.push(
         this.imagenRepository.create({
           restaurante: { id: restaurante.id },
-          url: `/publico/restaurantes/${id}/galeria/${filename}`,
+          url: uploaded.secure_url,
         }),
       );
     }
