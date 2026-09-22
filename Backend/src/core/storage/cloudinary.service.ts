@@ -1,9 +1,10 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 
 @Injectable()
 export class CloudinaryService {
+  private readonly logger = new Logger(CloudinaryService.name);
   private readonly configured: boolean;
 
   constructor(config: ConfigService) {
@@ -27,6 +28,10 @@ export class CloudinaryService {
         { folder, public_id: publicId, resource_type: 'image', format: 'webp', overwrite: false },
         (error, result) => {
           if (error || !result) {
+            this.logger.error('Cloudinary upload failed', {
+              message: error?.message,
+              httpCode: error?.http_code,
+            });
             reject(new ServiceUnavailableException('No se pudo guardar la imagen en Cloudinary'));
             return;
           }
