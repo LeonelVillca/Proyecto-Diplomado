@@ -82,7 +82,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(body),
-        timeout: nuevoEstado == 'aprobada' ? const Duration(seconds: 60) : null,
+        timeout: nuevoEstado == 'aprobada' ? const Duration(seconds: 120) : null,
       );
 
       if (res.statusCode == 200) {
@@ -107,7 +107,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     try {
       final token = AuthScope.of(context).token;
       final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud/${solicitud.id}/reenviar-invitacion');
-      final res = await http.post(url, headers: {'Authorization': 'Bearer $token'}, timeout: const Duration(seconds: 60));
+      final res = await http.post(url, headers: {'Authorization': 'Bearer $token'}, timeout: const Duration(seconds: 120));
       if (!mounted) return;
       if (res.statusCode == 200) {
         if (_isSolicitudDialogOpen) Navigator.of(context).pop();

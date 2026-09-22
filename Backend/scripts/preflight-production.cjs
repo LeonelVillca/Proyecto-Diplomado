@@ -9,7 +9,7 @@ async function main() {
   }
   validateSecurityEnvironment(process.env);
   const missing = [
-    'MAIL_HOST', 'MAIL_USER', 'MAIL_PASS', 'MAIL_FROM',
+    'BREVO_API_KEY', 'MAIL_FROM',
     'FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY',
   ].filter((name) => !process.env[name]);
   if (missing.length) throw new Error(`Faltan variables: ${missing.join(', ')}`);

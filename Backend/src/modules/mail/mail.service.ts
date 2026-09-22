@@ -1,39 +1,95 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+
+interface CorreoTransaccional {
+  destinatario: string;
+  asunto: string;
+  html: string;
+  texto?: string;
+}
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailService.name);
 
-  constructor(private configService: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('MAIL_HOST'),
-      port: parseInt(this.configService.get<string>('MAIL_PORT') || '465', 10),
-      secure: this.configService.get<string>('MAIL_SECURE') === 'true',
-      auth: {
-        user: this.configService.get<string>('MAIL_USER'),
-        pass: this.configService.get<string>('MAIL_PASS'),
-      },
-    });
+  constructor(private configService: ConfigService) {}
+
+  private async enviarCorreo(correo: CorreoTransaccional): Promise<void> {
+    const apiKey = this.configService.get<string>('BREVO_API_KEY')?.trim();
+    const remitente = this.configService.get<string>('MAIL_FROM')?.trim();
+    if (!apiKey || !remitente) {
+      this.logger.error('Falta configurar BREVO_API_KEY o MAIL_FROM.');
+      throw new ServiceUnavailableException(
+        'El servicio de correo no está configurado. Inténtalo más tarde.',
+      );
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
+    try {
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'api-key': apiKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: {
+            email: remitente,
+            name:
+              this.configService.get<string>('MAIL_FROM_NAME')?.trim() ||
+              'Mesa Chapaca',
+          },
+          to: [{ email: correo.destinatario }],
+          subject: correo.asunto,
+          htmlContent: correo.html,
+          ...(correo.texto ? { textContent: correo.texto } : {}),
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        this.logger.error(`Brevo rechazó el envío: HTTP ${response.status}.`);
+        throw new ServiceUnavailableException(
+          'Brevo no pudo aceptar el correo. Revisa la configuración del remitente e inténtalo más tarde.',
+        );
+      }
+      this.logger.log('Correo transaccional aceptado por Brevo.');
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) throw error;
+      const reason =
+        error instanceof Error
+          ? error.name === 'AbortError'
+            ? 'timeout'
+            : error.name
+          : 'error desconocido';
+      this.logger.error(`No se pudo conectar con la API de Brevo: ${reason}.`);
+      throw new ServiceUnavailableException(
+        'No se pudo conectar con el servicio de correo. Inténtalo más tarde.',
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   async enviarVerificacionSolicitud(correoDestino: string, token: string): Promise<void> {
     const apiBase = this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000';
     const url = new URL('/api/v1/solicitud/verificar-correo', apiBase);
     url.searchParams.set('token', token);
-    await this.transporter.sendMail({
-      from: this.configService.get<string>('MAIL_FROM'),
-      to: correoDestino,
-      subject: 'Confirma tu solicitud - Mesa Chapaca',
-      text: `Confirma tu correo para que podamos revisar tu solicitud: ${url.toString()}\nEl enlace vence en 24 horas. Si no hiciste la solicitud, ignora este correo.`,
+    await this.enviarCorreo({
+      destinatario: correoDestino,
+      asunto: 'Confirma tu solicitud - Mesa Chapaca',
+      texto: `Confirma tu correo para que podamos revisar tu solicitud: ${url.toString()}\nEl enlace vence en 24 horas. Si no hiciste la solicitud, ignora este correo.`,
       html: `<p>Para que podamos revisar tu solicitud, confirma tu correo:</p><p><a href="${url.toString()}">Confirmar correo</a></p><p>El enlace vence en 24 horas. Si no hiciste la solicitud, ignora este correo.</p>`,
     });
   }
 
   async enviarInvitacion(correoDestino: string, token: string): Promise<void> {
-    const from = this.configService.get<string>('MAIL_FROM');
     // Para entornos locales usamos el puerto por defecto de Flutter Web, en producción sería el dominio real
     const frontend = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:62532';
     const url = `${new URL(frontend).origin}/#/crear-contrasena?token=${encodeURIComponent(token)}`;
@@ -65,25 +121,14 @@ export class MailService {
       </div>
     `;
 
-    try {
-      await this.transporter.sendMail({
-        from,
-        to: correoDestino,
-        subject: 'Invitación a Mesa Chapaca - Configura tu cuenta',
-        html,
-      });
-      this.logger.log(`Invitación enviada exitosamente a ${correoDestino}`);
-    } catch (error) {
-      const details = error as { message?: string; code?: string; responseCode?: number; command?: string };
-      this.logger.error(
-        `Error al enviar invitación: code=${details.code ?? 'unknown'} responseCode=${details.responseCode ?? 'unknown'} command=${details.command ?? 'unknown'} message=${details.message ?? String(error)}`,
-      );
-      throw error;
-    }
+    await this.enviarCorreo({
+      destinatario: correoDestino,
+      asunto: 'Invitación a Mesa Chapaca - Configura tu cuenta',
+      html,
+    });
   }
 
   async enviarRecuperacionPassword(correoDestino: string, pin: string): Promise<void> {
-    const from = this.configService.get<string>('MAIL_FROM');
     const html = `
       <div style="background-color: #F5EEE0; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(36, 21, 18, 0.05);">
@@ -121,20 +166,10 @@ export class MailService {
       </div>
     `;
 
-    try {
-      await this.transporter.sendMail({
-        from,
-        to: correoDestino,
-        subject: 'Mesa Chapaca - Código de recuperación',
-        html,
-      });
-      this.logger.log(`Correo de recuperación enviado exitosamente a ${correoDestino}`);
-    } catch (error) {
-      const details = error as { message?: string; code?: string; responseCode?: number; command?: string };
-      this.logger.error(
-        `Error al enviar recuperación: code=${details.code ?? 'unknown'} responseCode=${details.responseCode ?? 'unknown'} command=${details.command ?? 'unknown'} message=${details.message ?? String(error)}`,
-      );
-      throw error;
-    }
+    await this.enviarCorreo({
+      destinatario: correoDestino,
+      asunto: 'Mesa Chapaca - Código de recuperación',
+      html,
+    });
   }
 }
