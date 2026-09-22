@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import 'multer';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, DataSource, IsNull, Not } from 'typeorm';
 import * as crypto from 'crypto';
 import { Solicitud } from './solicitud.entity';
 import { CrearSolicitudDto } from './dto/crear-solicitud.dto';
@@ -300,6 +300,11 @@ export class SolicitudService {
         if (!actual || actual.estado !== 'pendiente') {
           throw new ConflictException('La solicitud ya fue procesada.');
         }
+        if (!actual.correoVerificadoAt) {
+          throw new ConflictException(
+            'La solicitud no puede aprobarse porque el solicitante no confirmó su correo.',
+          );
+        }
         const rol = await manager.findOne(Rol, {
           where: { nombre: 'admin_restaurante' },
         });
@@ -320,15 +325,6 @@ export class SolicitudService {
             }),
           );
         }
-        await manager.update(
-          InvitacionToken,
-          {
-            usuario: { id: actual.usuario.id },
-            tipo: 'invitacion',
-            usado: false,
-          },
-          { usado: true },
-        );
         await manager.save(
           manager.create(InvitacionToken, {
             usuario: { id: actual.usuario.id },
@@ -355,6 +351,18 @@ export class SolicitudService {
           solicitud.usuario.correo,
           tokenStr,
         );
+        await this.dataSource.transaction(async (manager) => {
+          await manager.update(
+            InvitacionToken,
+            {
+              usuario: { id: solicitud.usuario.id },
+              tipo: 'invitacion',
+              usado: false,
+              token: Not(tokenStr),
+            },
+            { usado: true },
+          );
+        });
       } catch (error) {
         this.logger.error(
           'Solicitud aprobada, pero no se pudo enviar la invitación; requiere reenvío manual.',
@@ -392,11 +400,6 @@ export class SolicitudService {
 
       const tokenStr = crypto.randomBytes(32).toString('hex');
       await this.dataSource.transaction(async (manager) => {
-        await manager.update(
-          InvitacionToken,
-          { usuario: { id: solicitud.usuario.id }, tipo: 'invitacion', usado: false },
-          { usado: true },
-        );
         await manager.save(
           manager.create(InvitacionToken, {
             usuario: { id: solicitud.usuario.id },
@@ -409,6 +412,18 @@ export class SolicitudService {
 
       this.logger.log(`Token de invitación generado para solicitud=${id}`);
       await this.mailService.enviarInvitacion(solicitud.usuario.correo, tokenStr);
+      await this.dataSource.transaction(async (manager) => {
+        await manager.update(
+          InvitacionToken,
+          {
+            usuario: { id: solicitud.usuario.id },
+            tipo: 'invitacion',
+            usado: false,
+            token: Not(tokenStr),
+          },
+          { usado: true },
+        );
+      });
       this.logger.log(`Invitación enviada para solicitud=${id}`);
       return { mensaje: 'Invitación reenviada correctamente.' };
     } catch (error) {

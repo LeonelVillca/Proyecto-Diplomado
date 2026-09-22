@@ -4,6 +4,33 @@ import { Restaurante } from '../restaurante/restaurante.entity';
 import { Rol } from '../rol/rol.entity';
 
 describe('Aprobación de solicitudes', () => {
+  it('conserva los tokens anteriores si falla el envío del reenvío', async () => {
+    const solicitud = { id: 8, estado: 'aprobada', usuario: { id: 2, correo: 'u@example.test' } };
+    const repo = { findOne: jest.fn(async () => solicitud) };
+    const manager = { create: jest.fn((_entity: unknown, value: unknown) => value), save: jest.fn(async (value: unknown) => value), update: jest.fn() };
+    const source = { transaction: jest.fn(async (callback: (manager: unknown) => Promise<unknown>) => callback(manager)) };
+    const mail = { enviarInvitacion: jest.fn(async () => { throw new Error('SMTP no disponible'); }) };
+    const service = new SolicitudService(repo as any, {} as any, source as any, mail as any, {} as any);
+
+    await expect(service.reenviarInvitacion(8)).rejects.toThrow('SMTP no disponible');
+    expect(source.transaction).toHaveBeenCalledTimes(1);
+    expect(manager.update).not.toHaveBeenCalled();
+  });
+
+  it('invalida los tokens anteriores solo después de enviar el reenvío', async () => {
+    const solicitud = { id: 8, estado: 'aprobada', usuario: { id: 2, correo: 'u@example.test' } };
+    const repo = { findOne: jest.fn(async () => solicitud) };
+    const manager = { create: jest.fn((_entity: unknown, value: unknown) => value), save: jest.fn(async (value: unknown) => value), update: jest.fn(async () => undefined) };
+    const source = { transaction: jest.fn(async (callback: (manager: unknown) => Promise<unknown>) => callback(manager)) };
+    const mail = { enviarInvitacion: jest.fn(async () => undefined) };
+    const service = new SolicitudService(repo as any, {} as any, source as any, mail as any, {} as any);
+
+    await expect(service.reenviarInvitacion(8)).resolves.toEqual({ mensaje: 'Invitación reenviada correctamente.' });
+    expect(source.transaction).toHaveBeenCalledTimes(2);
+    expect(mail.enviarInvitacion).toHaveBeenCalledTimes(1);
+    expect(manager.update).toHaveBeenCalledTimes(1);
+  });
+
   it('no deja aprobar solicitudes nuevas sin correo confirmado', async () => {
     const solicitud = { id: 5, estado: 'pendiente', correoVerificadoAt: null, usuario: { id: 2, correo: 'u@example.test' } };
     const repo = { findOne: async () => solicitud };

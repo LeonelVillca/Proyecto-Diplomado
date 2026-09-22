@@ -38,11 +38,11 @@ String _requestKey(String method, Uri url, Map<String, String>? headers, Object?
   return '$method|$url|$safeHeaders|${body ?? ''}';
 }
 
-Future<base.Response> _request(String method, Uri url, Map<String, String>? headers, Object? body, Encoding? encoding) async {
+Future<base.Response> _request(String method, Uri url, Map<String, String>? headers, Object? body, Encoding? encoding, {Duration? timeout}) async {
   final key = _requestKey(method, url, headers, body);
   final existing = _inFlightRequests[key];
   if (existing != null) return existing;
-  final pending = _performRequest(method, url, headers, body, encoding);
+  final pending = _performRequest(method, url, headers, body, encoding, timeout: timeout);
   _inFlightRequests[key] = pending;
   try {
     return await pending;
@@ -51,7 +51,7 @@ Future<base.Response> _request(String method, Uri url, Map<String, String>? head
   }
 }
 
-Future<base.Response> _performRequest(String method, Uri url, Map<String, String>? headers, Object? body, Encoding? encoding) async {
+Future<base.Response> _performRequest(String method, Uri url, Map<String, String>? headers, Object? body, Encoding? encoding, {Duration? timeout}) async {
   final request = base.Request(method, url);
   if (headers != null) request.headers.addAll(headers);
   if (encoding != null) request.encoding = encoding;
@@ -62,18 +62,19 @@ Future<base.Response> _performRequest(String method, Uri url, Map<String, String
   final token = await SessionHttp.authorize(request);
   final client = base.Client();
   try {
-    final response = await base.Response.fromStream(await client.send(request).timeout(const Duration(seconds: 20)))
-      .timeout(const Duration(seconds: 20));
+    final requestTimeout = timeout ?? const Duration(seconds: 20);
+    final response = await base.Response.fromStream(await client.send(request).timeout(requestTimeout))
+      .timeout(requestTimeout);
     await SessionHttp.check(response.statusCode, token);
     return response;
   } finally { client.close(); }
 }
 
-Future<base.Response> get(Uri url, {Map<String, String>? headers}) => _request('GET', url, headers, null, null);
-Future<base.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) => _request('POST', url, headers, body, encoding);
-Future<base.Response> patch(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) => _request('PATCH', url, headers, body, encoding);
-Future<base.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) => _request('PUT', url, headers, body, encoding);
-Future<base.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding}) => _request('DELETE', url, headers, body, encoding);
+Future<base.Response> get(Uri url, {Map<String, String>? headers, Duration? timeout}) => _request('GET', url, headers, null, null, timeout: timeout);
+Future<base.Response> post(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding, Duration? timeout}) => _request('POST', url, headers, body, encoding, timeout: timeout);
+Future<base.Response> patch(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding, Duration? timeout}) => _request('PATCH', url, headers, body, encoding, timeout: timeout);
+Future<base.Response> put(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding, Duration? timeout}) => _request('PUT', url, headers, body, encoding, timeout: timeout);
+Future<base.Response> delete(Uri url, {Map<String, String>? headers, Object? body, Encoding? encoding, Duration? timeout}) => _request('DELETE', url, headers, body, encoding, timeout: timeout);
 
 class MultipartRequest extends base.MultipartRequest {
   MultipartRequest(super.method, super.url);

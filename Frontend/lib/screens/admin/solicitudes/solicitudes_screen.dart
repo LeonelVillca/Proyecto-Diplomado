@@ -7,6 +7,7 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/solicitud_admin_model.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:frontend/core/utils/web_helpers/platform_view_registry.dart' as ui_web;
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:frontend/widgets/admin/admin_modal.dart';
@@ -27,6 +28,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
   List<SolicitudAdminModel> _solicitudes = [];
 
   bool _isInit = true;
+  bool _isSolicitudDialogOpen = false;
 
   @override
   void didChangeDependencies() {
@@ -80,6 +82,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(body),
+        timeout: nuevoEstado == 'aprobada' ? const Duration(seconds: 60) : null,
       );
 
       if (res.statusCode == 200) {
@@ -104,19 +107,36 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     try {
       final token = AuthScope.of(context).token;
       final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud/${solicitud.id}/reenviar-invitacion');
-      final res = await http.post(url, headers: {'Authorization': 'Bearer $token'});
+      final res = await http.post(url, headers: {'Authorization': 'Bearer $token'}, timeout: const Duration(seconds: 60));
       if (!mounted) return;
       if (res.statusCode == 200) {
+        if (_isSolicitudDialogOpen) Navigator.of(context).pop();
         AdminNotificationModal.success(context, 'Invitación reenviada al correo registrado.');
       } else {
-        AdminNotificationModal.error(context, 'No se pudo reenviar la invitación (${res.statusCode}).');
+        if (_isSolicitudDialogOpen) Navigator.of(context).pop();
+        var detail = '';
+        try {
+          final payload = jsonDecode(utf8.decode(res.bodyBytes));
+          if (payload is Map && payload['message'] is String) detail = ' ${payload['message']}';
+        } catch (_) {}
+        AdminNotificationModal.error(context, 'No se pudo reenviar la invitación.${detail.isEmpty ? ' Inténtalo nuevamente.' : detail}');
       }
-    } catch (_) {
-      if (mounted) AdminNotificationModal.error(context, 'Error al reenviar la invitación.');
+    } on TimeoutException {
+      if (mounted) {
+        if (_isSolicitudDialogOpen) Navigator.of(context).pop();
+        AdminNotificationModal.error(context, 'El servidor tardó demasiado en confirmar el envío. Verifica el correo antes de volver a intentarlo.');
+      }
+    } catch (error) {
+      debugPrint('Error reenviando invitación: $error');
+      if (mounted) {
+        if (_isSolicitudDialogOpen) Navigator.of(context).pop();
+        AdminNotificationModal.error(context, 'No se pudo contactar al servidor para reenviar la invitación. Revisa tu conexión e inténtalo nuevamente.');
+      }
     }
   }
 
   void _verDetalles(SolicitudAdminModel solicitud) {
+    _isSolicitudDialogOpen = true;
     AdminModal.show(
       context: context,
       title: 'Detalle de Solicitud #${solicitud.id}',
@@ -167,7 +187,6 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           const SizedBox(width: 16),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
               _reenviarInvitacion(solicitud);
             },
             style: ElevatedButton.styleFrom(
@@ -244,7 +263,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
             Text('No hay documentos adjuntos.', style: GoogleFonts.manrope(color: const Color(0xFF6B635E), fontSize: 14)),
         ],
       ),
-    );
+    ).whenComplete(() => _isSolicitudDialogOpen = false);
   }
 
   Widget _buildBadge(String text) {
