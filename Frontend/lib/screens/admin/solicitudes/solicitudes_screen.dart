@@ -132,10 +132,10 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           ),
           const SizedBox(width: 16),
           ElevatedButton(
-            onPressed: solicitud.correoVerificado ? () {
+            onPressed: () {
               Navigator.pop(context);
               _cambiarEstadoSolicitud(solicitud, 'aprobada');
-            } : null,
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFBE4B24),
               foregroundColor: Colors.white,
@@ -191,8 +191,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           const SizedBox(height: 16),
           _buildDetailItem('Correo Electrónico', '${solicitud.usuario?['correo'] ?? ''}'),
           const SizedBox(height: 12),
-          _buildDetailItem('Confirmación de correo',
-              solicitud.correoVerificado ? 'Confirmado' : 'Pendiente — no se puede aprobar todavía'),
+          _buildDetailItem('Correo registrado',
+              solicitud.usuario?['correo'] ?? 'No provisto'),
           const SizedBox(height: 24),
           Text('Descripción del Negocio', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFFA39C98), letterSpacing: 1)),
           const SizedBox(height: 8),

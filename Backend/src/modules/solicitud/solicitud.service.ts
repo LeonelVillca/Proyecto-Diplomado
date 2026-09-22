@@ -44,11 +44,6 @@ export class SolicitudService {
     },
   ): Promise<Solicitud> {
     const correoNormalizado = dto.correoUsuario.trim().toLowerCase();
-    const tokenVerificacion = crypto.randomBytes(32).toString('hex');
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(tokenVerificacion)
-      .digest('hex');
     const nitFile = files?.documentoNit?.[0];
     const ciFile = files?.documentoCi?.[0];
 
@@ -141,28 +136,7 @@ export class SolicitudService {
       });
 
       await queryRunner.manager.save([docNit, docCi]);
-      await queryRunner.manager.query(
-        `INSERT INTO solicitud_verificacion (id_solicitud, token_hash, expira_at)
-         VALUES ($1, $2, NOW() + INTERVAL '24 hours')`,
-        [solicitud.id, tokenHash],
-      );
       await queryRunner.commitTransaction();
-
-      try {
-        await this.mailService.enviarVerificacionSolicitud(
-          correoNormalizado,
-          tokenVerificacion,
-        );
-        await this.dataSource.query(
-          'UPDATE solicitud_verificacion SET enviado_at = NOW() WHERE id_solicitud = $1 AND token_hash = $2',
-          [solicitud.id, tokenHash],
-        );
-      } catch (error) {
-        this.logger.error(
-          'No se pudo enviar o registrar el correo de verificación de solicitud.',
-          (error as Error)?.message,
-        );
-      }
       return solicitud;
     } catch (error) {
       this.logger.error(
@@ -325,11 +299,6 @@ export class SolicitudService {
         });
         if (!actual || actual.estado !== 'pendiente') {
           throw new ConflictException('La solicitud ya fue procesada.');
-        }
-        if (!actual.correoVerificadoAt) {
-          throw new ConflictException(
-            'El solicitante todavía no confirmó su correo.',
-          );
         }
         const rol = await manager.findOne(Rol, {
           where: { nombre: 'admin_restaurante' },
