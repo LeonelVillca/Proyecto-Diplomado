@@ -74,7 +74,10 @@ export class MailService {
       });
       this.logger.log(`Invitación enviada exitosamente a ${correoDestino}`);
     } catch (error) {
-      this.logger.error(`Error al enviar invitación a ${correoDestino}:`, error);
+      const details = error as { message?: string; code?: string; responseCode?: number; command?: string };
+      this.logger.error(
+        `Error al enviar invitación: code=${details.code ?? 'unknown'} responseCode=${details.responseCode ?? 'unknown'} command=${details.command ?? 'unknown'} message=${details.message ?? String(error)}`,
+      );
       throw error;
     }
   }
@@ -127,7 +130,10 @@ export class MailService {
       });
       this.logger.log(`Correo de recuperación enviado exitosamente a ${correoDestino}`);
     } catch (error) {
-      this.logger.error(`Error al enviar correo de recuperación a ${correoDestino}:`, error);
+      const details = error as { message?: string; code?: string; responseCode?: number; command?: string };
+      this.logger.error(
+        `Error al enviar recuperación: code=${details.code ?? 'unknown'} responseCode=${details.responseCode ?? 'unknown'} command=${details.command ?? 'unknown'} message=${details.message ?? String(error)}`,
+      );
       throw error;
     }
   }
