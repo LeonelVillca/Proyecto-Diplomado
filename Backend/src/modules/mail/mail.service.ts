@@ -29,7 +29,9 @@ export class MailService {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20_000);
+    // El cliente Flutter espera hasta 60 s; deja margen suficiente para recibir
+    // la respuesta de Brevo sin mostrar un falso error tras 20 s.
+    const timeout = setTimeout(() => controller.abort(), 45_000);
     try {
       const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         method: 'POST',

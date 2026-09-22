@@ -36,10 +36,17 @@ class AuthLeftVisual extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           ColorFiltered(
-            colorFilter: ColorFilter.mode(authWine.withValues(alpha: 0.14), BlendMode.multiply),
+            colorFilter: ColorFilter.mode(
+              authWine.withValues(alpha: 0.14),
+              BlendMode.multiply,
+            ),
             child: FadeTransition(
               opacity: fadeIn,
-              child: Image.asset('assets/fondoTarija.webp', fit: BoxFit.cover, alignment: Alignment.topCenter),
+              child: Image.asset(
+                'assets/fondoTarija.webp',
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
             ),
           ),
           Positioned(
@@ -68,34 +75,48 @@ class AuthLeftVisual extends StatelessWidget {
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.24),
+                      ),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       children: [
                         Image.asset(
                           'assets/icon_app.webp',
-                          height: 42, 
-                          fit: BoxFit.contain
-                          ),
+                          height: 42,
+                          fit: BoxFit.contain,
+                        ),
                         const SizedBox(width: 14),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Mesa Chapaca',
-                                style: GoogleFonts.piazzolla(
-                                    fontSize: 19, color: Colors.white, fontWeight: FontWeight.w700, height: 1.05)),
+                            Text(
+                              'Mesa Chapaca',
+                              style: GoogleFonts.piazzolla(
+                                fontSize: 19,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                height: 1.05,
+                              ),
+                            ),
                             const SizedBox(height: 3),
-                            Text('Reservas en Tarija',
-                                style: GoogleFonts.manrope(
-                                    fontSize: 10.5,
-                                    color: Colors.white.withValues(alpha: 0.7),
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.6)),
+                            Text(
+                              'Reservas en Tarija',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10.5,
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -166,6 +187,7 @@ class AuthLoginField extends StatefulWidget {
   final void Function(String)? onFieldSubmitted;
   final Widget? suffixIcon;
   final int maxLines;
+  final Iterable<String>? autofillHints;
 
   const AuthLoginField({
     super.key,
@@ -179,6 +201,7 @@ class AuthLoginField extends StatefulWidget {
     this.onFieldSubmitted,
     this.suffixIcon,
     this.maxLines = 1,
+    this.autofillHints,
   });
 
   @override
@@ -229,7 +252,11 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
               color: authCard,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: _active ? authGoldAccent : _hovered ? authWine.withValues(alpha: 0.35) : const Color(0xFFE9E0D1),
+                color: _active
+                    ? authGoldAccent
+                    : _hovered
+                    ? authWine.withValues(alpha: 0.35)
+                    : const Color(0xFFE9E0D1),
                 width: _active ? 1.6 : 1,
               ),
               boxShadow: [
@@ -246,6 +273,7 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
               obscureText: widget.obscureText,
               keyboardType: widget.keyboardType,
               maxLines: widget.maxLines,
+              autofillHints: widget.autofillHints,
               cursorColor: authWine,
               style: GoogleFonts.manrope(
                 color: authInk,
@@ -268,11 +296,26 @@ class _AuthLoginFieldState extends State<AuthLoginField> {
                 suffixIcon: widget.suffixIcon,
                 filled: true,
                 fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 19),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 19,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
                 errorStyle: GoogleFonts.manrope(fontWeight: FontWeight.w600),
               ),
               validator: widget.validator,
@@ -311,7 +354,9 @@ class _AuthSubmitButtonState extends State<AuthSubmitButton> {
   Widget build(BuildContext context) {
     final effectiveDisabled = widget.disabled || widget.loading;
     return MouseRegion(
-      cursor: effectiveDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      cursor: effectiveDisabled
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: GestureDetector(
@@ -326,7 +371,9 @@ class _AuthSubmitButtonState extends State<AuthSubmitButton> {
             gradient: widget.disabled
                 ? null
                 : LinearGradient(
-                    colors: _hovered && !widget.loading ? [authWineSoft, authWine] : [authWine, authWineDeep],
+                    colors: _hovered && !widget.loading
+                        ? [authWineSoft, authWine]
+                        : [authWine, authWineDeep],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -335,14 +382,23 @@ class _AuthSubmitButtonState extends State<AuthSubmitButton> {
                 ? []
                 : [
                     BoxShadow(
-                      color: authWine.withValues(alpha: _hovered && !widget.loading ? 0.35 : 0.15),
+                      color: authWine.withValues(
+                        alpha: _hovered && !widget.loading ? 0.35 : 0.15,
+                      ),
                       blurRadius: _hovered && !widget.loading ? 20 : 10,
                       offset: const Offset(0, 6),
                     ),
                   ],
           ),
           child: widget.loading
-              ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -357,8 +413,12 @@ class _AuthSubmitButtonState extends State<AuthSubmitButton> {
                     ),
                     if (!widget.disabled) ...[
                       const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward, size: 20, color: Colors.white),
-                    ]
+                      const Icon(
+                        Icons.arrow_forward,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                    ],
                   ],
                 ),
         ),

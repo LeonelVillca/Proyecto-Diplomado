@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
-import 'package:frontend/widgets/admin/admin_notification_modal.dart';
+import 'package:frontend/screens/admin/auth/auth_response_message.dart';
+import 'package:frontend/screens/admin/auth/password_policy.dart';
+import 'package:frontend/screens/admin/auth/widgets/auth_components.dart';
+import 'package:frontend/services/shared/secure_http.dart' as http;
 
 class CrearContrasenaScreen extends StatefulWidget {
   final String? token;
@@ -19,20 +23,46 @@ class _CrearContrasenaScreenState extends State<CrearContrasenaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _isSuccess = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmation = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordCtrl.addListener(_refreshPasswordChecklist);
+    _confirmCtrl.addListener(_refreshPasswordChecklist);
+  }
+
+  void _refreshPasswordChecklist() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _crearContrasena() async {
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    
     if (widget.token == null || widget.token!.isEmpty) {
-      _mostrarMensaje('No se encontró un token válido. Por favor, solicita un nuevo enlace.', true);
+      setState(
+        () => _errorMessage =
+            'Este enlace no contiene un código válido. Solicita que te envíen una nueva invitación.',
+      );
       return;
     }
 
-    setState(() => _isLoading = true);
-
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
       final res = await http.post(
         Uri.parse('${ApiEndpoints.baseUrl}/api/v1/auth/crear-contrasena'),
@@ -41,218 +71,349 @@ class _CrearContrasenaScreenState extends State<CrearContrasenaScreen> {
           'token': widget.token,
           'password': _passwordCtrl.text,
         }),
+        timeout: const Duration(seconds: 45),
       );
 
-      if (res.statusCode == 200) {
-        setState(() => _isSuccess = true);
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        if (mounted) setState(() => _isSuccess = true);
       } else {
-        final body = jsonDecode(res.body);
-        _mostrarMensaje(body['message'] ?? 'Error al crear la contraseña.', true);
+        final fallback = res.statusCode == 400
+            ? 'El enlace ya venció o fue utilizado. Solicita una invitación nueva.'
+            : 'No se pudo crear la contraseña. Inténtalo nuevamente.';
+        if (mounted) {
+          setState(
+            () => _errorMessage = authHttpErrorMessage(
+              res.statusCode,
+              res.body,
+              fallback,
+            ),
+          );
+        }
       }
-    } catch (e) {
-      _mostrarMensaje('Error de conexión con el servidor.', true);
+    } on TimeoutException {
+      if (mounted) {
+        setState(
+          () => _errorMessage =
+              'La operación tardó demasiado y no pudimos confirmar el resultado. Prueba iniciar sesión con la contraseña nueva antes de volver a enviar la invitación.',
+        );
+      }
+    } on http.ClientException {
+      if (mounted) {
+        setState(
+          () => _errorMessage =
+              'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo otra vez.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _errorMessage =
+              'Ocurrió un problema inesperado al guardar. Vuelve a intentarlo; si persiste, solicita una invitación nueva.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _mostrarMensaje(String msg, bool isError) {
-    if (!mounted) return;
-    if (isError) {
-      AdminNotificationModal.error(context, msg);
-    } else {
-      AdminNotificationModal.success(context, msg);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5EEE0), // paper color
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 56),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6B1A35).withOpacity(0.05),
-                  blurRadius: 40,
-                  offset: const Offset(0, 20),
+      backgroundColor: authPaper,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: MediaQuery.sizeOf(context).width < 480 ? 24 : 44,
+                  vertical: 36,
                 ),
-              ],
+                decoration: BoxDecoration(
+                  color: authCard,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFE9E0D1)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: authInk.withValues(alpha: 0.06),
+                      blurRadius: 32,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: _isSuccess ? _buildSuccess() : _buildForm(),
+              ),
             ),
-            child: _isSuccess ? _buildSuccess(context) : _buildForm(context),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildForm(BuildContext context) {
+  Widget _buildForm() {
     return Form(
       key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDF3E7),
-              shape: BoxShape.circle,
+      child: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: authWine.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_reset_rounded,
+                  size: 34,
+                  color: authWine,
+                ),
+              ),
             ),
-            child: const Icon(Icons.lock_reset_rounded, size: 48, color: Color(0xFF6B1233)),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 22),
+            Text(
+              'Crea tu contraseña',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.piazzolla(
+                fontSize: 32,
+                height: 1.15,
+                fontWeight: FontWeight.w700,
+                color: authInk,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Define una contraseña segura para activar tu cuenta de Mesa Chapaca.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                height: 1.5,
+                fontWeight: FontWeight.w500,
+                color: authInkSoft,
+              ),
+            ),
+            const SizedBox(height: 30),
+            AuthLoginField(
+              controller: _passwordCtrl,
+              label: 'Nueva contraseña',
+              hintText: 'Escribe una contraseña segura',
+              icon: Icons.lock_outline_rounded,
+              obscureText: _obscurePassword,
+              autofillHints: const [AutofillHints.newPassword],
+              validator: PasswordPolicy.validate,
+              suffixIcon: IconButton(
+                tooltip: _obscurePassword
+                    ? 'Mostrar contraseña'
+                    : 'Ocultar contraseña',
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: authInkSoft,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            AuthLoginField(
+              controller: _confirmCtrl,
+              label: 'Confirmar contraseña',
+              hintText: 'Vuelve a escribirla',
+              icon: Icons.verified_user_outlined,
+              obscureText: _obscureConfirmation,
+              autofillHints: const [AutofillHints.newPassword],
+              validator: (value) => PasswordPolicy.validateConfirmation(
+                _passwordCtrl.text,
+                value,
+              ),
+              suffixIcon: IconButton(
+                tooltip: _obscureConfirmation
+                    ? 'Mostrar confirmación'
+                    : 'Ocultar confirmación',
+                onPressed: () => setState(
+                  () => _obscureConfirmation = !_obscureConfirmation,
+                ),
+                icon: Icon(
+                  _obscureConfirmation
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: authInkSoft,
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            _buildPasswordChecklist(),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 16),
+              _buildErrorBanner(_errorMessage!),
+            ],
+            const SizedBox(height: 24),
+            AuthSubmitButton(
+              label: 'Guardar contraseña',
+              loading: _isLoading,
+              onPressed: _crearContrasena,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordChecklist() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAF8F4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE9E0D1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            'Crea tu contraseña',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.piazzolla(
-              fontSize: 32,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF241512),
+            'Tu contraseña debe tener:',
+            style: GoogleFonts.manrope(
+              color: authInk,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            'Establece tu nueva contraseña segura para acceder al panel de administración de Mesa Chapaca.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.manrope(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF7A6A5C),
-              height: 1.5,
-            ),
+          _checklistItem(
+            '8 caracteres como mínimo',
+            PasswordPolicy.hasMinimumLength(_passwordCtrl.text),
           ),
-          const SizedBox(height: 40),
-          _buildTextField(
-            controller: _passwordCtrl,
-            label: 'Nueva contraseña',
-            icon: Icons.lock_outline_rounded,
-            validator: (value) => value == null || value.length < 6 ? 'Mínimo 6 caracteres' : null,
+          _checklistItem(
+            'Una letra mayúscula y una minúscula',
+            PasswordPolicy.hasUppercase(_passwordCtrl.text) &&
+                PasswordPolicy.hasLowercase(_passwordCtrl.text),
           ),
-          const SizedBox(height: 24),
-          _buildTextField(
-            controller: _confirmCtrl,
-            label: 'Confirmar contraseña',
-            icon: Icons.lock_outline_rounded,
-            validator: (value) {
-              if (value == null || value.isEmpty) return 'Confirma la contraseña';
-              if (value != _passwordCtrl.text) return 'Las contraseñas no coinciden';
-              return null;
-            },
+          _checklistItem(
+            'Un número o un símbolo',
+            PasswordPolicy.hasNumberOrSymbol(_passwordCtrl.text),
           ),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _crearContrasena,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6B1233), // wine
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 0,
-            ),
-            child: _isLoading
-                ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Text('Guardar Contraseña', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+          _checklistItem(
+            'La confirmación debe coincidir',
+            _confirmCtrl.text.isNotEmpty &&
+                _confirmCtrl.text == _passwordCtrl.text,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required String? Function(String?) validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: true,
-      style: GoogleFonts.manrope(fontSize: 16, color: const Color(0xFF241512), fontWeight: FontWeight.w600),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.manrope(color: const Color(0xFF7A6A5C), fontWeight: FontWeight.w600),
-        prefixIcon: Icon(icon, color: const Color(0xFF8C7A6B), size: 22),
-        filled: true,
-        fillColor: const Color(0xFFFAFAFA),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFDCD6CC), width: 1.5),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFF6B1233), width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
-        ),
+  Widget _checklistItem(String label, bool complete) {
+    final color = complete ? authSage : authInkSoft;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Row(
+        children: [
+          Icon(
+            complete ? Icons.check_circle_rounded : Icons.circle_outlined,
+            size: 18,
+            color: color,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              label,
+              style: GoogleFonts.manrope(
+                fontSize: 12.5,
+                height: 1.4,
+                color: color,
+                fontWeight: complete ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
-      validator: validator,
     );
   }
 
-  Widget _buildSuccess(BuildContext context) {
+  Widget _buildErrorBanner(String message) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xFFD95C5C).withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: const Color(0xFFD95C5C).withValues(alpha: 0.24),
+      ),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(
+          Icons.error_outline_rounded,
+          size: 19,
+          color: Color(0xFFB33C3C),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            message,
+            style: GoogleFonts.manrope(
+              fontSize: 13,
+              height: 1.45,
+              color: const Color(0xFF8E3030),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _buildSuccess() {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEAF5EE),
-            shape: BoxShape.circle,
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: authSage.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_outline_rounded,
+              size: 42,
+              color: authSage,
+            ),
           ),
-          child: const Icon(Icons.check_circle_rounded, size: 64, color: Color(0xFF1F8B4C)),
         ),
         const SizedBox(height: 24),
         Text(
           '¡Contraseña creada!',
           textAlign: TextAlign.center,
           style: GoogleFonts.piazzolla(
-            fontSize: 32,
+            fontSize: 29,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF241512),
+            color: authInk,
           ),
         ),
         const SizedBox(height: 12),
         Text(
-          'Tu cuenta ya está segura. Ahora puedes iniciar sesión para acceder al panel de administración.',
+          'Tu cuenta ya está activa. Inicia sesión con tu nueva contraseña para entrar al panel.',
           textAlign: TextAlign.center,
           style: GoogleFonts.manrope(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF7A6A5C),
+            fontSize: 14,
             height: 1.5,
+            color: authInkSoft,
           ),
         ),
-        const SizedBox(height: 40),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF241512), // ink
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 0,
+        const SizedBox(height: 30),
+        AuthSubmitButton(
+          label: 'Ir a iniciar sesión',
+          loading: false,
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
           ),
-          child: Text('Ir al Login', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
         ),
       ],
     );
