@@ -730,7 +730,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
                   if (!_deletedGalleryIds.contains(imageId)) _deletedGalleryIds.add(imageId);
                 }
               }),
-              child: Container(
+              icon: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
                 child: const Icon(Icons.close, color: Colors.white, size: 14),
