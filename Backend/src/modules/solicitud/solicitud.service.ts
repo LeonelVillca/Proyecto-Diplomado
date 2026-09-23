@@ -301,10 +301,20 @@ export class SolicitudService {
         .update(tokenStr)
         .digest('hex');
       const guardada = await this.dataSource.transaction(async (manager) => {
+        // PostgreSQL cannot apply FOR UPDATE to the nullable side of the
+        // LEFT JOIN generated when findOne loads the usuario relation.
+        // Lock only the solicitud row, then load its relation separately.
+        const filasBloqueadas: Array<{ id_solicitud: number }> =
+          await manager.query(
+            'SELECT id_solicitud FROM solicitud WHERE id_solicitud = $1 FOR UPDATE',
+            [id],
+          );
+        if (filasBloqueadas.length === 0) {
+          throw new ConflictException('La solicitud ya fue procesada.');
+        }
         const actual = await manager.findOne(Solicitud, {
           where: { id },
           relations: { usuario: true },
-          lock: { mode: 'pessimistic_write' },
         });
         if (!actual || actual.estado !== 'pendiente') {
           throw new ConflictException('La solicitud ya fue procesada.');

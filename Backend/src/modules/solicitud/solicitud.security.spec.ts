@@ -85,7 +85,10 @@ describe('Aprobación de solicitudes', () => {
       usuario: { id: 2, correo: 'u@example.test' },
     };
     const repo = { findOne: async () => solicitud };
-    const manager = { findOne: jest.fn(async () => solicitud) };
+    const manager = {
+      query: jest.fn(async () => [{ id_solicitud: 5 }]),
+      findOne: jest.fn(async () => solicitud),
+    };
     const source = {
       transaction: async (callback: (manager: unknown) => Promise<unknown>) =>
         callback(manager),
@@ -101,6 +104,11 @@ describe('Aprobación de solicitudes', () => {
       'no confirmó su correo',
     );
     expect(manager.findOne).toHaveBeenCalledTimes(1);
+    expect(manager.query).toHaveBeenCalledWith(
+      'SELECT id_solicitud FROM solicitud WHERE id_solicitud = $1 FOR UPDATE',
+      [5],
+    );
+    expect(manager.findOne.mock.calls[0][1]).not.toHaveProperty('lock');
   });
 
   it('consume el enlace de verificación una sola vez dentro de una transacción', async () => {
@@ -200,6 +208,7 @@ describe('Aprobación de solicitudes', () => {
       save: jest.fn(),
     };
     const manager = {
+      query: jest.fn(async () => [{ id_solicitud: 5 }]),
       findOne: jest.fn(async (entity: unknown) =>
         entity === Solicitud
           ? { ...solicitud }
