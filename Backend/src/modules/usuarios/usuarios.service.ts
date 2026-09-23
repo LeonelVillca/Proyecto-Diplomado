@@ -14,7 +14,10 @@ export class UsuariosService {
   ) {}
 
   crear(dto: CrearUsuarioDto): Promise<Usuario> {
-    const usuario = this.usuarioRepository.create(dto);
+    const usuario = this.usuarioRepository.create({
+      ...dto,
+      correo: dto.correo.trim().toLowerCase(),
+    });
     return this.usuarioRepository.save(usuario);
   }
 
@@ -26,6 +29,7 @@ export class UsuariosService {
       FROM usuarios u
       LEFT JOIN cuentas_auth ca ON u.id_usuario = ca.id_usuario
       LEFT JOIN oauth_cuenta oa ON u.id_usuario = oa.id_usuario
+      WHERE u.eliminado_at IS NULL
       ORDER BY u.id_usuario ASC
     `);
     return usuarios.map((u: any) => ({
@@ -58,14 +62,31 @@ export class UsuariosService {
   async actualizar(id: number, dto: ActualizarUsuarioDto): Promise<Usuario> {
     const usuario = await this.buscarPorId(id);
     if (dto.estado !== undefined && dto.estado !== usuario.estado) {
-      await this.usuarioRepository.manager.getRepository(CuentaAuth).increment({ usuario: { id } }, 'sessionVersion', 1);
+      await this.usuarioRepository.manager
+        .getRepository(CuentaAuth)
+        .increment({ usuario: { id } }, 'sessionVersion', 1);
     }
-    Object.assign(usuario, dto);
+    Object.assign(usuario, dto, {
+      ...(dto.correo !== undefined
+        ? { correo: dto.correo.trim().toLowerCase() }
+        : {}),
+    });
     return this.usuarioRepository.save(usuario);
   }
 
   async eliminar(id: number): Promise<void> {
     const usuario = await this.buscarPorId(id);
-    await this.usuarioRepository.delete(usuario.id);
+    await this.usuarioRepository.manager.transaction(async (manager) => {
+      usuario.estado = 'eliminado';
+      await manager.save(usuario);
+      await manager.getRepository(CuentaAuth).update(
+        { usuario: { id } },
+        {
+          estado: false,
+          sessionVersion: () => 'session_version + 1',
+        },
+      );
+      await manager.softRemove(usuario);
+    });
   }
 }

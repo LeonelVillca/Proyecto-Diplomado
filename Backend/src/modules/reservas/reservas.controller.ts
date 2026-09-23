@@ -16,21 +16,29 @@ import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
-import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
+import {
+  OwnershipGuard,
+  CheckOwnership,
+} from '../../core/guards/ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { DataSource } from 'typeorm';
 import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
-import { Restaurante } from '../restaurante/restaurante.entity';
+import { UsuarioRestaurante } from '../usuario-restaurante/usuario-restaurante.entity';
 
 @Controller('reservas')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class ReservasController {
-  constructor(private readonly reservasService: ReservasService, private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly reservasService: ReservasService,
+    private readonly dataSource: DataSource,
+  ) {}
 
   @Post()
   crear(@Body() dto: CrearReservaDto, @Req() req: any) {
     if (dto.idUsuario !== req.user.id) {
-      throw new ForbiddenException('No puedes crear una reserva a nombre de otro usuario');
+      throw new ForbiddenException(
+        'No puedes crear una reserva a nombre de otro usuario',
+      );
     }
     return this.reservasService.crear(dto);
   }
@@ -40,20 +48,25 @@ export class ReservasController {
   listarTodas() {
     return this.reservasService.listarTodas();
   }
-  
+
   @Get('usuario/:idUsuario')
-  listarPorUsuario(@Param('idUsuario', ParseIntPipe) idUsuario: number, @Req() req: any) {
-      if (req.user.id !== idUsuario) {
-          throw new ForbiddenException('Solo puedes ver tus propias reservas');
-      }
-      return this.reservasService.listarPorUsuario(idUsuario);
+  listarPorUsuario(
+    @Param('idUsuario', ParseIntPipe) idUsuario: number,
+    @Req() req: any,
+  ) {
+    if (req.user.id !== idUsuario) {
+      throw new ForbiddenException('Solo puedes ver tus propias reservas');
+    }
+    return this.reservasService.listarPorUsuario(idUsuario);
   }
-  
+
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('reserva')
   @Get('restaurante/:idRestaurante')
-  listarPorRestaurante(@Param('idRestaurante', ParseIntPipe) idRestaurante: number) {
-      return this.reservasService.listarPorRestaurante(idRestaurante);
+  listarPorRestaurante(
+    @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
+  ) {
+    return this.reservasService.listarPorRestaurante(idRestaurante);
   }
 
   @Get(':id')
@@ -62,17 +75,20 @@ export class ReservasController {
 
     if (reserva.usuario.id === req.user.id) return reserva;
     const roles = await this.dataSource.getRepository(UsuarioRol).find({
-      where: { idUsuario: req.user.id }, relations: { rol: true },
+      where: { idUsuario: req.user.id },
+      relations: { rol: true },
     });
     if (roles.some((r) => r.rol.nombre === 'admin_sistema')) return reserva;
     if (roles.some((r) => r.rol.nombre === 'admin_restaurante')) {
-      const restaurante = await this.dataSource.getRepository(Restaurante).findOne({
-        where: {
-          id: reserva.mesa.restaurante.id,
-          solicitud: { usuario: { id: req.user.id }, estado: 'aprobada' },
-        },
-        select: { id: true },
-      });
+      const restaurante = await this.dataSource
+        .getRepository(UsuarioRestaurante)
+        .findOne({
+          where: {
+            idRestaurante: reserva.mesa.restaurante.id,
+            idUsuario: req.user.id,
+            activo: true,
+          },
+        });
       if (restaurante) return reserva;
     }
     throw new ForbiddenException('No tienes permisos para ver esta reserva');

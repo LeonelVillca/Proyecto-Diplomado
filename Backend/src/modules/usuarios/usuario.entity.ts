@@ -1,4 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('usuarios')
 export class Usuario {
@@ -37,4 +43,14 @@ export class Usuario {
 
   @Column({ name: 'fecha_registro', type: 'timestamp', default: () => 'now()' })
   fechaRegistro: Date;
+
+  @UpdateDateColumn({ name: 'actualizado_at', type: 'timestamptz' })
+  actualizadoAt: Date;
+
+  @DeleteDateColumn({
+    name: 'eliminado_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  eliminadoAt: Date | null;
 }

@@ -21,7 +21,7 @@ import {
 import { MailService } from '../mail/mail.service';
 import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac, randomInt, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { CuentaAuth } from '../cuentas-auth/cuenta-auth.entity';
 import { pinHmacSecret } from '../../core/config/security.config';
 
@@ -260,32 +260,47 @@ export class AuthService {
   }
 
   async crearContrasena(dto: CrearContrasenaDto): Promise<{ mensaje: string }> {
-    const invitacion = await this.dataSource.manager.findOne(InvitacionToken, {
-      where: { token: dto.token, tipo: 'invitacion' },
-      relations: { usuario: true },
+    const tokenHash = createHash('sha256').update(dto.token).digest('hex');
+    await this.dataSource.transaction(async (manager) => {
+      const invitacion = await manager.findOne(InvitacionToken, {
+        where: { token: tokenHash, tipo: 'invitacion' },
+        relations: { usuario: true },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!invitacion) {
+        throw new BadRequestException('El token es inválido o no existe.');
+      }
+      if (invitacion.usado) {
+        throw new BadRequestException('El token ya ha sido utilizado.');
+      }
+      if (invitacion.fechaExpiracion < new Date()) {
+        throw new BadRequestException(
+          'El token ha expirado. Por favor, solicita uno nuevo.',
+        );
+      }
+
+      const cuentaRepo = manager.getRepository(CuentaAuth);
+      let cuenta = await cuentaRepo.findOne({
+        where: { usuario: { id: invitacion.usuario.id } },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (cuenta?.passwordHash) {
+        throw new BadRequestException('La cuenta ya tiene contraseña creada.');
+      }
+      const passwordHash = await bcrypt.hash(dto.password, 12);
+      if (!cuenta) {
+        cuenta = cuentaRepo.create({
+          usuario: { id: invitacion.usuario.id },
+          passwordHash,
+        });
+      } else {
+        cuenta.passwordHash = passwordHash;
+      }
+      await cuentaRepo.save(cuenta);
+      invitacion.usado = true;
+      await manager.save(invitacion);
     });
-
-    if (!invitacion) {
-      throw new BadRequestException('El token es inválido o no existe.');
-    }
-
-    if (invitacion.usado) {
-      throw new BadRequestException('El token ya ha sido utilizado.');
-    }
-
-    if (invitacion.fechaExpiracion < new Date()) {
-      throw new BadRequestException(
-        'El token ha expirado. Por favor, solicita uno nuevo.',
-      );
-    }
-
-    await this.cuentasAuthService.asegurarCuenta(
-      invitacion.usuario.id,
-      dto.password,
-    );
-
-    invitacion.usado = true;
-    await this.dataSource.manager.save(invitacion);
 
     return { mensaje: 'Contraseña creada exitosamente' };
   }

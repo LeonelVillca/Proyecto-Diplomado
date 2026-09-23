@@ -19,6 +19,7 @@ import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 import { InvitacionToken } from '../invitacion-token/invitacion-token.entity';
 import { MailService } from '../mail/mail.service';
 import { Restaurante } from '../restaurante/restaurante.entity';
+import { UsuarioRestaurante } from '../usuario-restaurante/usuario-restaurante.entity';
 import { validateDocument } from '../../core/security/uploads';
 import { R2StorageService } from '../../core/storage/r2-storage.service';
 
@@ -144,7 +145,11 @@ export class SolicitudService {
         error instanceof Error ? error.stack : String(error),
       );
       await queryRunner.rollbackTransaction();
-      await Promise.all(uploadedKeys.map((key) => this.r2Storage.remove(key).catch(() => undefined)));
+      await Promise.all(
+        uploadedKeys.map((key) =>
+          this.r2Storage.remove(key).catch(() => undefined),
+        ),
+      );
       throw error;
     } finally {
       await queryRunner.release();
@@ -291,6 +296,10 @@ export class SolicitudService {
 
     if (estadoAnterior === 'pendiente' && dto.estado === 'aprobada') {
       const tokenStr = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(tokenStr)
+        .digest('hex');
       const guardada = await this.dataSource.transaction(async (manager) => {
         const actual = await manager.findOne(Solicitud, {
           where: { id },
@@ -328,12 +337,12 @@ export class SolicitudService {
         await manager.save(
           manager.create(InvitacionToken, {
             usuario: { id: actual.usuario.id },
-            token: tokenStr,
+            token: tokenHash,
             tipo: 'invitacion',
             fechaExpiracion: new Date(Date.now() + 48 * 60 * 60 * 1000),
           }),
         );
-        await manager.save(
+        const restaurante = await manager.save(
           manager.create(Restaurante, {
             solicitud: { id: actual.id },
             nombre: actual.nombreRestaurante,
@@ -342,6 +351,14 @@ export class SolicitudService {
             telefono: actual.celularContacto,
             correo: actual.usuario.correo,
             estado: false,
+          }),
+        );
+        await manager.save(
+          manager.create(UsuarioRestaurante, {
+            usuario: { id: actual.usuario.id },
+            restaurante: { id: restaurante.id },
+            rol: 'propietario',
+            activo: true,
           }),
         );
         return aprobada;
@@ -358,7 +375,7 @@ export class SolicitudService {
               usuario: { id: solicitud.usuario.id },
               tipo: 'invitacion',
               usado: false,
-              token: Not(tokenStr),
+              token: Not(tokenHash),
             },
             { usado: true },
           );
@@ -379,9 +396,14 @@ export class SolicitudService {
         (solicitud.documentosAdjuntos ?? []).map((documento) => {
           const filename = documento.url.split('/').pop();
           return filename
-            ? this.r2Storage.remove(`solicitudes/${solicitud.id}/${filename}`).catch((error) =>
-                this.logger.error('Error al eliminar documento R2', (error as Error)?.message),
-              )
+            ? this.r2Storage
+                .remove(`solicitudes/${solicitud.id}/${filename}`)
+                .catch((error) =>
+                  this.logger.error(
+                    'Error al eliminar documento R2',
+                    (error as Error)?.message,
+                  ),
+                )
             : Promise.resolve();
         }),
       );
@@ -395,15 +417,21 @@ export class SolicitudService {
     try {
       const solicitud = await this.buscarPorId(id);
       if (solicitud.estado !== 'aprobada') {
-        throw new ConflictException('Solo se puede reenviar la invitación de una solicitud aprobada.');
+        throw new ConflictException(
+          'Solo se puede reenviar la invitación de una solicitud aprobada.',
+        );
       }
 
       const tokenStr = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(tokenStr)
+        .digest('hex');
       await this.dataSource.transaction(async (manager) => {
         await manager.save(
           manager.create(InvitacionToken, {
             usuario: { id: solicitud.usuario.id },
-            token: tokenStr,
+            token: tokenHash,
             tipo: 'invitacion',
             fechaExpiracion: new Date(Date.now() + 48 * 60 * 60 * 1000),
           }),
@@ -411,7 +439,10 @@ export class SolicitudService {
       });
 
       this.logger.log(`Token de invitación generado para solicitud=${id}`);
-      await this.mailService.enviarInvitacion(solicitud.usuario.correo, tokenStr);
+      await this.mailService.enviarInvitacion(
+        solicitud.usuario.correo,
+        tokenStr,
+      );
       await this.dataSource.transaction(async (manager) => {
         await manager.update(
           InvitacionToken,
@@ -419,7 +450,7 @@ export class SolicitudService {
             usuario: { id: solicitud.usuario.id },
             tipo: 'invitacion',
             usado: false,
-            token: Not(tokenStr),
+            token: Not(tokenHash),
           },
           { usado: true },
         );

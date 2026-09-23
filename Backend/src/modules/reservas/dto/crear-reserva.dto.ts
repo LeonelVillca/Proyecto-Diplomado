@@ -1,4 +1,13 @@
-import { IsDateString, IsInt, IsOptional, IsString, Matches, Min, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Min,
+  Max,
+  MaxLength,
+} from 'class-validator';
 
 export class CrearReservaDto {
   @IsInt()
@@ -15,6 +24,12 @@ export class CrearReservaDto {
     message: 'La hora debe estar en formato HH:MM o HH:MM:SS',
   })
   hora: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(15)
+  @Max(480)
+  duracionMinutos?: number = 120;
 
   @IsInt()
   @Min(1)

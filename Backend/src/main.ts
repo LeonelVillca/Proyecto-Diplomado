@@ -4,6 +4,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import helmet from 'helmet';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 import { originAllowed } from './core/config/security.config';
@@ -40,6 +41,33 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api/v1');
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('API Restaurantes')
+    .setDescription(
+      'Documentación interactiva de la API para la gestión de restaurantes, menús, reservas, reseñas y usuarios.',
+    )
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Ingrese únicamente el token JWT, sin el prefijo Bearer.',
+      },
+      'access-token',
+    )
+    .addServer('/api/v1', 'API v1')
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument, {
+    jsonDocumentUrl: 'docs-json',
+    customSiteTitle: 'API Restaurantes | Swagger',
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -57,6 +85,7 @@ async function bootstrap() {
 
   Logger.log(`Servidor corriendo en http://0.0.0.0:${port}`, 'Bootstrap');
   Logger.log(`🚀 API corriendo en http://localhost:${port}/api/v1`, 'Bootstrap');
+  Logger.log(`📚 Swagger disponible en http://localhost:${port}/docs`, 'Bootstrap');
 }
 
 void bootstrap();

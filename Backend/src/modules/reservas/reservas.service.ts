@@ -4,13 +4,15 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Reserva } from './reserva.entity';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
 import { Usuario } from '../usuarios/usuario.entity';
 import { Mesa } from '../mesa/mesa.entity';
 import { ReservasGateway } from './reservas.gateway';
+import { HorarioAtencion } from '../horario-atencion/horario-atencion.entity';
+import { ExcepcionHorario } from '../horario-atencion/excepcion-horario.entity';
 
 @Injectable()
 export class ReservasService {
@@ -21,6 +23,10 @@ export class ReservasService {
     private readonly usuariosRepo: Repository<Usuario>,
     @InjectRepository(Mesa)
     private readonly mesasRepo: Repository<Mesa>,
+    @InjectRepository(HorarioAtencion)
+    private readonly horariosRepo: Repository<HorarioAtencion>,
+    @InjectRepository(ExcepcionHorario)
+    private readonly excepcionesRepo: Repository<ExcepcionHorario>,
     private readonly reservasGateway: ReservasGateway,
   ) {}
 
@@ -38,16 +44,21 @@ export class ReservasService {
 
     this.validarCapacidadYEstadoMesa(mesa, dto.numeroPersonas);
 
-    const reservaExistente = await this.reservasRepo.findOne({
-      where: {
-        mesa: { id: dto.idMesa },
-        fecha: dto.fecha,
-        hora: dto.hora,
-        estado: In(['pendiente', 'confirmada']),
-      },
-    });
-
-    if (reservaExistente) {
+    const duracionMinutos = dto.duracionMinutos ?? 120;
+    await this.validarHorarioRestaurante(
+      mesa.restaurante.id,
+      dto.fecha,
+      dto.hora,
+      duracionMinutos,
+    );
+    if (
+      await this.haySolapamiento(
+        dto.idMesa,
+        dto.fecha,
+        dto.hora,
+        duracionMinutos,
+      )
+    ) {
       throw new BadRequestException(
         'La mesa no está disponible en la fecha y hora seleccionadas',
       );
@@ -58,6 +69,7 @@ export class ReservasService {
       usuario,
       mesa,
       estado: 'pendiente',
+      duracionMinutos,
     });
 
     let guardada: Reserva;
@@ -81,6 +93,7 @@ export class ReservasService {
       idRestaurante: mesa.restaurante.id,
       fecha: guardada.fecha,
       hora: guardada.hora,
+      duracionMinutos: guardada.duracionMinutos,
       numeroPersonas: guardada.numeroPersonas,
       estado: guardada.estado,
     };
@@ -137,6 +150,8 @@ export class ReservasService {
 
     if (dto.fecha) reserva.fecha = dto.fecha;
     if (dto.hora) reserva.hora = dto.hora;
+    if (dto.duracionMinutos !== undefined)
+      reserva.duracionMinutos = dto.duracionMinutos;
     if (dto.numeroPersonas) reserva.numeroPersonas = dto.numeroPersonas;
     if (dto.comentarios !== undefined) reserva.comentarios = dto.comentarios;
 
@@ -144,15 +159,21 @@ export class ReservasService {
     // cuando un administrador cambia mesa, horario, comensales o estado.
     if (['pendiente', 'confirmada'].includes(reserva.estado)) {
       this.validarCapacidadYEstadoMesa(reserva.mesa, reserva.numeroPersonas);
-      const reservaExistente = await this.reservasRepo.findOne({
-        where: {
-          mesa: { id: reserva.mesa.id },
-          fecha: reserva.fecha,
-          hora: reserva.hora,
-          estado: In(['pendiente', 'confirmada']),
-        },
-      });
-      if (reservaExistente && reservaExistente.id !== reserva.id) {
+      await this.validarHorarioRestaurante(
+        reserva.mesa.restaurante.id,
+        reserva.fecha,
+        reserva.hora,
+        reserva.duracionMinutos,
+      );
+      if (
+        await this.haySolapamiento(
+          reserva.mesa.id,
+          reserva.fecha,
+          reserva.hora,
+          reserva.duracionMinutos,
+          reserva.id,
+        )
+      ) {
         throw new BadRequestException(
           'La mesa no está disponible en la fecha y hora seleccionadas',
         );
@@ -182,7 +203,8 @@ export class ReservasService {
 
   async eliminar(id: number): Promise<void> {
     const reserva = await this.buscarPorId(id);
-    await this.reservasRepo.remove(reserva);
+    reserva.estado = 'cancelada';
+    await this.reservasRepo.save(reserva);
   }
 
   private isSlotConflict(error: unknown): boolean {
@@ -193,18 +215,107 @@ export class ReservasService {
     };
     const cause = dbError?.driverError ?? dbError;
     return (
-      cause?.code === '23505' &&
-      cause?.constraint === 'uq_reserva_mesa_horario_activa'
+      (cause?.code === '23P01' &&
+        cause?.constraint === 'ex_reserva_mesa_intervalo_activo') ||
+      (cause?.code === '23505' &&
+        cause?.constraint === 'uq_reserva_mesa_horario_activa')
     );
   }
 
-  private validarCapacidadYEstadoMesa(mesa: Mesa, numeroPersonas: number): void {
+  private async haySolapamiento(
+    idMesa: number,
+    fecha: string,
+    hora: string,
+    duracionMinutos: number,
+    excluirId?: number,
+  ): Promise<boolean> {
+    const consulta = this.reservasRepo
+      .createQueryBuilder('reserva')
+      .where('reserva.id_mesa = :idMesa', { idMesa })
+      .andWhere("reserva.estado IN ('pendiente', 'confirmada')")
+      .andWhere(
+        `reserva.fecha + reserva.hora <
+         CAST(:fecha AS date) + CAST(:hora AS time) +
+         (:duracionMinutos * INTERVAL '1 minute')`,
+        { fecha, hora, duracionMinutos },
+      )
+      .andWhere(
+        `reserva.fecha + reserva.hora +
+         (reserva.duracion_minutos * INTERVAL '1 minute') >
+         CAST(:fecha AS date) + CAST(:hora AS time)`,
+        { fecha, hora },
+      );
+    if (excluirId !== undefined) {
+      consulta.andWhere('reserva.id_reserva <> :excluirId', { excluirId });
+    }
+    return (await consulta.getCount()) > 0;
+  }
+
+  private validarCapacidadYEstadoMesa(
+    mesa: Mesa,
+    numeroPersonas: number,
+  ): void {
     if (mesa.estado === 'inactiva') {
       throw new BadRequestException('La mesa seleccionada no está disponible');
     }
     if (!mesa.capacidad || numeroPersonas > mesa.capacidad) {
       throw new BadRequestException(
         `La mesa seleccionada tiene capacidad para ${mesa.capacidad ?? 0} personas`,
+      );
+    }
+  }
+
+  private minutos(hora: string): number {
+    const [horas, minutos] = hora.split(':').map(Number);
+    return horas * 60 + minutos;
+  }
+
+  private async validarHorarioRestaurante(
+    idRestaurante: number,
+    fecha: string,
+    hora: string,
+    duracionMinutos: number,
+  ): Promise<void> {
+    const inicio = this.minutos(hora);
+    const fin = inicio + duracionMinutos;
+    if (fin > 24 * 60) {
+      throw new BadRequestException(
+        'La reserva no puede extenderse al día siguiente.',
+      );
+    }
+
+    const excepcion = await this.excepcionesRepo.findOne({
+      where: { restaurante: { id: idRestaurante }, fecha },
+    });
+    if (excepcion?.cerrado) {
+      throw new BadRequestException(
+        excepcion.motivo || 'El restaurante está cerrado en esa fecha.',
+      );
+    }
+
+    let franjas: Array<{ horaInicio: string; horaFin: string }>;
+    if (excepcion?.horaInicio && excepcion.horaFin) {
+      franjas = [
+        {
+          horaInicio: excepcion.horaInicio,
+          horaFin: excepcion.horaFin,
+        },
+      ];
+    } else {
+      const diaSemana = (new Date(`${fecha}T00:00:00Z`).getUTCDay() + 6) % 7;
+      franjas = await this.horariosRepo.find({
+        where: { restaurante: { id: idRestaurante }, diaSemana },
+      });
+    }
+
+    const dentroDeHorario = franjas.some(
+      (franja) =>
+        inicio >= this.minutos(franja.horaInicio) &&
+        fin <= this.minutos(franja.horaFin),
+    );
+    if (!dentroDeHorario) {
+      throw new BadRequestException(
+        'La reserva queda fuera del horario de atención.',
       );
     }
   }

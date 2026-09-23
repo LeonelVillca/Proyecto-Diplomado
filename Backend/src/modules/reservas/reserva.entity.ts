@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
@@ -28,6 +29,9 @@ export class Reserva {
   @Column({ type: 'time' })
   hora: string;
 
+  @Column({ name: 'duracion_minutos', type: 'int', default: 120 })
+  duracionMinutos: number;
+
   @Column({ name: 'numero_personas', type: 'int' })
   numeroPersonas: number;
 
@@ -39,4 +43,7 @@ export class Reserva {
 
   @CreateDateColumn({ name: 'fecha_creacion' })
   fechaCreacion: Date;
+
+  @UpdateDateColumn({ name: 'actualizado_at', type: 'timestamptz' })
+  actualizadoAt: Date;
 }

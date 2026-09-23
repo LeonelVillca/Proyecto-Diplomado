@@ -10,6 +10,7 @@ import { Mesa } from '../mesa/mesa.entity';
 import { Imagen } from '../imagen/imagen.entity';
 import { Resena } from '../resenas/resena.entity';
 import { CloudinaryService } from '../../core/storage/cloudinary.service';
+import { UsuarioRestaurante } from '../usuario-restaurante/usuario-restaurante.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CloudinaryService } from '../../core/storage/cloudinary.service';
       Mesa,
       Imagen,
       Resena,
+      UsuarioRestaurante,
     ]),
   ],
   controllers: [RestauranteController],

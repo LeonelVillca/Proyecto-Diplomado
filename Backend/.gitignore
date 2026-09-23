@@ -11,6 +11,9 @@
 # - Archivos con credenciales de prueba (NUNCA commitear)
 credenciales_prueba.txt
 *.credentials.txt
+backups/
+*.dump
+schema_*.sql
 
 # - Logs
 *.log

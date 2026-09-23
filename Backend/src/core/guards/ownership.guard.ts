@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
-import { Restaurante } from '../../modules/restaurante/restaurante.entity';
 import { UsuarioRol } from '../../modules/usuario-rol/usuario-rol.entity';
+import { UsuarioRestaurante } from '../../modules/usuario-restaurante/usuario-restaurante.entity';
 
 export const RESOURCE_TYPE_KEY = 'resource_type';
 export type OwnedResource =
@@ -17,6 +17,7 @@ export type OwnedResource =
   | 'plato'
   | 'mesa'
   | 'horario_atencion'
+  | 'excepcion_horario'
   | 'reserva'
   | 'resena'
   | 'respuesta_resena'
@@ -48,11 +49,10 @@ export class OwnershipGuard implements CanActivate {
       .getRepository(UsuarioRol)
       .find({ where: { idUsuario: user.id }, relations: { rol: true } });
     if (roles.some((r) => r.rol.nombre === 'admin_sistema')) return true;
-    const own = await this.dataSource.getRepository(Restaurante).find({
-      where: { solicitud: { usuario: { id: user.id }, estado: 'aprobada' } },
-      select: { id: true },
+    const own = await this.dataSource.getRepository(UsuarioRestaurante).find({
+      where: { idUsuario: user.id, activo: true },
     });
-    const ownedIds = new Set(own.map((r) => r.id));
+    const ownedIds = new Set(own.map((r) => r.idRestaurante));
     const targets: number[] = [];
     // Primero se comprueba el recurso EXISTENTE. El body nunca reemplaza esta comprobación.
     if (params.id !== undefined)
@@ -104,6 +104,7 @@ export class OwnershipGuard implements CanActivate {
       menu: ['Menu', { restaurante: true }],
       mesa: ['Mesa', { restaurante: true }],
       horario_atencion: ['HorarioAtencion', { restaurante: true }],
+      excepcion_horario: ['ExcepcionHorario', { restaurante: true }],
       ubicacion: ['Ubicacion', { restaurante: true }],
       resena: ['Resena', { restaurante: true }],
       plato: ['Plato', { menu: { restaurante: true } }],

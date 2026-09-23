@@ -7,7 +7,7 @@ import * as crypto from 'crypto';
 import { sanitizeImage } from '../../core/security/uploads';
 import { CloudinaryService } from '../../core/storage/cloudinary.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Restaurante } from './restaurante.entity';
 import { CrearRestauranteDto } from './dto/crear-restaurante.dto';
 import { ActualizarRestauranteDto } from './dto/actualizar-restaurante.dto';
@@ -17,6 +17,7 @@ import { HorarioAtencion } from '../horario-atencion/horario-atencion.entity';
 import { Mesa } from '../mesa/mesa.entity';
 import { Imagen } from '../imagen/imagen.entity';
 import { Resena } from '../resenas/resena.entity';
+import { UsuarioRestaurante } from '../usuario-restaurante/usuario-restaurante.entity';
 
 @Injectable()
 export class RestauranteService {
@@ -35,28 +36,46 @@ export class RestauranteService {
     private readonly imagenRepository: Repository<Imagen>,
     @InjectRepository(Resena)
     private readonly resenaRepository: Repository<Resena>,
+    @InjectRepository(UsuarioRestaurante)
+    private readonly usuarioRestauranteRepository: Repository<UsuarioRestaurante>,
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   async crear(dto: CrearRestauranteDto): Promise<Restaurante> {
-    if (dto.idSolicitud !== undefined) {
-      const solicitud = await this.solicitudRepository.findOneBy({
-        id: dto.idSolicitud,
-      });
-      if (!solicitud) {
-        throw new NotFoundException(
-          `Solicitud con id ${dto.idSolicitud} no encontrada`,
+    return this.restauranteRepository.manager.transaction(async (manager) => {
+      let solicitud: Solicitud | null = null;
+      if (dto.idSolicitud !== undefined) {
+        solicitud = await manager.findOne(Solicitud, {
+          where: { id: dto.idSolicitud },
+          relations: { usuario: true },
+        });
+        if (!solicitud) {
+          throw new NotFoundException(
+            `Solicitud con id ${dto.idSolicitud} no encontrada`,
+          );
+        }
+      }
+
+      const { idSolicitud, ...datos } = dto;
+      const guardado = await manager.save(
+        manager.create(Restaurante, {
+          ...datos,
+          solicitud: idSolicitud ? { id: idSolicitud } : null,
+          estado: false,
+        }),
+      );
+      if (solicitud?.usuario) {
+        await manager.save(
+          manager.create(UsuarioRestaurante, {
+            usuario: { id: solicitud.usuario.id },
+            restaurante: { id: guardado.id },
+            rol: 'propietario',
+            activo: true,
+          }),
         );
       }
-    }
-
-    const { idSolicitud, ...datos } = dto;
-    const restaurante = this.restauranteRepository.create({
-      ...datos,
-      solicitud: idSolicitud ? { id: idSolicitud } : null,
-      estado: false,
+      return guardado;
     });
-    return this.restauranteRepository.save(restaurante);
   }
 
   async listarTodos(): Promise<any[]> {
@@ -223,10 +242,16 @@ export class RestauranteService {
   }
 
   async listarPorUsuario(idUsuario: number): Promise<Restaurante[]> {
-    const restaurantes = await this.restauranteRepository.find({
-      where: { solicitud: { usuario: { id: idUsuario } } },
-      relations: { solicitud: { usuario: true } },
+    const asignaciones = await this.usuarioRestauranteRepository.find({
+      where: { idUsuario, activo: true },
     });
+    const ids = asignaciones.map((item) => item.idRestaurante);
+    const restaurantes = ids.length
+      ? await this.restauranteRepository.find({
+          where: { id: In(ids) },
+          relations: { solicitud: { usuario: true } },
+        })
+      : [];
 
     if (restaurantes.length === 0) {
       // Auto-reparación: Si no tiene restaurante, buscar si tiene solicitud aprobada y crearlo
@@ -247,6 +272,14 @@ export class RestauranteService {
         });
         const guardado =
           await this.restauranteRepository.save(nuevoRestaurante);
+        await this.usuarioRestauranteRepository.save(
+          this.usuarioRestauranteRepository.create({
+            usuario: { id: idUsuario },
+            restaurante: { id: guardado.id },
+            rol: 'propietario',
+            activo: true,
+          }),
+        );
         const conRelaciones = await this.restauranteRepository.findOne({
           where: { id: guardado.id },
           relations: { solicitud: { usuario: true } },
@@ -440,7 +473,9 @@ export class RestauranteService {
 
   async eliminar(id: number): Promise<void> {
     const restaurante = await this.buscarPorId(id);
-    await this.restauranteRepository.delete(restaurante.id);
+    restaurante.estado = false;
+    await this.restauranteRepository.save(restaurante);
+    await this.restauranteRepository.softRemove(restaurante);
   }
 
   async subirPortada(

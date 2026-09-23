@@ -2,7 +2,13 @@
 -- La transacción completa se revierte si existen duplicados o datos inválidos.
 BEGIN;
 
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  nombre varchar(255) PRIMARY KEY,
+  aplicada_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Funcionalidades retiradas del producto.
+DROP VIEW IF EXISTS vista_ranking_restaurantes;
 DROP TABLE IF EXISTS notificacion;
 DROP TABLE IF EXISTS visita;
 
@@ -127,5 +133,9 @@ CREATE INDEX ix_soporte_categoria ON soporte (id_categoria_soporte);
 CREATE INDEX ix_solicitud_usuario ON solicitud (id_usuario);
 CREATE INDEX ix_usuario_rol_rol ON usuario_rol (id_rol);
 CREATE INDEX ix_rol_permiso_permiso ON rol_permiso (id_permiso);
+
+INSERT INTO schema_migrations (nombre)
+VALUES ('20260921-normalizacion-integridad.sql')
+ON CONFLICT DO NOTHING;
 
 COMMIT;
