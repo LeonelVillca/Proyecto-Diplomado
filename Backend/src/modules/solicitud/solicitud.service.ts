@@ -319,11 +319,6 @@ export class SolicitudService {
         if (!actual || actual.estado !== 'pendiente') {
           throw new ConflictException('La solicitud ya fue procesada.');
         }
-        if (!actual.correoVerificadoAt) {
-          throw new ConflictException(
-            'La solicitud no puede aprobarse porque el solicitante no confirmó su correo.',
-          );
-        }
         const rol = await manager.findOne(Rol, {
           where: { nombre: 'admin_restaurante' },
         });

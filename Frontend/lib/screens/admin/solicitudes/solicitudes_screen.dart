@@ -130,10 +130,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         }
         if (mounted) {
           final mensaje =
-              detalle.toLowerCase().contains('no confirmó su correo')
-              ? 'No se puede aprobar todavía: el solicitante debe confirmar su correo. $detalle'
-              : detalle.toLowerCase().contains('ya fue procesada') ||
-                    detalle.toLowerCase().contains('procesada no puede cambiar')
+              detalle.toLowerCase().contains('ya fue procesada') ||
+                  detalle.toLowerCase().contains('procesada no puede cambiar')
               ? 'La solicitud ya fue procesada. Actualicé el listado para mostrar su estado actual.'
               : '$detalle (código ${res.statusCode}).';
           AdminNotificationModal.error(context, mensaje);

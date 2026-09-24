@@ -33,31 +33,6 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
   PlatformFile? _ciFile;
   bool _isLoading = false;
   bool _isSuccess = false;
-  bool _isResending = false;
-
-  Future<void> _reenviarVerificacion() async {
-    if (_isResending) return;
-    setState(() => _isResending = true);
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/solicitud/reenviar-verificacion'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'correo': _correoCtrl.text.trim()}),
-      );
-      if (!mounted) return;
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Si tu solicitud está pendiente, recibirás un enlace. Tras un envío reciente, espera cinco minutos; revisa también spam.'),
-        ));
-      } else {
-        _mostrarError('No se pudo solicitar otro enlace. Intenta más tarde.');
-      }
-    } catch (_) {
-      _mostrarError('No se pudo conectar con el servidor.');
-    } finally {
-      if (mounted) setState(() => _isResending = false);
-    }
-  }
 
   Future<void> _enviarSolicitud() async {
     if (!_formKey.currentState!.validate()) return;
@@ -213,14 +188,9 @@ class _SolicitudRegistroScreenState extends State<SolicitudRegistroScreen> {
                     textAlign: TextAlign.center),
                 const SizedBox(height: 14),
                 Text(
-                  'Si la solicitud puede procesarse, recibirás un enlace por correo. Confírmalo para que podamos revisarla. Si no aparece, revisa la carpeta de spam.',
+                  'Recibimos tu solicitud y el equipo la revisará. Si es aprobada, enviaremos a este correo una invitación para crear tu contraseña y activar el acceso. No necesitas confirmar el correo antes de la revisión.',
                   style: LandingType.bodyText(size: 15),
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: _isResending ? null : _reenviarVerificacion,
-                  child: Text(_isResending ? 'Enviando...' : 'Reenviar enlace de confirmación'),
                 ),
                 const SizedBox(height: 36),
                 FilledButton(

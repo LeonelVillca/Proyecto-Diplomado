@@ -77,36 +77,57 @@ describe('Aprobación de solicitudes', () => {
     expect(manager.update).toHaveBeenCalledTimes(1);
   });
 
-  it('no deja aprobar solicitudes nuevas sin correo confirmado', async () => {
+  it('aprueba e invita aunque el correo no tenga verificación previa', async () => {
     const solicitud = {
       id: 5,
       estado: 'pendiente',
       correoVerificadoAt: null,
       usuario: { id: 2, correo: 'u@example.test' },
+      nombreRestaurante: 'Ejemplo',
+      tipoComida: 'regional',
+      descripcion: 'Restaurante de prueba',
+      celularContacto: '70000000',
     };
-    const repo = { findOne: async () => solicitud };
+    const repo = { findOne: jest.fn(async () => solicitud) };
     const manager = {
       query: jest.fn(async () => [{ id_solicitud: 5 }]),
-      findOne: jest.fn(async () => solicitud),
+      findOne: jest.fn(async (entity: unknown) =>
+        entity === Solicitud
+          ? solicitud
+          : entity === Rol
+            ? { id: 3 }
+            : null,
+      ),
+      create: jest.fn((entity: any, value: any) =>
+        Object.assign(new entity(), value),
+      ),
+      save: jest.fn(async (value: any) =>
+        value instanceof Restaurante ? Object.assign(value, { id: 9 }) : value,
+      ),
+      update: jest.fn(async () => undefined),
     };
     const source = {
-      transaction: async (callback: (manager: unknown) => Promise<unknown>) =>
-        callback(manager),
+      transaction: jest.fn(
+        async (callback: (manager: unknown) => Promise<unknown>) =>
+          callback(manager),
+      ),
     };
+    const mail = { enviarInvitacion: jest.fn(async () => undefined) };
     const service = new SolicitudService(
       repo as any,
       {} as any,
       source as any,
-      {} as any,
+      mail as any,
       {} as any,
     );
-    await expect(service.actualizar(5, { estado: 'aprobada' })).rejects.toThrow(
-      'no confirmó su correo',
+
+    await expect(service.actualizar(5, { estado: 'aprobada' })).resolves.toEqual(
+      expect.objectContaining({ estado: 'aprobada' }),
     );
-    expect(manager.findOne).toHaveBeenCalledTimes(1);
-    expect(manager.query).toHaveBeenCalledWith(
-      'SELECT id_solicitud FROM solicitud WHERE id_solicitud = $1 FOR UPDATE',
-      [5],
+    expect(solicitud.correoVerificadoAt).toBeNull();
+    expect(mail.enviarInvitacion).toHaveBeenCalledWith(
+      'u@example.test',
+      expect.any(String),
     );
     expect(manager.findOne.mock.calls[0][1]).not.toHaveProperty('lock');
   });
