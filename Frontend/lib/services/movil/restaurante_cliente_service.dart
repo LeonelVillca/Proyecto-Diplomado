@@ -122,7 +122,7 @@ class RestauranteClienteService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception('Failed to create review: \${response.body}');
+      throw Exception('No se pudo publicar la reseña: ${response.body}');
     }
   }
 
