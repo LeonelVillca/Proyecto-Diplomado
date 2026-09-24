@@ -1,10 +1,17 @@
 import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/movil/api_config.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
+
+class ReservaFinalizadaRequerida implements Exception {
+  const ReservaFinalizadaRequerida();
+
+  @override
+  String toString() =>
+      'Podrás publicar tu reseña cuando tengas una reserva finalizada en este restaurante.';
+}
 
 class RestauranteClienteService {
   final String token;
@@ -122,6 +129,20 @@ class RestauranteClienteService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
+      if (response.statusCode == 400) {
+        try {
+          final body = jsonDecode(utf8.decode(response.bodyBytes));
+          if (body is Map &&
+              body['message'] ==
+                  'Solo puedes reseñar después de una reserva finalizada.') {
+            throw const ReservaFinalizadaRequerida();
+          }
+        } on ReservaFinalizadaRequerida {
+          rethrow;
+        } on FormatException {
+          // Mostrar el cuerpo original si la respuesta no es JSON.
+        }
+      }
       throw Exception('No se pudo publicar la reseña: ${response.body}');
     }
   }

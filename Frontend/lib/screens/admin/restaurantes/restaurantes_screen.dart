@@ -116,7 +116,7 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
         ],
       ),
     );
-    if (confirmar != true) return;
+    if (confirmar != true || !mounted) return;
 
     try {
       final token = AuthScope.of(context, listen: false).token;
@@ -125,6 +125,13 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
         body: jsonEncode({'estado': activar}),
       );
+      if (response.statusCode == 400) {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        if (body is Map && body['message'] is String) {
+          if (mounted) AdminNotificationModal.info(context, body['message'] as String);
+          return;
+        }
+      }
       if (response.statusCode != 200) throw Exception();
       await _cargarRestaurantes();
       if (mounted) {

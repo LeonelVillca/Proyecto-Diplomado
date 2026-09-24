@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
+import 'package:frontend/services/movil/restaurante_cliente_service.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart' as frontend_auth;
 
 class CreateReviewModal extends StatefulWidget {
@@ -41,6 +42,16 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
           SnackBar(
             content: const Text('¡Reseña publicada con éxito!'),
             backgroundColor: AppColors.sage,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } on ReservaFinalizadaRequerida catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.wine,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -92,6 +103,11 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
                 onPressed: () => Navigator.pop(context),
               )
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Puedes reseñar después de que tu reserva en este restaurante esté finalizada.',
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
           Text(

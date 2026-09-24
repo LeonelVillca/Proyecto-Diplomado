@@ -162,6 +162,14 @@ export class RestauranteService {
     id: number,
     estado: boolean,
   ): Promise<any> {
+    if (estado === true) {
+      const datos = await this.datosParaPublicacion(id);
+      if (!datos || !this.perfilCompleto(datos)) {
+        throw new BadRequestException(
+          'Completa la ubicación, horarios, mesas y datos del perfil antes de activar el restaurante.',
+        );
+      }
+    }
     const restaurante = await this.buscarPorId(id);
     restaurante.estado = estado;
     const actualizado = await this.restauranteRepository.save(restaurante);
@@ -173,13 +181,16 @@ export class RestauranteService {
   }
 
   private perfilPublicable(restaurante: any): boolean {
+    return restaurante.estado === true && this.perfilCompleto(restaurante);
+  }
+
+  private perfilCompleto(restaurante: any): boolean {
     const textoCompleto = (valor: unknown) =>
       typeof valor === 'string' && valor.trim().length > 0;
     const solicitudAprobada =
       !restaurante.solicitud || restaurante.solicitud.estado === 'aprobada';
 
     return (
-      restaurante.estado === true &&
       solicitudAprobada &&
       textoCompleto(restaurante.nombre) &&
       textoCompleto(restaurante.tipoComida) &&
@@ -200,12 +211,12 @@ export class RestauranteService {
     );
   }
 
-  private async activarSiPerfilCompleto(id: number): Promise<void> {
+  private async datosParaPublicacion(id: number): Promise<any | null> {
     const restaurante = await this.restauranteRepository.findOne({
       where: { id },
       relations: { solicitud: true },
     });
-    if (!restaurante || restaurante.estado === true) return;
+    if (!restaurante) return null;
 
     const ubicacion = await this.ubicacionRepository.findOne({
       where: { restaurante: { id } },
@@ -216,18 +227,30 @@ export class RestauranteService {
     const mesas = await this.mesaRepository.find({
       where: { restaurante: { id } },
     });
-    const publicable = this.perfilPublicable({
+    return {
       ...restaurante,
       direccion: ubicacion?.direccion,
       latitud: ubicacion?.latitud,
       longitud: ubicacion?.longitud,
       horarios,
       mesas,
-    });
+    };
+  }
 
-    if (publicable) {
-      restaurante.estado = true;
-      await this.restauranteRepository.save(restaurante);
+  private async activarSiPerfilCompleto(
+    id: number,
+    estabaCompleto: boolean,
+  ): Promise<void> {
+    // No reactivar un perfil completo suspendido por un administrador.
+    if (estabaCompleto) return;
+    const datos = await this.datosParaPublicacion(id);
+    if (!datos || datos.estado === true) return;
+
+    if (this.perfilCompleto(datos)) {
+      await this.restauranteRepository.update(
+        { id, estado: false },
+        { estado: true },
+      );
     }
   }
 
@@ -378,6 +401,10 @@ export class RestauranteService {
     id: number,
     dto: ActualizarRestauranteDto,
   ): Promise<Restaurante> {
+    const perfilAnterior = await this.datosParaPublicacion(id);
+    const estabaCompleto = perfilAnterior
+      ? this.perfilCompleto(perfilAnterior)
+      : false;
     const defineMesas = dto.mesasTotal !== undefined;
     const defineCapacidad = dto.capacidadTotal !== undefined;
     if (defineMesas !== defineCapacidad) {
@@ -467,7 +494,7 @@ export class RestauranteService {
       }
     });
 
-    await this.activarSiPerfilCompleto(id);
+    await this.activarSiPerfilCompleto(id, estabaCompleto);
     return this.buscarPorId(id);
   }
 
@@ -486,6 +513,10 @@ export class RestauranteService {
       throw new BadRequestException('Se requiere una imagen de portada');
 
     const restaurante = await this.buscarPorId(id);
+    const perfilAnterior = await this.datosParaPublicacion(id);
+    const estabaCompleto = perfilAnterior
+      ? this.perfilCompleto(perfilAnterior)
+      : false;
 
     if (!file.mimetype.startsWith('image/')) {
       throw new BadRequestException('El archivo debe ser una imagen');
@@ -499,7 +530,7 @@ export class RestauranteService {
     );
     restaurante.fotoPortada = uploaded.secure_url;
     const guardado = await this.restauranteRepository.save(restaurante);
-    await this.activarSiPerfilCompleto(id);
+    await this.activarSiPerfilCompleto(id, estabaCompleto);
     return guardado;
   }
 
@@ -507,6 +538,10 @@ export class RestauranteService {
     if (!file) throw new BadRequestException('Se requiere una imagen de logo');
 
     const restaurante = await this.buscarPorId(id);
+    const perfilAnterior = await this.datosParaPublicacion(id);
+    const estabaCompleto = perfilAnterior
+      ? this.perfilCompleto(perfilAnterior)
+      : false;
 
     if (!file.mimetype.startsWith('image/')) {
       throw new BadRequestException('El archivo debe ser una imagen');
@@ -519,7 +554,7 @@ export class RestauranteService {
     );
     restaurante.logo = uploaded.secure_url;
     const guardado = await this.restauranteRepository.save(restaurante);
-    await this.activarSiPerfilCompleto(id);
+    await this.activarSiPerfilCompleto(id, estabaCompleto);
     return guardado;
   }
 
