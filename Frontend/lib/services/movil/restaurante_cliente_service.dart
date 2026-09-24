@@ -143,7 +143,18 @@ class RestauranteClienteService {
           // Mostrar el cuerpo original si la respuesta no es JSON.
         }
       }
-      throw Exception('No se pudo publicar la reseña: ${response.body}');
+      String message = 'No se pudo publicar la reseña.';
+      try {
+        final body = jsonDecode(utf8.decode(response.bodyBytes));
+        final apiMessage = body['message'];
+        if (apiMessage is String && apiMessage.isNotEmpty) {
+          message = apiMessage;
+        }
+        if (apiMessage is List) {
+          message = apiMessage.join(', ');
+        }
+      } catch (_) {}
+      throw Exception(message);
     }
   }
 

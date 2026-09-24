@@ -5,6 +5,7 @@ import {
   Body,
   Patch,
   Param,
+  Query,
   Delete,
   ParseIntPipe,
   UseGuards,
@@ -14,6 +15,7 @@ import {
 import { ReservasService } from './reservas.service';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
+import { ConsultarDisponibilidadDto } from './dto/consultar-disponibilidad.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import {
@@ -47,6 +49,11 @@ export class ReservasController {
   @Get()
   listarTodas() {
     return this.reservasService.listarTodas();
+  }
+
+  @Get('disponibilidad')
+  consultarDisponibilidad(@Query() dto: ConsultarDisponibilidadDto) {
+    return this.reservasService.consultarDisponibilidad(dto);
   }
 
   @Get('usuario/:idUsuario')

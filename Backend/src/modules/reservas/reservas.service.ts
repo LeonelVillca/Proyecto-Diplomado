@@ -4,10 +4,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { Reserva } from './reserva.entity';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
+import { ConsultarDisponibilidadDto } from './dto/consultar-disponibilidad.dto';
 import { Usuario } from '../usuarios/usuario.entity';
 import { Mesa } from '../mesa/mesa.entity';
 import { ReservasGateway } from './reservas.gateway';
@@ -102,6 +103,51 @@ export class ReservasService {
     void this.reservasGateway.emitNuevaReserva(payload);
 
     return guardada;
+  }
+
+  async consultarDisponibilidad(dto: ConsultarDisponibilidadDto): Promise<{
+    mesas: Array<{ idMesa: number; numeroMesa: string; capacidad: number }>;
+  }> {
+    await this.validarHorarioRestaurante(
+      dto.idRestaurante,
+      dto.fecha,
+      dto.hora,
+      dto.duracionMinutos,
+    );
+
+    const mesas = await this.mesasRepo.find({
+      where: {
+        restaurante: { id: dto.idRestaurante },
+        estado: Not('inactiva'),
+        capacidad: MoreThanOrEqual(dto.numeroPersonas),
+      },
+      order: { capacidad: 'ASC', id: 'ASC' },
+    });
+    if (mesas.length === 0) return { mesas: [] };
+
+    const ocupadas = await this.consultaSolapamientos(
+      dto.fecha,
+      dto.hora,
+      dto.duracionMinutos,
+    )
+      .select('reserva.id_mesa', 'idMesa')
+      .andWhere('reserva.id_mesa IN (:...ids)', {
+        ids: mesas.map((mesa) => mesa.id),
+      })
+      .getRawMany<{ idMesa: number }>();
+    const idsOcupadas = new Set(
+      ocupadas.map((reserva) => Number(reserva.idMesa)),
+    );
+
+    return {
+      mesas: mesas
+        .filter((mesa) => !idsOcupadas.has(mesa.id))
+        .map((mesa) => ({
+          idMesa: mesa.id,
+          numeroMesa: mesa.numeroMesa,
+          capacidad: mesa.capacidad!,
+        })),
+    };
   }
 
   listarTodas(): Promise<Reserva[]> {
@@ -229,10 +275,25 @@ export class ReservasService {
     duracionMinutos: number,
     excluirId?: number,
   ): Promise<boolean> {
-    const consulta = this.reservasRepo
+    const consulta = this.consultaSolapamientos(
+      fecha,
+      hora,
+      duracionMinutos,
+    ).andWhere('reserva.id_mesa = :idMesa', { idMesa });
+    if (excluirId !== undefined) {
+      consulta.andWhere('reserva.id_reserva <> :excluirId', { excluirId });
+    }
+    return (await consulta.getCount()) > 0;
+  }
+
+  private consultaSolapamientos(
+    fecha: string,
+    hora: string,
+    duracionMinutos: number,
+  ): SelectQueryBuilder<Reserva> {
+    return this.reservasRepo
       .createQueryBuilder('reserva')
-      .where('reserva.id_mesa = :idMesa', { idMesa })
-      .andWhere("reserva.estado IN ('pendiente', 'confirmada')")
+      .where("reserva.estado IN ('pendiente', 'confirmada')")
       .andWhere(
         `reserva.fecha + reserva.hora <
          CAST(:fecha AS date) + CAST(:hora AS time) +
@@ -245,10 +306,6 @@ export class ReservasService {
          CAST(:fecha AS date) + CAST(:hora AS time)`,
         { fecha, hora },
       );
-    if (excluirId !== undefined) {
-      consulta.andWhere('reserva.id_reserva <> :excluirId', { excluirId });
-    }
-    return (await consulta.getCount()) > 0;
   }
 
   private validarCapacidadYEstadoMesa(

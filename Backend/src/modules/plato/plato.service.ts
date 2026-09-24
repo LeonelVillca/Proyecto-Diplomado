@@ -25,6 +25,7 @@ export class PlatoService {
       nombre: dto.nombre,
       precio: dto.precio,
       descripcion: dto.descripcion,
+      fotoUrl: dto.fotoUrl,
       disponible: dto.disponible,
       menu,
     });

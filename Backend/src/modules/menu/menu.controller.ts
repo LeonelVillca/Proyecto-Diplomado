@@ -16,6 +16,7 @@ import { Roles } from '../../core/decorators/roles.decorator';
 import { MenuService } from './menu.service';
 import { CrearMenuDto } from './dto/crear-menu.dto';
 import { ActualizarMenuDto } from './dto/actualizar-menu.dto';
+import { CambiarDisponibilidadMenuDto } from './dto/cambiar-disponibilidad-menu.dto';
 import { Menu } from './menu.entity';
 
 @Controller('menu')
@@ -62,9 +63,11 @@ export class MenuController {
   @Patch(':id/disponibilidad')
   async cambiarDisponibilidad(
     @Param('id', ParseIntPipe) id: number,
-    @Body('disponibilidad') disponibilidad: boolean,
+    @Body() dto: CambiarDisponibilidadMenuDto,
   ): Promise<Menu> {
-    return this.menuService.actualizar(id, { disponibilidad });
+    return this.menuService.actualizar(id, {
+      disponibilidad: dto.disponibilidad,
+    });
   }
 
   @Roles('admin_restaurante', 'admin_sistema')

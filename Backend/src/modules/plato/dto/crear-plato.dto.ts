@@ -31,6 +31,10 @@ export class CrearPlatoDto {
   descripcion?: string;
 
   @IsOptional()
+  @IsString()
+  fotoUrl?: string | null;
+
+  @IsOptional()
   @IsBoolean()
   disponible?: boolean;
 }

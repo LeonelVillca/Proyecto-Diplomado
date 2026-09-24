@@ -4,7 +4,7 @@ import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
-import 'package:frontend/widgets/movil/restaurant/reservation_modal.dart';
+import 'package:frontend/screens/movil/reservations/reservation_screen.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_menu_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_info_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_reviews_tab.dart';
@@ -495,12 +495,11 @@ class _StickyReserveBar extends StatelessWidget {
   final Restaurant restaurant;
   const _StickyReserveBar({required this.restaurant});
 
-  void _showReservationModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => ReservationModal(restaurant: restaurant),
+  void _openReservationScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReservationScreen(restaurant: restaurant),
+      ),
     );
   }
 
@@ -523,7 +522,7 @@ class _StickyReserveBar extends StatelessWidget {
           boxShadow: [BoxShadow(color: AppColors.wine.withOpacity(0.35), blurRadius: 22, offset: const Offset(0, 10))],
         ),
         child: FilledButton(
-          onPressed: () => _showReservationModal(context),
+          onPressed: () => _openReservationScreen(context),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.wine,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
