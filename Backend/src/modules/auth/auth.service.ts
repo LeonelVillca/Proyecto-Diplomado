@@ -262,10 +262,19 @@ export class AuthService {
   async crearContrasena(dto: CrearContrasenaDto): Promise<{ mensaje: string }> {
     const tokenHash = createHash('sha256').update(dto.token).digest('hex');
     await this.dataSource.transaction(async (manager) => {
+      // Lock the token row by itself; joining usuario while locking makes
+      // PostgreSQL try to FOR UPDATE the nullable side of an outer join.
+      const filasBloqueadas: Array<{ id_token: number }> = await manager.query(
+        `SELECT id_token FROM invitacion_token
+         WHERE token = $1 AND tipo = $2 FOR UPDATE`,
+        [tokenHash, 'invitacion'],
+      );
+      if (!filasBloqueadas.length) {
+        throw new BadRequestException('El token es inválido o no existe.');
+      }
       const invitacion = await manager.findOne(InvitacionToken, {
         where: { token: tokenHash, tipo: 'invitacion' },
         relations: { usuario: true },
-        lock: { mode: 'pessimistic_write' },
       });
 
       if (!invitacion) {
