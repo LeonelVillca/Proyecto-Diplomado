@@ -17,8 +17,9 @@ class MenuAdminService {
       if (data.isNotEmpty) {
         return data.first['id'];
       }
+      return null;
     }
-    return null;
+    throw Exception('Error al obtener el restaurante: ${res.body}');
   }
 
   Future<List<MenuAdminModel>> obtenerMenus(int idRestaurante) async {

@@ -1,34 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-const kGoldColor = Color(0xFFD4AF37);
-const kWineColor = Color(0xFF6B1A35);
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// Píldora flotante de filtro rápido (personas + horario).
-class MapFilterPill extends StatelessWidget {
-  const MapFilterPill({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(30), blurRadius: 12, offset: const Offset(0, 4))],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.people_outline, size: 18, color: kWineColor),
-          const SizedBox(width: 6),
-          Text('2  ·  Esta noche - 19:00', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
-          const SizedBox(width: 8),
-          const Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.black54),
-        ],
-      ),
-    );
-  }
-}
+const kGoldColor = Color(0xFFC08A2D);
+const kWineColor = Color(0xFFBE4B24);
 
 /// Barra de búsqueda flotante.
 class MapSearchBar extends StatelessWidget {
@@ -38,75 +12,37 @@ class MapSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(25), blurRadius: 10, offset: const Offset(0, 3))],
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(25),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           const SizedBox(width: 14),
-          const Icon(Icons.search, color: Colors.black45, size: 20),
+          const Icon(LucideIcons.search, color: Colors.black45, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: TextField(
               onChanged: onChanged,
               decoration: InputDecoration.collapsed(
                 hintText: 'Buscar restaurante o zona...',
-                hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.black38),
+                hintStyle: TextStyle(
+                  fontFamily: 'InstrumentSans',
+                  fontSize: 13,
+                  color: Colors.black38,
+                ),
               ),
             ),
-          ),
-          Container(
-            margin: const EdgeInsets.all(6),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: kWineColor, borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.tune, color: Colors.white, size: 16),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Chips de categorías horizontales.
-class MapFilterChips extends StatefulWidget {
-  const MapFilterChips({super.key});
-
-  @override
-  State<MapFilterChips> createState() => _MapFilterChipsState();
-}
-
-class _MapFilterChipsState extends State<MapFilterChips> {
-  final List<String> _cats = ['🍷 Vinos', '🔥 Parrilla', '❤️ Romántico', '☕ Brunch', '🌍 Internacional', '🥗 Tarijeña'];
-  int _selected = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 38,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: _cats.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final sel = i == _selected;
-          return GestureDetector(
-            onTap: () => setState(() => _selected = i),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: sel ? kWineColor : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 6, offset: const Offset(0, 2))],
-              ),
-              child: Text(_cats[i], style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? Colors.white : Colors.black87)),
-            ),
-          );
-        },
       ),
     );
   }
@@ -121,7 +57,9 @@ class RestaurantMapCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String tags = restaurant.tags != null && restaurant.tags.isNotEmpty ? restaurant.tags.first : 'Restaurante';
+    final String tags = restaurant.tags != null && restaurant.tags.isNotEmpty
+        ? restaurant.tags.first
+        : 'Restaurante';
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -130,7 +68,13 @@ class RestaurantMapCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(20),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -145,8 +89,15 @@ class RestaurantMapCard extends StatelessWidget {
                   errorBuilder: (_, __, ___) => Container(
                     width: 68,
                     height: 68,
-                    decoration: BoxDecoration(color: kWineColor.withAlpha(20), borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.restaurant, color: kWineColor, size: 32),
+                    decoration: BoxDecoration(
+                      color: kWineColor.withAlpha(20),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      LucideIcons.utensils,
+                      color: kWineColor,
+                      size: 32,
+                    ),
                   ),
                 ),
               )
@@ -158,30 +109,58 @@ class RestaurantMapCard extends StatelessWidget {
                   color: kWineColor.withAlpha(20),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.restaurant, color: kWineColor, size: 32),
+                child: const Icon(
+                  LucideIcons.utensils,
+                  color: kWineColor,
+                  size: 32,
+                ),
               ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(restaurant.name, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text(
+                    restaurant.name,
+                    style: TextStyle(
+                      fontFamily: 'InstrumentSans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 3),
-                  Text(tags, style: GoogleFonts.poppins(fontSize: 12, color: Colors.black54)),
+                  Text(
+                    tags,
+                    style: TextStyle(
+                      fontFamily: 'InstrumentSans',
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.star_rounded, color: kGoldColor, size: 15),
+                      const Icon(
+                        Icons.star_rounded,
+                        color: kGoldColor,
+                        size: 15,
+                      ),
                       const SizedBox(width: 3),
-                      Text('${restaurant.rating}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text(
+                        '${restaurant.rating}',
+                        style: TextStyle(
+                          fontFamily: 'InstrumentSans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(width: 10),
-                      Text('\$\$', style: GoogleFonts.poppins(fontSize: 12, color: Colors.black45)),
                     ],
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.black26),
+            const Icon(LucideIcons.chevronRight, color: Colors.black26),
           ],
         ),
       ),

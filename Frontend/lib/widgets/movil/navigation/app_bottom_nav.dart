@@ -1,59 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/movil/theme.dart';
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:frontend/screens/movil/home/home_tab.dart';
 
-/// Barra de navegación flotante estilo "píldora centrada".
-///
-/// El indicador del ítem activo es una cápsula dorada que NO toca
-/// los bordes del menú — queda contenida en el centro de cada celda.
 class AppBottomNav extends StatelessWidget {
-  const AppBottomNav({super.key, required this.current, required this.onSelected});
-
+  const AppBottomNav({
+    super.key,
+    required this.current,
+    required this.onSelected,
+  });
   final HomeTab current;
   final ValueChanged<HomeTab> onSelected;
 
-  // Paleta oficial Mesa Chapaca
-  static const _bg     = AppColors.card;      // blanco roto
-  static const _accent = AppColors.wine;      // vino activo
-  static const _inact  = AppColors.inkSoft;   // gris inactivo
-
   @override
-  Widget build(BuildContext context) {
-    return SafeArea(
+  Widget build(BuildContext context) => Container(
+    decoration: const BoxDecoration(
+      color: ConsumerColors.card,
+      border: Border(top: BorderSide(color: ConsumerColors.line)),
+    ),
+    child: SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-        child: Container(
-          height: 68,
-          decoration: BoxDecoration(
-            color: _bg,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(100),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              for (final tab in HomeTab.values)
-                Expanded(
-                  child: _NavItem(
-                    tab: tab,
-                    selected: tab == current,
-                    onTap: () => onSelected(tab),
-                    accent: _accent,
-                    inact: _inact,
-                  ),
+      child: SizedBox(
+        height: 62,
+        child: Row(
+          children: [
+            for (final tab in HomeTab.values)
+              Expanded(
+                child: _NavItem(
+                  tab: tab,
+                  selected: tab == current,
+                  onTap: () => onSelected(tab),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _NavItem extends StatelessWidget {
@@ -61,56 +43,47 @@ class _NavItem extends StatelessWidget {
     required this.tab,
     required this.selected,
     required this.onTap,
-    required this.accent,
-    required this.inact,
   });
-
   final HomeTab tab;
   final bool selected;
   final VoidCallback onTap;
-  final Color accent;
-  final Color inact;
 
   @override
-  Widget build(BuildContext context) {
-    final iconColor = selected ? Colors.white : inact;
-
-    return GestureDetector(
+  Widget build(BuildContext context) => Semantics(
+    selected: selected,
+    button: true,
+    label: tab.label,
+    child: InkWell(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
-          // La píldora se agranda para acomodar el texto si está seleccionada
-          width: selected ? 68 : 44,
-          height: selected ? 56 : 44,
-          decoration: BoxDecoration(
-            color: selected ? accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(selected ? 20 : 22),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 3,
+            decoration: BoxDecoration(
+              color: selected ? ConsumerColors.wine : Colors.transparent,
+              borderRadius: BorderRadius.circular(99),
+            ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(tab.icon, size: selected ? 20 : 22, color: iconColor),
-              if (selected) ...[
-                const SizedBox(height: 2),
-                Text(
-                  tab.label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: iconColor,
-                    height: 1.0,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ]
-            ],
+          const SizedBox(height: 8),
+          Icon(
+            tab.icon,
+            size: 21,
+            color: selected ? ConsumerColors.wine : ConsumerColors.inkSoft,
           ),
-        ),
+          const SizedBox(height: 3),
+          Text(
+            tab.label,
+            style: TextStyle(
+              fontFamily: 'InstrumentSans',
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: selected ? ConsumerColors.wine : ConsumerColors.inkSoft,
+            ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
 }

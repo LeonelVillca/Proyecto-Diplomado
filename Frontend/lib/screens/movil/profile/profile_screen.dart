@@ -1,9 +1,10 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
-import 'package:frontend/core/movil/theme.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
-import 'package:frontend/screens/movil/login/login_screen.dart';
 import 'package:frontend/screens/movil/profile/user_reviews_screen.dart';
 import 'package:frontend/screens/movil/profile/user_support_screen.dart';
+import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 import 'dart:convert';
 import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/core/utils/network/api_endpoints.dart';
@@ -18,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   int _reservasCount = 0;
   int _resenasCount = 0;
+  String? _statsError;
 
   @override
   void initState() {
@@ -35,29 +37,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (idUsuario == null) return;
 
     try {
-      final urlResenas = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/resenas/usuario/$idUsuario');
-      final resResenas = await http.get(urlResenas, headers: {'Authorization': 'Bearer $token'});
+      final urlResenas = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/resenas/usuario/$idUsuario',
+      );
+      final resResenas = await http.get(
+        urlResenas,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
       if (resResenas.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(utf8.decode(resResenas.bodyBytes));
+        final List<dynamic> data = jsonDecode(
+          utf8.decode(resResenas.bodyBytes),
+        );
         if (mounted) setState(() => _resenasCount = data.length);
+      } else {
+        throw Exception('No se pudieron cargar las estadísticas.');
       }
-      final urlReservas = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/reservas/usuario/$idUsuario');
-      final resReservas = await http.get(urlReservas, headers: {'Authorization': 'Bearer $token'});
+      final urlReservas = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/reservas/usuario/$idUsuario',
+      );
+      final resReservas = await http.get(
+        urlReservas,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
       if (resReservas.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(utf8.decode(resReservas.bodyBytes));
+        final List<dynamic> data = jsonDecode(
+          utf8.decode(resReservas.bodyBytes),
+        );
         if (mounted) setState(() => _reservasCount = data.length);
+      } else {
+        throw Exception('No se pudieron cargar las estadísticas.');
       }
     } catch (e) {
       debugPrint('Error cargando estadisticas: $e');
+      if (mounted)
+        setState(
+          () => _statsError =
+              'No se pudieron cargar las estadísticas de tu perfil.',
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = AuthScope.of(context);
-    final displayName = auth.displayName ?? 'Chapaco';
+    final displayName = auth.displayName?.trim().isNotEmpty == true
+        ? auth.displayName!.trim()
+        : 'Mi perfil';
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C';
 
     return SafeArea(
@@ -75,39 +102,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'Perfil',
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       fontSize: 28,
-                      color: AppColors.ink,
+                      color: ConsumerColors.ink,
                     ),
                   ),
                   const SizedBox(height: 24),
+                  if (_statsError != null) ...[
+                    InlineErrorBanner(message: _statsError!),
+                    const SizedBox(height: 16),
+                  ],
 
-                  // Tarjeta de perfil (estilo de la imagen pero con gradiente vino)
+                  // Identidad de la cuenta
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.wine, AppColors.wineDark],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: ConsumerColors.card,
+                      border: Border.all(color: ConsumerColors.line),
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: AppShadows.cardStrong,
+                      boxShadow: ConsumerShadows.cardStrong,
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Avatar
                         Container(
-                          width: 72,
-                          height: 72,
-                          decoration: const BoxDecoration(
-                            color: AppColors.gold,
-                            shape: BoxShape.circle,
+                          width: 88,
+                          height: 88,
+                          decoration: BoxDecoration(
+                            color: ConsumerColors.sage,
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(color: Colors.white, width: 5),
                           ),
                           child: Center(
                             child: auth.photoUrl != null
-                                ? ClipOval(child: Image.network(auth.photoUrl!, fit: BoxFit.cover, width: 72, height: 72))
-                                : Icon(Icons.person_rounded, size: 40, color: AppColors.ink),
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(23),
+                                    child: Image.network(
+                                      auth.photoUrl!,
+                                      fit: BoxFit.cover,
+                                      width: 78,
+                                      height: 78,
+                                    ),
+                                  )
+                                : Text(
+                                    initial,
+                                    style: const TextStyle(
+                                      fontFamily: 'Fraunces',
+                                      fontSize: 32,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -118,37 +162,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               Text(
                                 displayName,
-                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium
+                                    ?.copyWith(
+                                      color: ConsumerColors.ink,
+                                      fontSize: 22,
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Tarija, Bolivia ',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white70,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  const Text('🇧🇴', style: TextStyle(fontSize: 13)),
-                                ],
-                              ),
+                              if (auth.email != null)
+                                Text(
+                                  auth.email!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
                               const SizedBox(height: 12),
                               // Badges (Píldoras)
                               Row(
                                 children: [
-                                  _buildBadge(context, Icons.calendar_month_rounded, '$_reservasCount Reservas'),
+                                  _buildBadge(
+                                    context,
+                                    LucideIcons.calendar,
+                                    '$_reservasCount Reservas',
+                                  ),
                                   const SizedBox(width: 8),
                                   GestureDetector(
                                     onTap: () {
-                                      Navigator.push(context, MaterialPageRoute(builder: (_) => const UserReviewsScreen()));
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const UserReviewsScreen(),
+                                        ),
+                                      );
                                     },
-                                    child: _buildBadge(context, Icons.star_rounded, '$_resenasCount Reseñas'),
+                                    child: _buildBadge(
+                                      context,
+                                      Icons.star_rounded,
+                                      '$_resenasCount Reseñas',
+                                    ),
                                   ),
                                 ],
                               ),
@@ -164,53 +220,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Sección: Mi cuenta
                   Text(
                     'Mi cuenta',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 14),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleSmall?.copyWith(fontSize: 14),
                   ),
                   const SizedBox(height: 12),
-                  _buildSettingRow(context, Icons.person_rounded, 'Editar perfil'),
                   _buildSettingRow(
-                    context, 
-                    Icons.star_rounded, 
+                    context,
+                    Icons.star_rounded,
                     'Mis Reseñas',
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const UserReviewsScreen()));
-                    }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const UserReviewsScreen(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 
                   // Sección: Ayuda
                   Text(
                     'Ayuda',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontSize: 14),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleSmall?.copyWith(fontSize: 14),
                   ),
                   const SizedBox(height: 12),
                   _buildSettingRow(
-                    context, 
-                    Icons.support_agent_rounded, 
+                    context,
+                    LucideIcons.headset,
                     'Centro de ayuda',
                     onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const UserSupportScreen()));
-                    }
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const UserSupportScreen(),
+                        ),
+                      );
+                    },
                   ),
-                  _buildSettingRow(context, Icons.info_outline_rounded, 'Términos y condiciones'),
 
                   const SizedBox(height: 32),
 
                   // Botón cerrar sesión (adaptado al estilo minimalista)
                   _buildSettingRow(
-                    context, 
-                    Icons.logout_rounded, 
-                    'Cerrar todas las sesiones',
+                    context,
+                    LucideIcons.logOut,
+                    'Cerrar sesión',
                     isDestructive: true,
                     onTap: () async {
                       final messenger = ScaffoldMessenger.of(context);
                       await auth.signOut();
                       if (auth.errorMessage != null && messenger.mounted) {
-                        messenger.showSnackBar(SnackBar(content: Text(auth.errorMessage!)));
+                        messenger.showMaterialBanner(
+                          MaterialBanner(
+                            content: Text(auth.errorMessage!),
+                            backgroundColor: ConsumerColors.errorSoft,
+                            actions: [
+                              TextButton(
+                                onPressed: messenger.hideCurrentMaterialBanner,
+                                child: const Text('Cerrar'),
+                              ),
+                            ],
+                          ),
+                        );
                       }
-                    }
+                    },
                   ),
-                  
+
                   const SizedBox(height: 120),
                 ],
               ),
@@ -225,18 +304,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: ConsumerColors.wineSoft,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppColors.gold, size: 14),
+          Icon(icon, color: ConsumerColors.wine, size: 14),
           const SizedBox(width: 4),
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
+              color: ConsumerColors.wineDark,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -246,9 +325,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingRow(BuildContext context, IconData icon, String label, {bool isDestructive = false, VoidCallback? onTap}) {
-    final color = isDestructive ? Colors.redAccent : AppColors.ink;
-    final iconColor = isDestructive ? Colors.redAccent : AppColors.gold;
+  Widget _buildSettingRow(
+    BuildContext context,
+    IconData icon,
+    String label, {
+    bool isDestructive = false,
+    VoidCallback? onTap,
+  }) {
+    final color = isDestructive ? Colors.redAccent : ConsumerColors.ink;
+    final iconColor = isDestructive ? Colors.redAccent : ConsumerColors.gold;
 
     return GestureDetector(
       onTap: onTap,
@@ -257,9 +342,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          color: AppColors.card,
+          color: ConsumerColors.card,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: AppShadows.cardSoft,
+          boxShadow: ConsumerShadows.cardSoft,
         ),
         child: Row(
           children: [
@@ -267,15 +352,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                label, 
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontSize: 15,
-                  color: color,
-                )
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontSize: 15, color: color),
               ),
             ),
             if (!isDestructive)
-              const Icon(Icons.chevron_right_rounded, color: AppColors.inkSoft, size: 20),
+              const Icon(
+                LucideIcons.chevronRight,
+                color: ConsumerColors.inkSoft,
+                size: 20,
+              ),
           ],
         ),
       ),

@@ -1,5 +1,5 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
-import 'package:frontend/core/movil/theme.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
@@ -15,10 +15,14 @@ class GaleriaScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: AppColors.ink),
+        iconTheme: const IconThemeData(color: ConsumerColors.ink),
         title: Text(
           'Todas las fotos (${images.length})',
-          style: const TextStyle(color: AppColors.ink, fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: ConsumerColors.ink,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
         elevation: 0.5,
@@ -37,10 +41,8 @@ class GaleriaScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => _FullScreenGallery(
-                    images: images,
-                    initialIndex: index,
-                  ),
+                  builder: (_) =>
+                      _FullScreenGallery(images: images, initialIndex: index),
                 ),
               );
             },
@@ -117,7 +119,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
         },
         itemCount: widget.images.length,
         loadingBuilder: (context, event) => const Center(
-          child: CircularProgressIndicator(color: AppColors.wine),
+          child: CircularProgressIndicator(color: ConsumerColors.wine),
         ),
         pageController: _pageController,
         onPageChanged: (int index) {

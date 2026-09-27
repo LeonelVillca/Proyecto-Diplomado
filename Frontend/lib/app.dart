@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:frontend/core/movil/theme.dart';
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/screens/movil/shell/root_screen.dart';
@@ -29,7 +29,7 @@ class _AppScopeManagerState extends State<AppScopeManager> {
   @override
   Widget build(BuildContext context) {
     final auth = AuthScope.of(context);
-    
+
     if (_restauranteController == null || _lastToken != auth.token) {
       _lastToken = auth.token;
       _restauranteController = RestauranteController(auth.token);
@@ -56,11 +56,7 @@ class ResponsiveEntryPoint extends StatelessWidget {
 
 /// Configuración principal de la aplicación (MaterialApp).
 class App extends StatelessWidget {
-  const App({
-    super.key,
-    this.authController,
-    this.initialScreen,
-  });
+  const App({super.key, this.authController, this.initialScreen});
 
   /// Proveedor de autenticación (se inyecta desde `main`).
   final AuthController? authController;
@@ -73,10 +69,13 @@ class App extends StatelessWidget {
     return AuthScope(
       authController: authController ?? AuthController(),
       child: AppScopeManager(
-        child: MaterialApp(
+        child: Builder(
+          builder: (context) => MaterialApp(
             title: 'Mesa Chapaca',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.light,
+            theme: AuthScope.of(context).isAuthenticated
+                ? ConsumerTheme.light
+                : AppTheme.light,
             home: initialScreen ?? const ResponsiveEntryPoint(),
             onGenerateRoute: (settings) {
               // if (settings.name != null && settings.name!.startsWith('/crear-contrasena')) {
@@ -88,6 +87,7 @@ class App extends StatelessWidget {
               // }
               return null;
             },
+          ),
         ),
       ),
     );

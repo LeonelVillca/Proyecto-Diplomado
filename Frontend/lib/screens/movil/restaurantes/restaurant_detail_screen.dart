@@ -1,6 +1,6 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:frontend/core/movil/theme.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/models/movil/restaurant_detail.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
@@ -51,7 +51,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: ConsumerColors.paper,
       body: Stack(
         children: [
           // La imagen se desplaza y desaparece; el título queda fijado en la barra.
@@ -59,13 +59,13 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               SliverAppBar(
                 pinned: true,
-                expandedHeight: 300,
+                expandedHeight: 225,
                 collapsedHeight: 72,
-                backgroundColor: AppColors.paper,
+                backgroundColor: ConsumerColors.paper,
                 elevation: innerBoxIsScrolled ? 2 : 0,
                 automaticallyImplyLeading: false,
                 leading: _RoundBtn(
-                  icon: Icons.arrow_back_rounded,
+                  icon: LucideIcons.arrowLeft,
                   onTap: () => Navigator.pop(context),
                 ),
                 flexibleSpace: FlexibleSpaceBar(
@@ -76,13 +76,18 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                           widget.restaurant.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.ink,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: ConsumerColors.ink,
+                                fontWeight: FontWeight.w800,
+                              ),
                         )
                       : null,
-                  titlePadding: const EdgeInsetsDirectional.only(start: 58, end: 24, bottom: 16),
+                  titlePadding: const EdgeInsetsDirectional.only(
+                    start: 58,
+                    end: 24,
+                    bottom: 16,
+                  ),
                   background: _HeroSection(restaurant: widget.restaurant),
                 ),
               ),
@@ -90,197 +95,225 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             body: SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
               child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.paper,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5)),
-                      ],
+                decoration: BoxDecoration(
+                  color: ConsumerColors.paper,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Tirador
-                        Center(
-                          child: Container(
-                            margin: const EdgeInsets.only(top: 12, bottom: 20),
-                            width: 38,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(2),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Tirador
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 20),
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+
+                    // Título editorial fuera de la imagen: más legible y
+                    // sin competir con las miniaturas de la galería.
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 0, 22, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.restaurant.name,
+                            style: const TextStyle(
+                              fontFamily: 'Fraunces',
+                              fontSize: 30,
+                              height: 1.05,
+                              fontWeight: FontWeight.w700,
+                              color: ConsumerColors.ink,
                             ),
                           ),
-                        ),
-
-                        // Título editorial fuera de la imagen: más legible y
-                        // sin competir con las miniaturas de la galería.
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(22, 0, 22, 18),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(height: 7),
+                          Row(
                             children: [
-                              Text(
-                                widget.restaurant.name,
-                                style: GoogleFonts.piazzolla(
-                                  fontSize: 30,
-                                  height: 1.05,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.ink,
-                                ),
+                              const Icon(
+                                LucideIcons.mapPin,
+                                size: 15,
+                                color: ConsumerColors.wine,
                               ),
-                              const SizedBox(height: 7),
-                              Row(
-                                children: [
-                                  const Icon(Icons.place_outlined, size: 15, color: AppColors.wine),
-                                  const SizedBox(width: 5),
-                                  Expanded(
-                                    child: Text(
-                                      widget.restaurant.zone,
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: AppColors.inkSoft,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Badges dinámicos del restaurante
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 22),
-                          child: Row(
-                            children: [
-                              _buildCuisineBadge(),
-                              const SizedBox(width: 8),
-                              _buildOpenBadge(),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        
-                        // Chips horizontales
-                        SizedBox(
-                          height: 36,
-                          child: ListView(
-                            padding: const EdgeInsets.symmetric(horizontal: 22),
-                            scrollDirection: Axis.horizontal,
-                            children: [
-                              _IconChip(icon: Icons.star_rounded, label: widget.restaurant.rating.toString(), iconColor: AppColors.gold),
-                              const SizedBox(width: 8),
-                              _IconChip(icon: Icons.restaurant_rounded, label: widget.restaurant.cuisine.label, iconColor: AppColors.inkSoft),
-                              const SizedBox(width: 8),
-                              _IconChip(icon: Icons.attach_money_rounded, label: widget.restaurant.price, iconColor: AppColors.inkSoft),
-                              const SizedBox(width: 8),
-                              _IconChip(icon: Icons.map_rounded, label: 'A 2 km', iconColor: AppColors.sage),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        // Direccion
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 22),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.location_on_rounded, size: 18, color: AppColors.inkSoft),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 5),
                               Expanded(
                                 child: Text(
-                                  widget.restaurant.address ?? widget.restaurant.zone,
-                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  widget.restaurant.zone,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: ConsumerColors.inkSoft,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // 3. Selector segmentado
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 22),
-                          child: _SegmentedSelector(
-                            tabs: const ['Menú', 'Información', 'Reseñas'],
-                            activeIndex: _activeTab,
-                            onChanged: (idx) => setState(() => _activeTab = idx),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 24),
-                        
-                        // Contenido de la tab activa
-                        _buildTabContent(),
-                        
-                        // Espacio al final
-                        const SizedBox(height: 120),
-                      ],
+                        ],
+                      ),
                     ),
+                    _StickyReserveBar(restaurant: widget.restaurant),
+
+                    // Badges dinámicos del restaurante
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      child: Row(children: [_buildCuisineBadge()]),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Chips horizontales
+                    SizedBox(
+                      height: 36,
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          if (widget.restaurant.reviewCount > 0) ...[
+                            _IconChip(
+                              icon: Icons.star_rounded,
+                              label:
+                                  '${widget.restaurant.rating.toStringAsFixed(1)} (${widget.restaurant.reviewCount})',
+                              iconColor: ConsumerColors.gold,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          _IconChip(
+                            icon: LucideIcons.utensils,
+                            label: widget.restaurant.cuisine.label,
+                            iconColor: ConsumerColors.inkSoft,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Direccion
+                    if (widget.restaurant.address != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              LucideIcons.mapPin,
+                              size: 18,
+                              color: ConsumerColors.inkSoft,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.restaurant.address!,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+
+                    // 3. Selector segmentado
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      child: _SegmentedSelector(
+                        tabs: const ['Menú', 'Información', 'Reseñas'],
+                        activeIndex: _activeTab,
+                        onChanged: (idx) => setState(() => _activeTab = idx),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Contenido de la tab activa
+                    _buildTabContent(),
+
+                    // Espacio al final
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
             ),
-          ),
-
-          // Barra de reserva fija sobre el contenido inferior.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _StickyReserveBar(restaurant: widget.restaurant),
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildCuisineBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.wine.withOpacity(0.10),
+        color: ConsumerColors.wine.withOpacity(0.10),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          const Icon(Icons.restaurant_menu_rounded, size: 13, color: AppColors.wine),
+          const Icon(
+            LucideIcons.utensils,
+            size: 13,
+            color: ConsumerColors.wine,
+          ),
           const SizedBox(width: 6),
-          Text(widget.restaurant.cuisine.label, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.wine, fontSize: 11)),
+          Text(
+            widget.restaurant.cuisine.label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: ConsumerColors.wine,
+              fontSize: 11,
+            ),
+          ),
         ],
       ),
     );
   }
-  
-  Widget _buildOpenBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.sage.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text('Abierto ahora', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppColors.sage, fontSize: 11)),
-    );
-  }
-  
+
   Widget _buildTabContent() {
     if (_activeTab == 0) {
-      if (_dishes == null) return const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()));
+      if (_dishes == null)
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: CircularProgressIndicator(),
+          ),
+        );
       return DetailMenuTab(dishes: _dishes!);
     } else if (_activeTab == 1) {
-      return DetailInfoTab(restaurant: widget.restaurant, schedule: widget.restaurant.schedule);
+      return DetailInfoTab(
+        restaurant: widget.restaurant,
+        schedule: widget.restaurant.schedule,
+      );
     } else {
-      if (_reviews == null) return const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()));
-      
+      if (_reviews == null)
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: CircularProgressIndicator(),
+          ),
+        );
+
       double avg = 0;
       if (_reviews!.isNotEmpty) {
-        avg = _reviews!.map((e) => e.rating).reduce((a, b) => a + b) / _reviews!.length;
+        avg =
+            _reviews!.map((e) => e.rating).reduce((a, b) => a + b) /
+            _reviews!.length;
       }
-      
+
       return DetailReviewsTab(
         restaurantId: widget.restaurant.id,
-        reviews: _reviews!, 
+        reviews: _reviews!,
         avgRating: avg > 0 ? avg : widget.restaurant.rating,
         onReviewAdded: _loadReviews,
       );
@@ -301,44 +334,57 @@ class _HeroSectionState extends State<_HeroSection> {
 
   @override
   Widget build(BuildContext context) {
-    final images = widget.restaurant.gallery.isNotEmpty 
-        ? widget.restaurant.gallery 
-        : (widget.restaurant.photoUrl != null ? [widget.restaurant.photoUrl!] : <String>[]);
-    final cover = images.isNotEmpty && _selectedIndex < images.length 
-        ? images[_selectedIndex] 
+    final images = widget.restaurant.gallery.isNotEmpty
+        ? widget.restaurant.gallery
+        : (widget.restaurant.photoUrl != null
+              ? [widget.restaurant.photoUrl!]
+              : <String>[]);
+    final cover = images.isNotEmpty && _selectedIndex < images.length
+        ? images[_selectedIndex]
         : (images.isNotEmpty ? images.first : null);
 
     return Container(
       height: 300, // un poco mas de 260px para el overlap
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.wineSoft,
-        image: cover != null ? DecorationImage(image: NetworkImage(cover), fit: BoxFit.cover) : null,
+        color: ConsumerColors.wineSoft,
+        image: cover != null
+            ? DecorationImage(image: NetworkImage(cover), fit: BoxFit.cover)
+            : null,
       ),
       child: Stack(
         children: [
           // Degradado superior para que se vean los botones
           Container(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.center, colors: [Colors.black54, Colors.transparent]),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.center,
+                colors: [Colors.black54, Colors.transparent],
+              ),
             ),
           ),
-          
+
           // Miniaturas de galeria (solo si hay fotos)
           if (images.length > 1)
             Positioned(
               bottom: 40,
               left: 22,
               child: Row(
-                children: List.generate(images.length > 4 ? 4 : images.length, (idx) {
+                children: List.generate(images.length > 4 ? 4 : images.length, (
+                  idx,
+                ) {
                   final isLastAndMore = idx == 3 && images.length > 4;
                   final isSelected = _selectedIndex == idx && !isLastAndMore;
                   return GestureDetector(
                     onTap: () {
                       if (isLastAndMore) {
                         Navigator.push(
-                          context, 
-                          MaterialPageRoute(builder: (_) => GaleriaScreen(images: images, initialIndex: 3))
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                GaleriaScreen(images: images, initialIndex: 3),
+                          ),
                         );
                       } else {
                         setState(() {
@@ -353,16 +399,30 @@ class _HeroSectionState extends State<_HeroSection> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isSelected ? AppColors.wine : Colors.white, 
-                          width: 2
+                          color: isSelected
+                              ? ConsumerColors.wine
+                              : Colors.white,
+                          width: 2,
                         ),
-                        image: DecorationImage(image: NetworkImage(images[idx]), fit: BoxFit.cover),
+                        image: DecorationImage(
+                          image: NetworkImage(images[idx]),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       child: isLastAndMore
                           ? Container(
-                              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
                               alignment: Alignment.center,
-                              child: Text('+${images.length - 4}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                              child: Text(
+                                '+${images.length - 4}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             )
                           : null,
                     ),
@@ -384,17 +444,17 @@ class _RoundBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.paper.withOpacity(0.92),
+      color: ConsumerColors.paper.withOpacity(0.92),
       shape: const CircleBorder(),
       elevation: 3,
-      shadowColor: AppColors.wine.withOpacity(0.22),
+      shadowColor: ConsumerColors.wine.withOpacity(0.22),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 44,
           height: 44,
-          child: Icon(icon, color: AppColors.wine, size: 23),
+          child: Icon(icon, color: ConsumerColors.wine, size: 23),
         ),
       ),
     );
@@ -405,14 +465,18 @@ class _IconChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color iconColor;
-  const _IconChip({required this.icon, required this.label, required this.iconColor});
+  const _IconChip({
+    required this.icon,
+    required this.label,
+    required this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.paperDeep,
+        color: ConsumerColors.paperDeep,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -420,7 +484,13 @@ class _IconChip extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor, size: 14),
           const SizedBox(width: 6),
-          Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12, color: AppColors.ink)),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontSize: 12,
+              color: ConsumerColors.ink,
+            ),
+          ),
         ],
       ),
     );
@@ -432,7 +502,11 @@ class _SegmentedSelector extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int> onChanged;
 
-  const _SegmentedSelector({required this.tabs, required this.activeIndex, required this.onChanged});
+  const _SegmentedSelector({
+    required this.tabs,
+    required this.activeIndex,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -442,8 +516,9 @@ class _SegmentedSelector extends StatelessWidget {
         return Container(
           height: 46,
           decoration: BoxDecoration(
-            color: AppColors.paperDeep,
-            borderRadius: BorderRadius.circular(15),
+            color: ConsumerColors.card,
+            border: Border.all(color: ConsumerColors.line),
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Stack(
             children: [
@@ -457,9 +532,15 @@ class _SegmentedSelector extends StatelessWidget {
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.card,
-                    borderRadius: BorderRadius.circular(11),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                    color: ConsumerColors.wine,
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -473,10 +554,13 @@ class _SegmentedSelector extends StatelessWidget {
                       child: Center(
                         child: Text(
                           tabs[idx],
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: isActive ? AppColors.wine : AppColors.inkSoft,
-                            fontSize: 13,
-                          ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: isActive
+                                    ? Colors.white
+                                    : ConsumerColors.inkSoft,
+                                fontSize: 13,
+                              ),
                         ),
                       ),
                     ),
@@ -505,31 +589,18 @@ class _StickyReserveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 120,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.paper.withOpacity(0.0), AppColors.paper.withOpacity(0.9), AppColors.paper],
-          stops: const [0.0, 0.4, 1.0],
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(22, 40, 22, MediaQuery.of(context).padding.bottom + 16),
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          boxShadow: [BoxShadow(color: AppColors.wine.withOpacity(0.35), blurRadius: 22, offset: const Offset(0, 10))],
-        ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 0, 22, 18),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
         child: FilledButton(
           onPressed: () => _openReservationScreen(context),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.wine,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
           child: Text(
-            'Reservar una Mesa',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+            'Reservar una mesa',
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: Colors.white),
           ),
         ),
       ),

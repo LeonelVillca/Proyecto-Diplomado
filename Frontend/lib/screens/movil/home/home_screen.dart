@@ -1,23 +1,22 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
 import 'package:frontend/widgets/movil/restaurant/explore_card.dart';
+import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 
 // ── Aliases de la paleta oficial Mesa Chapaca ────────────────────────
 class _C {
-  static const bg       = AppColors.paper;        // crema fondo
-  static const surface  = AppColors.card;          // blanco roto tarjetas
-  static const surface2 = AppColors.paperDeep;     // crema más profunda
-  static const accent   = AppColors.gold;          // dorado principal
-  static const accentBg = Color(0xFFF5EEE0);       // variante clara del dorado
-  static const text     = AppColors.ink;           // tinta oscura principal
-  static const textMid  = AppColors.inkSoft;       // gris medio
-  static const textSoft = AppColors.inkSoft;       // gris suave
+  static const bg = ConsumerColors.paper; // crema fondo
+  static const surface = ConsumerColors.card; // blanco roto tarjetas
+  static const accent = ConsumerColors.wine;
+  static const text = ConsumerColors.ink; // tinta oscura principal
+  static const textMid = ConsumerColors.inkSoft; // gris medio
+  static const textSoft = ConsumerColors.inkSoft; // gris suave
 }
 
 class HomeScreen extends StatefulWidget {
@@ -38,11 +37,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
-      result = result.where((r) =>
-        r.name.toLowerCase().contains(q) ||
-        r.cuisine.label.toLowerCase().contains(q) ||
-        (r.address ?? r.zone).toLowerCase().contains(q),
-      ).toList();
+      result = result
+          .where(
+            (r) =>
+                r.name.toLowerCase().contains(q) ||
+                r.cuisine.label.toLowerCase().contains(q) ||
+                (r.address ?? r.zone).toLowerCase().contains(q),
+          )
+          .toList();
     }
     return result;
   }
@@ -76,20 +78,48 @@ class _HomeScreenState extends State<HomeScreen> {
         bottom: false,
         child: CustomScrollView(
           key: const PageStorageKey('home-scroll'),
-          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             // ── 1. Header ─────────────────────────────────────────────
             SliverToBoxAdapter(child: _HomeHeader()),
+
+            if (restauranteCtrl.errorMessage != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: InlineErrorBanner(
+                    message: restauranteCtrl.errorMessage!,
+                  ),
+                ),
+              ),
 
             // ── 2. Buscador ───────────────────────────────────────────
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
-                child: _SearchBar(onChanged: (q) => setState(() => _searchQuery = q)),
+                child: _SearchBar(
+                  onChanged: (q) => setState(() => _searchQuery = q),
+                ),
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 28)),
+            const SliverToBoxAdapter(child: SizedBox(height: 18)),
+            if (allRestaurants.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _CategoryChips(
+                  categories: allRestaurants
+                      .map((r) => r.cuisine)
+                      .toSet()
+                      .toList(),
+                  selected: _selected,
+                  onSelect: (c) =>
+                      setState(() => _selected = _selected == c ? null : c),
+                  onReset: () => setState(() => _selected = null),
+                ),
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
             if (isFiltering) ...[
               // ── Resultados de búsqueda / filtro ────────────────────
@@ -104,19 +134,14 @@ class _HomeScreenState extends State<HomeScreen> {
               else
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  sliver: SliverGrid(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, i) => ExploreCard(
+                  sliver: SliverList.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (context, i) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: ExploreCard(
                         restaurant: filtered[i],
                         onTap: () => _navToDetail(context, filtered[i]),
                       ),
-                      childCount: filtered.length,
-                    ),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      childAspectRatio: 0.68,
                     ),
                   ),
                 ),
@@ -138,7 +163,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 290,
+                    height: 156,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -170,33 +195,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Chips de categorías
-              SliverToBoxAdapter(
-                child: _CategoryChips(
-                  selected: _selected,
-                  onSelect: (c) => setState(() => _selected = _selected == c ? null : c),
-                  onReset: () => setState(() => _selected = null),
-                ),
-              ),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 20)),
-
-              // Grilla 2 columnas
+              // Lista compacta de restaurantes reales
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) => ExploreCard(
+                sliver: SliverList.builder(
+                  itemCount: allRestaurants.length,
+                  itemBuilder: (context, i) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: ExploreCard(
                       restaurant: allRestaurants[i],
                       onTap: () => _navToDetail(context, allRestaurants[i]),
                     ),
-                    childCount: allRestaurants.length,
-                  ),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                    childAspectRatio: 0.68,
                   ),
                 ),
               ),
@@ -209,14 +218,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  static TextStyle _sectionTitle() => GoogleFonts.poppins(
-    fontSize: 22,
-    fontWeight: FontWeight.w700,
+  static TextStyle _sectionTitle() => const TextStyle(
+    fontFamily: 'Fraunces',
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
     color: _C.text,
     letterSpacing: -0.3,
   );
 
-  static TextStyle _sectionSub() => GoogleFonts.poppins(
+  static TextStyle _sectionSub() => const TextStyle(
+    fontFamily: 'InstrumentSans',
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: _C.textSoft,
@@ -232,26 +243,30 @@ class _HomeHeader extends StatelessWidget {
     final auth = AuthScope.of(context);
     final displayName = auth.displayName ?? '';
     final firstName = displayName.trim().isEmpty
-        ? 'Chapaco'
+        ? 'bienvenido'
         : displayName.trim().split(RegExp(r'\s+')).first;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Row(
         children: [
-          // Logo box
+          // Avatar de la sesión
           Container(
-            width: 50,
-            height: 50,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: _C.accent,
-              borderRadius: BorderRadius.circular(14),
+              color: ConsumerColors.sage,
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                'assets/icon_app.webp',
-                fit: BoxFit.cover),
+            alignment: Alignment.center,
+            child: Text(
+              firstName[0].toUpperCase(),
+              style: const TextStyle(
+                fontFamily: 'Fraunces',
+                fontSize: 21,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -260,29 +275,35 @@ class _HomeHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Hola, $firstName 👋',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: _C.text,
-                    letterSpacing: -0.2,
+                const Text(
+                  'Bienvenido',
+                  style: TextStyle(
+                    fontFamily: 'InstrumentSans',
+                    fontSize: 12,
+                    color: _C.textSoft,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_rounded, color: _C.accent, size: 13),
-                    const SizedBox(width: 3),
-                    Text(
-                      'Tarija, Bolivia 🇧🇴',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: _C.textSoft,
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(text: 'Hola, '),
+                      TextSpan(
+                        text: '$firstName.',
+                        style: const TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: _C.accent,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  style: const TextStyle(
+                    fontFamily: 'Fraunces',
+                    fontSize: 21,
+                    fontWeight: FontWeight.w600,
+                    color: _C.text,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -306,32 +327,33 @@ class _SearchBar extends StatelessWidget {
       height: 52,
       decoration: BoxDecoration(
         color: _C.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: ConsumerColors.line),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: _C.textSoft, size: 22),
+          const Icon(LucideIcons.search, color: _C.textSoft, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
               onChanged: onChanged,
-              style: GoogleFonts.poppins(fontSize: 14, color: _C.text),
+              style: TextStyle(
+                fontFamily: 'InstrumentSans',
+                fontSize: 14,
+                color: _C.text,
+              ),
               decoration: InputDecoration(
                 hintText: 'Buscar restaurantes...',
-                hintStyle: GoogleFonts.poppins(fontSize: 14, color: _C.textSoft),
+                hintStyle: TextStyle(
+                  fontFamily: 'InstrumentSans',
+                  fontSize: 14,
+                  color: _C.textSoft,
+                ),
                 border: InputBorder.none,
                 isDense: true,
               ),
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: _C.surface2,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.tune_rounded, color: _C.textMid, size: 18),
           ),
         ],
       ),
@@ -343,20 +365,16 @@ class _SearchBar extends StatelessWidget {
 // Chips de categoría
 // ──────────────────────────────────────────────────────────────────────
 class _CategoryChips extends StatelessWidget {
+  final List<Cuisine> categories;
   final Cuisine? selected;
   final ValueChanged<Cuisine> onSelect;
   final VoidCallback onReset;
-  const _CategoryChips({required this.selected, required this.onSelect, required this.onReset});
-
-  static const _items = [
-    (label: 'Todos',    cuisine: null),
-    (label: 'Parrilla', cuisine: Cuisine.parrilla),
-    (label: 'Casero',   cuisine: Cuisine.tipico),
-    (label: 'Pasta',    cuisine: Cuisine.pastas),
-    (label: 'Café',     cuisine: Cuisine.cafe),
-    (label: 'Vinos',    cuisine: Cuisine.vinoBar),
-    (label: 'Postres',  cuisine: Cuisine.postres),
-  ];
+  const _CategoryChips({
+    required this.categories,
+    required this.selected,
+    required this.onSelect,
+    required this.onReset,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -365,32 +383,56 @@ class _CategoryChips extends StatelessWidget {
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         scrollDirection: Axis.horizontal,
-        itemCount: _items.length,
+        itemCount: categories.length + 1,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, i) {
-          final item = _items[i];
-          final isSel = item.cuisine == null
+          final cuisine = i == 0 ? null : categories[i - 1];
+          final isSel = cuisine == null
               ? selected == null
-              : selected == item.cuisine;
+              : selected == cuisine;
           return GestureDetector(
             onTap: () {
-              if (item.cuisine != null) onSelect(item.cuisine!);
-              else onReset();
+              if (cuisine != null)
+                onSelect(cuisine);
+              else
+                onReset();
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
               decoration: BoxDecoration(
                 color: isSel ? _C.accent : _C.surface,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Text(
-                item.label,
-                style: GoogleFonts.poppins(
-                  fontSize: 13.5,
-                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                  color: isSel ? Colors.black : _C.textMid,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: isSel ? _C.accent : ConsumerColors.line,
                 ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    cuisine == null
+                        ? LucideIcons.layoutGrid
+                        : switch (cuisine) {
+                            Cuisine.parrilla => LucideIcons.flame,
+                            Cuisine.vinoBar => LucideIcons.wine,
+                            Cuisine.cafe => LucideIcons.coffee,
+                            Cuisine.postres => LucideIcons.cookie,
+                            _ => LucideIcons.utensils,
+                          },
+                    size: 15,
+                    color: isSel ? Colors.white : _C.textMid,
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    cuisine?.label ?? 'Todos',
+                    style: TextStyle(
+                      fontFamily: 'InstrumentSans',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSel ? Colors.white : _C.textMid,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -410,158 +452,128 @@ class _RecommendedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 260,
-        decoration: BoxDecoration(
+    return SizedBox(
+      width: 300,
+      child: Material(
+        color: _C.surface,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(22),
-          color: _C.surface,
-          image: restaurant.photoUrl != null
-              ? DecorationImage(
-                  image: NetworkImage(restaurant.photoUrl!),
-                  fit: BoxFit.cover,
-                )
-              : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(80),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: ConsumerColors.line),
+              borderRadius: BorderRadius.circular(22),
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Scrim inferior
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xE5000000)],
-                    stops: [0.35, 1.0],
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: 112,
+                    height: 118,
+                    child: restaurant.photoUrl == null
+                        ? const ColoredBox(
+                            color: ConsumerColors.paperDeep,
+                            child: Icon(LucideIcons.utensils, color: _C.accent),
+                          )
+                        : Image.network(
+                            restaurant.photoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const ColoredBox(
+                              color: ConsumerColors.paperDeep,
+                              child: Icon(
+                                LucideIcons.utensils,
+                                color: _C.accent,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
-              ),
-            ),
-
-            // Info inferior
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Badge rating + tipo
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _C.accent,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.star_rounded, color: Colors.black, size: 13),
-                              const SizedBox(width: 4),
-                              Text(
-                                restaurant.rating.toStringAsFixed(1),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        restaurant.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Fraunces',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: _C.text,
                         ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            '${restaurant.cuisine.label} · ${restaurant.reviewCount} reseñas',
-                            style: GoogleFonts.poppins(fontSize: 11, color: Colors.white70),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    // Nombre
-                    Text(
-                      restaurant.name,
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        height: 1.2,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    // Dirección
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on_rounded, color: _C.accent, size: 13),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            restaurant.address ?? restaurant.zone,
-                            style: GoogleFonts.poppins(fontSize: 11.5, color: Colors.white70),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      const SizedBox(height: 4),
+                      if (restaurant.reviewCount > 0)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: ConsumerColors.gold,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              restaurant.rating.toStringAsFixed(1),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: _C.text,
+                              ),
+                            ),
+                            Text(
+                              ' (' + restaurant.reviewCount.toString() + ')',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: _C.textSoft,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Botón Reservar
-                    SizedBox(
-                      width: double.infinity,
-                      child: DecoratedBox(
+                      const SizedBox(height: 3),
+                      Text(
+                        restaurant.cuisine.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _C.textSoft,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
                           color: _C.accent,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(99),
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.calendar_today_rounded, color: Colors.black, size: 15),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Reservar',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
+                        child: const Text(
+                          'Ver restaurante',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
-
 // El _ExploreCard fue extraído a lib/widgets/movil/restaurant/explore_card.dart
 // El ExploreCard fue extraído a lib/widgets/movil/restaurant/explore_card.dart
 
@@ -577,11 +589,20 @@ class _NoResults extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
       child: Column(
         children: [
-          Icon(Icons.search_off_rounded, size: 52, color: _C.textSoft.withAlpha(120)),
+          Icon(
+            LucideIcons.searchX,
+            size: 52,
+            color: _C.textSoft.withAlpha(120),
+          ),
           const SizedBox(height: 14),
           Text(
             'No encontramos resultados',
-            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: _C.textMid),
+            style: TextStyle(
+              fontFamily: 'InstrumentSans',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: _C.textMid,
+            ),
           ),
         ],
       ),

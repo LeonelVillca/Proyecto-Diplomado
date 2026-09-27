@@ -1,12 +1,13 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
-import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/screens/movil/reservations/reservation_schedule.dart';
+import 'package:frontend/screens/movil/reservations/reservation_sent_dialog.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 
@@ -306,18 +307,12 @@ class _ReservationScreenState extends State<ReservationScreen> {
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Solicitud enviada'),
-          content: Text(
-            'Tu reserva en ${widget.restaurant.name} para el ${_longDate(date)} a las $time '
-            'por $guests personas quedó pendiente de confirmación.',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Entendido'),
-            ),
-          ],
+        builder: (dialogContext) => ReservationSentDialog(
+          restaurant: widget.restaurant,
+          date: _longDate(date),
+          time: time,
+          guests: guests,
+          onClose: () => Navigator.of(dialogContext).pop(),
         ),
       );
       if (mounted) Navigator.of(context).pop(true);
@@ -378,19 +373,20 @@ class _ReservationScreenState extends State<ReservationScreen> {
           day,
     ];
     final slots = selectedDay.isEmpty ? <String>[] : selectedDay.first.slots;
-    final titleStyle = GoogleFonts.piazzolla(
-      color: AppColors.ink,
+    final titleStyle = TextStyle(
+      fontFamily: 'Fraunces',
+      color: ConsumerColors.ink,
       fontSize: 21,
       fontWeight: FontWeight.w700,
     );
 
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: ConsumerColors.paper,
       appBar: AppBar(
-        backgroundColor: AppColors.paper,
+        backgroundColor: ConsumerColors.paper,
         title: Text(
           'Reservar mesa',
-          style: GoogleFonts.piazzolla(fontWeight: FontWeight.w700),
+          style: TextStyle(fontFamily: 'Fraunces', fontWeight: FontWeight.w700),
         ),
       ),
       body: Center(
@@ -409,61 +405,67 @@ class _ReservationScreenState extends State<ReservationScreen> {
                   ),
                   const SizedBox(height: 18),
                 ],
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: ConsumerColors.paperDeep,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    _selectedDate == null || _selectedTime == null
+                        ? 'Selecciona día y hora para completar tu solicitud.'
+                        : '${_longDate(_selectedDate!)} · $_selectedTime · $_guests ${_guests == 1 ? 'persona' : 'personas'} · 2 horas',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: ConsumerColors.ink,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: FilledButton(
+                    onPressed:
+                        _submitting ||
+                            _loadingOptions ||
+                            _checkingAvailability ||
+                            _days.isEmpty ||
+                            _maxGuests == 0
+                        ? null
+                        : _submit,
+                    child: _submitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Solicitar reserva'),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 Text(
                   widget.restaurant.name,
-                  style: GoogleFonts.piazzolla(
-                    color: AppColors.wine,
+                  style: TextStyle(
+                    fontFamily: 'Fraunces',
+                    color: ConsumerColors.wine,
                     fontSize: 30,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Elige cuántas personas vendrán, un día de atención y una hora. '
+                  'Elige un día, una hora y cuántas personas vendrán. '
                   'La solicitud quedará pendiente hasta que el restaurante la confirme.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: AppColors.inkSoft),
-                ),
-                const SizedBox(height: 30),
-                Text('¿Cuántas personas?', style: titleStyle),
-                const SizedBox(height: 6),
-                Text(
-                  'Mostramos mesas con capacidad suficiente para tu grupo.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 12),
-                if (_loadingOptions)
-                  const LinearProgressIndicator()
-                else if (_maxGuests == 0)
-                  const Text(
-                    'Este restaurante no tiene mesas activas disponibles.',
-                  )
-                else
-                  Wrap(
-                    spacing: 9,
-                    runSpacing: 9,
-                    children: [
-                      for (var number = 1; number <= _maxGuests; number++)
-                        ChoiceChip(
-                          label: Text('$number'),
-                          selected: _guests == number,
-                          selectedColor: AppColors.wine,
-                          labelStyle: TextStyle(
-                            color: _guests == number
-                                ? Colors.white
-                                : AppColors.ink,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          onSelected: _submitting
-                              ? null
-                              : (_) {
-                                  setState(() => _guests = number);
-                                  _checkAvailability();
-                                },
-                        ),
-                    ],
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: ConsumerColors.inkSoft,
                   ),
+                ),
                 const SizedBox(height: 30),
                 Text('Día de la visita', style: titleStyle),
                 const SizedBox(height: 6),
@@ -485,7 +487,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                       ),
                       TextButton.icon(
                         onPressed: _loadOptions,
-                        icon: const Icon(Icons.refresh_rounded),
+                        icon: const Icon(LucideIcons.rotateCcw),
                         label: const Text('Volver a consultar'),
                       ),
                     ],
@@ -526,12 +528,12 @@ class _ReservationScreenState extends State<ReservationScreen> {
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: selected
-                                    ? AppColors.wine
-                                    : AppColors.card,
+                                    ? ConsumerColors.wine
+                                    : ConsumerColors.card,
                                 border: Border.all(
                                   color: selected
-                                      ? AppColors.wine
-                                      : AppColors.line,
+                                      ? ConsumerColors.wine
+                                      : ConsumerColors.line,
                                 ),
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -543,16 +545,17 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                     style: TextStyle(
                                       color: selected
                                           ? Colors.white70
-                                          : AppColors.inkSoft,
+                                          : ConsumerColors.inkSoft,
                                       fontSize: 13,
                                     ),
                                   ),
                                   Text(
                                     '${date.day} ${_shortMonth(date)}',
-                                    style: GoogleFonts.piazzolla(
+                                    style: TextStyle(
+                                      fontFamily: 'Fraunces',
                                       color: selected
                                           ? Colors.white
-                                          : AppColors.ink,
+                                          : ConsumerColors.ink,
                                       fontSize: 17,
                                       fontWeight: FontWeight.w700,
                                     ),
@@ -581,11 +584,11 @@ class _ReservationScreenState extends State<ReservationScreen> {
                       ChoiceChip(
                         label: Text(slot),
                         selected: _selectedTime == slot,
-                        selectedColor: AppColors.wine,
+                        selectedColor: ConsumerColors.wine,
                         labelStyle: TextStyle(
                           color: _selectedTime == slot
                               ? Colors.white
-                              : AppColors.ink,
+                              : ConsumerColors.ink,
                           fontWeight: FontWeight.w700,
                         ),
                         onSelected: _submitting
@@ -605,11 +608,82 @@ class _ReservationScreenState extends State<ReservationScreen> {
                   Text(
                     '${_availableCount!} ${_availableCount == 1 ? 'mesa disponible' : 'mesas disponibles'} para este horario.',
                     style: const TextStyle(
-                      color: AppColors.sage,
+                      color: ConsumerColors.sage,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
+                const SizedBox(height: 30),
+                Text('¿Cuántas personas?', style: titleStyle),
+                const SizedBox(height: 6),
+                Text(
+                  'Mostramos mesas con capacidad suficiente para tu grupo.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                if (_loadingOptions)
+                  const LinearProgressIndicator()
+                else if (_maxGuests == 0)
+                  const Text(
+                    'Este restaurante no tiene mesas activas disponibles.',
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: ConsumerColors.card,
+                      border: Border.all(color: ConsumerColors.line),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton.outlined(
+                          tooltip: 'Una persona menos',
+                          onPressed: _submitting || _guests <= 1
+                              ? null
+                              : () {
+                                  setState(() => _guests--);
+                                  _checkAvailability();
+                                },
+                          icon: const Icon(LucideIcons.minus),
+                        ),
+                        SizedBox(
+                          width: 90,
+                          child: Column(
+                            children: [
+                              Text(
+                                '$_guests',
+                                style: const TextStyle(
+                                  fontFamily: 'Fraunces',
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w600,
+                                  color: ConsumerColors.ink,
+                                ),
+                              ),
+                              Text(
+                                _guests == 1 ? 'persona' : 'personas',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: ConsumerColors.inkSoft,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton.outlined(
+                          tooltip: 'Una persona más',
+                          onPressed: _submitting || _guests >= _maxGuests
+                              ? null
+                              : () {
+                                  setState(() => _guests++);
+                                  _checkAvailability();
+                                },
+                          icon: const Icon(LucideIcons.plus),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 30),
                 Text('Peticiones especiales', style: titleStyle),
                 const SizedBox(height: 6),
@@ -626,70 +700,13 @@ class _ReservationScreenState extends State<ReservationScreen> {
                   decoration: InputDecoration(
                     hintText: 'Por ejemplo, una silla para bebé o una alergia',
                     filled: true,
-                    fillColor: AppColors.card,
+                    fillColor: ConsumerColors.card,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: AppColors.paperDeep,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    _selectedDate == null || _selectedTime == null
-                        ? 'Selecciona día y hora para completar tu solicitud.'
-                        : '${_longDate(_selectedDate!)} · $_selectedTime · $_guests ${_guests == 1 ? 'persona' : 'personas'} · 2 horas',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.ink,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
               ],
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          color: AppColors.card,
-          child: Center(
-            heightFactor: 1,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: SizedBox(
-                height: 52,
-                child: FilledButton(
-                  onPressed:
-                      _submitting ||
-                          _loadingOptions ||
-                          _checkingAvailability ||
-                          _days.isEmpty ||
-                          _maxGuests == 0
-                      ? null
-                      : _submit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.wine,
-                  ),
-                  child: _submitting
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Solicitar reserva'),
-                ),
-              ),
             ),
           ),
         ),

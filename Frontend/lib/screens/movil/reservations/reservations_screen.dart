@@ -1,11 +1,13 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as io;
-import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/reserva_admin_model.dart';
+import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 
 class ReservationsScreen extends StatefulWidget {
   const ReservationsScreen({super.key});
@@ -16,12 +18,17 @@ class ReservationsScreen extends StatefulWidget {
 
 class _ReservationsScreenState extends State<ReservationsScreen> {
   bool _isLoading = true;
+  String? _errorMessage;
   List<ReservaAdminModel> _reservas = [];
   io.Socket? _socket;
   String? _socketToken;
-  
-  List<ReservaAdminModel> get proximas => _reservas.where((r) => r.estado == 'pendiente' || r.estado == 'confirmada').toList();
-  List<ReservaAdminModel> get historial => _reservas.where((r) => r.estado != 'pendiente' && r.estado != 'confirmada').toList();
+
+  List<ReservaAdminModel> get proximas => _reservas
+      .where((r) => r.estado == 'pendiente' || r.estado == 'confirmada')
+      .toList();
+  List<ReservaAdminModel> get historial => _reservas
+      .where((r) => r.estado != 'pendiente' && r.estado != 'confirmada')
+      .toList();
 
   @override
   void initState() {
@@ -51,13 +58,16 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     if (token == _socketToken && _socket != null) return;
     _socket?.dispose();
     _socketToken = token;
-    if (token == null) { _socket = null; return; }
+    if (token == null) {
+      _socket = null;
+      return;
+    }
     _socket = io.io(ApiEndpoints.baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
       'forceNew': true,
       'auth': {'token': token},
-      'extraHeaders': {'Authorization': 'Bearer $token'}
+      'extraHeaders': {'Authorization': 'Bearer $token'},
     });
 
     _socket!.connect();
@@ -67,42 +77,55 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     });
 
     _socket!.on('nueva_reserva', (data) {
-       final auth = AuthScope.of(context, listen: false);
-       if (data['idUsuario'] == auth.idUsuario) {
-         if (mounted) _cargarDatos();
-       }
+      final auth = AuthScope.of(context, listen: false);
+      if (data['idUsuario'] == auth.idUsuario) {
+        if (mounted) _cargarDatos();
+      }
     });
 
     _socket!.on('reserva_actualizada', (data) {
-       // El backend envía {id, estado, idRestaurante}
-       bool belongsToUser = _reservas.any((r) => r.id == data['id']);
-       if (belongsToUser) {
-         if (mounted) _cargarDatos();
-       }
+      // El backend envía {id, estado, idRestaurante}
+      bool belongsToUser = _reservas.any((r) => r.id == data['id']);
+      if (belongsToUser) {
+        if (mounted) _cargarDatos();
+      }
     });
   }
 
   Future<void> _cargarDatos() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       final auth = AuthScope.of(context, listen: false);
       final idUsuario = auth.idUsuario;
       final token = auth.token;
-      
+
       if (idUsuario == null) return;
 
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/reservas/usuario/$idUsuario');
-      final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final url = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/reservas/usuario/$idUsuario',
+      );
+      final res = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
       if (res.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
         _reservas = data.map((e) => ReservaAdminModel.fromJson(e)).toList();
         _reservas.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+      } else {
+        if (mounted)
+          setState(() => _errorMessage = 'No se pudieron cargar tus reservas.');
       }
     } catch (e) {
       debugPrint('Error cargando reservas cliente: $e');
+      if (mounted)
+        setState(() => _errorMessage = 'No se pudieron cargar tus reservas.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -120,26 +143,53 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Mis reservas', style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28)),
+                  Text(
+                    'Mis reservas',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.displayMedium?.copyWith(fontSize: 28),
+                  ),
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: 14),
+                    InlineErrorBanner(message: _errorMessage!),
+                  ],
                   const SizedBox(height: 24),
-                  
+
                   // Tarjetas de estadisticas
                   Row(
                     children: [
-                      Expanded(child: _buildStatCard(context, proximas.length.toString(), 'Próximas', Icons.event_available_rounded)),
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          proximas.length.toString(),
+                          'Próximas',
+                          LucideIcons.calendarCheck,
+                        ),
+                      ),
                       const SizedBox(width: 16),
-                      Expanded(child: _buildStatCard(context, historial.length.toString(), 'Historial', Icons.history_rounded)),
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          historial.length.toString(),
+                          'Historial',
+                          LucideIcons.history,
+                        ),
+                      ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: AppColors.wine))
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: ConsumerColors.wine,
+                          ),
+                        )
                       : proximas.isEmpty && historial.isEmpty
-                          ? _buildEmptyState(context)
-                          : _buildReservasList(context),
-                  
+                      ? _buildEmptyState(context)
+                      : _buildReservasList(context),
+
                   const SizedBox(height: 120),
                 ],
               ),
@@ -154,19 +204,37 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(24), boxShadow: AppShadows.cardSoft),
+      decoration: BoxDecoration(
+        color: ConsumerColors.card,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: ConsumerShadows.cardSoft,
+      ),
       child: Column(
         children: [
           Container(
             width: 80,
             height: 80,
-            decoration: BoxDecoration(color: AppColors.paperDeep, shape: BoxShape.circle),
-            child: const Icon(Icons.calendar_today_rounded, size: 36, color: AppColors.wine),
+            decoration: BoxDecoration(
+              color: ConsumerColors.paperDeep,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              LucideIcons.calendar,
+              size: 36,
+              color: ConsumerColors.wine,
+            ),
           ),
           const SizedBox(height: 24),
-          Text('Sin reservas próximas', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            'Sin reservas próximas',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 12),
-          Text('Parece que aún no tienes planes. ¡Descubre un nuevo lugar para comer hoy!', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+          Text(
+            'Parece que aún no tienes planes. ¡Descubre un nuevo lugar para comer hoy!',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         ],
       ),
     );
@@ -192,49 +260,69 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   }
 
   Widget _buildReservaCard(BuildContext context, ReservaAdminModel reserva) {
-    Color bg = Colors.grey.shade200;
-    Color fg = Colors.grey.shade700;
-    
+    Color bg = ConsumerColors.paperDeep;
+    Color fg = ConsumerColors.inkSoft;
+
     if (reserva.estado == 'confirmada') {
-      bg = Colors.green.shade50;
-      fg = Colors.green.shade700;
+      bg = ConsumerColors.successSoft;
+      fg = ConsumerColors.success;
     } else if (reserva.estado == 'pendiente') {
-      bg = Colors.orange.shade50;
-      fg = Colors.orange.shade700;
+      bg = ConsumerColors.warningSoft;
+      fg = ConsumerColors.warning;
     } else if (reserva.estado == 'rechazada' || reserva.estado == 'cancelada') {
-      bg = Colors.red.shade50;
-      fg = Colors.red.shade700;
+      bg = ConsumerColors.errorSoft;
+      fg = ConsumerColors.error;
     }
 
     final date = reserva.fechaHora;
-    final fechaStr = '${date.day.toString().padLeft(2,'0')}/${date.month.toString().padLeft(2,'0')} a las ${date.hour.toString().padLeft(2,'0')}:${date.minute.toString().padLeft(2,'0')}';
+    final fechaStr =
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')} a las ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(20), boxShadow: AppShadows.cardSoft),
+      decoration: BoxDecoration(
+        color: ConsumerColors.card,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: ConsumerShadows.cardSoft,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: AppColors.paperDeep, borderRadius: BorderRadius.circular(16)),
-            child: const Icon(Icons.restaurant_rounded, color: AppColors.wine),
+            decoration: BoxDecoration(
+              color: ConsumerColors.paperDeep,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(LucideIcons.utensils, color: ConsumerColors.wine),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(reserva.restauranteNombre, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontSize: 16)),
+                Text(
+                  reserva.restauranteNombre,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall?.copyWith(fontSize: 16),
+                ),
                 const SizedBox(height: 4),
                 Text(fechaStr, style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.people_alt_rounded, size: 14, color: AppColors.secondaryText),
+                    Icon(
+                      LucideIcons.users,
+                      size: 14,
+                      color: ConsumerColors.secondaryText,
+                    ),
                     const SizedBox(width: 4),
-                    Text('${reserva.cantidadPersonas} personas', style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      '${reserva.cantidadPersonas} personas',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ],
@@ -242,26 +330,55 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
-            child: Text(reserva.estado.toUpperCase(), style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.bold)),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              reserva.estado.toUpperCase(),
+              style: TextStyle(
+                color: fg,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String value, String label, IconData icon) {
+  Widget _buildStatCard(
+    BuildContext context,
+    String value,
+    String label,
+    IconData icon,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(18), boxShadow: AppShadows.cardSoft),
+      decoration: BoxDecoration(
+        color: ConsumerColors.card,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: ConsumerShadows.cardSoft,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AppColors.wine, size: 24),
+          Icon(icon, color: ConsumerColors.wine, size: 24),
           const SizedBox(height: 12),
-          Text(value, style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 24)),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontSize: 24),
+          ),
           const SizedBox(height: 2),
-          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12)),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontSize: 12),
+          ),
         ],
       ),
     );

@@ -1,6 +1,6 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
 
-import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/widgets/movil/navigation/app_bottom_nav.dart';
 import 'package:frontend/screens/movil/home/home_screen.dart';
 import 'package:frontend/screens/movil/home/home_tab.dart';
@@ -23,25 +23,22 @@ class _MainShellState extends State<MainShell> {
 
   static const _screens = [
     HomeScreen(),
-    ReservationsScreen(),
     LocationScreen(),
+    ReservationsScreen(),
     ProfileScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: ConsumerColors.background,
       extendBody: true,
-      body: IndexedStack(
-        index: _tab.index,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _tab.index, children: _screens),
 
       bottomNavigationBar: AppBottomNav(
-         current: _tab,
-         onSelected: (tab) => setState(() => _tab = tab),
-        ),
-      );
+        current: _tab,
+        onSelected: (tab) => setState(() => _tab = tab),
+      ),
+    );
   }
 }

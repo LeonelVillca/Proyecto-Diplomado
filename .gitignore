@@ -1,5 +1,4 @@
 # Archivos de documentación y texto
-*.md
 *.txt
 !CMakeLists.txt
 !Frontend/docs/landing-quality-audit.md

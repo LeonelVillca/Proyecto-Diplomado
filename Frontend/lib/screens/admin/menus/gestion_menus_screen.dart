@@ -35,7 +35,9 @@ class GestionMenusScreen extends StatefulWidget {
 
 class _GestionMenusScreenState extends State<GestionMenusScreen> {
   bool _isLoading = true;
+  bool _initialLoadStarted = false;
   List<MenuAdminModel> _menus = [];
+  String? _loadError;
   String _filtroTexto = '';
   String _filtroEstado = 'todos'; 
   int? _idRestaurante;
@@ -46,24 +48,28 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_idRestaurante == null) {
+    if (!_initialLoadStarted) {
+      _initialLoadStarted = true;
       _cargarDatos();
     }
   }
 
   Future<void> _cargarDatos() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
     try {
       final token = AuthScope.of(context, listen: false).token!;
       final service = MenuAdminService(token);
       _idRestaurante = await service.obtenerIdRestaurante();
-      
-      if (_idRestaurante != null) {
-        _menus = await service.obtenerMenus(_idRestaurante!);
+      if (_idRestaurante == null) {
+        throw StateError('No se encontró un restaurante asociado a esta cuenta.');
       }
+      _menus = await service.obtenerMenus(_idRestaurante!);
     } catch (e) {
       debugPrint('Error: $e');
-      if (mounted) AdminNotificationModal.error(context, 'No pudimos cargar los menús. Intenta nuevamente.');
+      _loadError = 'No fue posible cargar los menús. Intente nuevamente.';
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -159,9 +165,49 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator(color: kBurgundy700))
-                : _buildTable(filtrados),
+                : _loadError != null
+                    ? _buildLoadError()
+                    : _buildTable(filtrados),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLoadError() {
+    return Container(
+      decoration: BoxDecoration(
+        color: kCard,
+        border: Border.all(color: kLine),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: kShadow,
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _loadError!,
+                style: GoogleFonts.manrope(fontSize: 13.5, color: kInkSoft),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: _cargarDatos,
+                icon: const Icon(Icons.refresh, color: kBurgundy700),
+                label: Text(
+                  'Reintentar',
+                  style: GoogleFonts.manrope(
+                    color: kBurgundy700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -304,7 +350,13 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
-                    child: Text('Aún no tienes más menús. Crea uno nuevo para empezar a organizarlos aquí.', style: GoogleFonts.manrope(fontSize: 13.5, color: kInkSoft), textAlign: TextAlign.center),
+                    child: Text(
+                      _menus.isEmpty
+                          ? 'No existen menús registrados.'
+                          : 'No se encontraron menús con los filtros actuales.',
+                      style: GoogleFonts.manrope(fontSize: 13.5, color: kInkSoft),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 )
               : ListView.separated(

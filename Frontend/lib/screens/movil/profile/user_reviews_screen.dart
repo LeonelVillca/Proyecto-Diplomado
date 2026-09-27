@@ -1,7 +1,8 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
-import 'package:frontend/core/movil/theme.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
@@ -14,6 +15,22 @@ class UserReviewsScreen extends StatefulWidget {
 }
 
 class _UserReviewsScreenState extends State<UserReviewsScreen> {
+  void _showError(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        content: Text(message),
+        backgroundColor: ConsumerColors.errorSoft,
+        actions: [
+          TextButton(
+            onPressed: messenger.hideCurrentMaterialBanner,
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool _isLoading = true;
   List<dynamic> _reviews = [];
 
@@ -31,39 +48,61 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
     if (idUsuario == null) return;
 
     try {
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/resenas/usuario/$idUsuario');
-      final res = await http.get(url, headers: {'Authorization': 'Bearer $token'});
+      final url = Uri.parse(
+        '${ApiEndpoints.baseUrl}/api/v1/resenas/usuario/$idUsuario',
+      );
+      final res = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
 
       if (res.statusCode == 200) {
         final data = jsonDecode(utf8.decode(res.bodyBytes));
         setState(() => _reviews = data);
+      } else if (mounted) {
+        _showError('No se pudieron cargar tus reseñas.');
       }
     } catch (e) {
       debugPrint('Error cargando reseñas de usuario: $e');
+      if (mounted) _showError('No se pudieron cargar tus reseñas.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _editarResena(Map<String, dynamic> review) async {
-    final comentarioCtrl = TextEditingController(text: review['comentario']?.toString() ?? '');
+    final comentarioCtrl = TextEditingController(
+      text: review['comentario']?.toString() ?? '',
+    );
     var calificacion = (review['calificacion'] as num?)?.toInt() ?? 1;
     final guardar = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppColors.paper,
-          title: Text('Editar reseña', style: Theme.of(context).textTheme.titleLarge),
+          backgroundColor: ConsumerColors.paper,
+          title: Text(
+            'Editar reseña',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) => IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(index < calificacion ? Icons.star_rounded : Icons.star_border_rounded, color: AppColors.gold),
-                  onPressed: () => setDialogState(() => calificacion = index + 1),
-                )),
+                children: List.generate(
+                  5,
+                  (index) => IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(
+                      index < calificacion
+                          ? Icons.star_rounded
+                          : LucideIcons.star,
+                      color: ConsumerColors.gold,
+                    ),
+                    onPressed: () =>
+                        setDialogState(() => calificacion = index + 1),
+                  ),
+                ),
               ),
               TextField(
                 controller: comentarioCtrl,
@@ -71,18 +110,28 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
                 decoration: InputDecoration(
                   hintText: 'Cuéntanos tu experiencia',
                   filled: true,
-                  fillColor: AppColors.card,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                  fillColor: ConsumerColors.card,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 onChanged: (_) => setDialogState(() {}),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
             FilledButton(
-              onPressed: comentarioCtrl.text.trim().isEmpty ? null : () => Navigator.pop(dialogContext, true),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.wine),
+              onPressed: comentarioCtrl.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: ConsumerColors.wine,
+              ),
               child: const Text('Guardar'),
             ),
           ],
@@ -93,10 +142,13 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
     comentarioCtrl.dispose();
     if (guardar != true || !mounted) return;
     try {
-      await RestauranteScope.of(context, listen: false).actualizarResena(review['id'].toString(), calificacion, comentario);
+      await RestauranteScope.of(
+        context,
+        listen: false,
+      ).actualizarResena(review['id'].toString(), calificacion, comentario);
       await _cargarResenas();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) _showError(e.toString());
     }
   }
 
@@ -107,7 +159,10 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
         title: const Text('Eliminar reseña'),
         content: const Text('Esta acción no se puede deshacer.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
@@ -118,40 +173,53 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
     );
     if (confirmar != true || !mounted) return;
     try {
-      await RestauranteScope.of(context, listen: false).eliminarResena(review['id'].toString());
+      await RestauranteScope.of(
+        context,
+        listen: false,
+      ).eliminarResena(review['id'].toString());
       await _cargarResenas();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) _showError(e.toString());
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.paper,
+      backgroundColor: ConsumerColors.paper,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: Text('Mis Reseñas', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18, color: AppColors.ink)),
+        title: Text(
+          'Mis Reseñas',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 18,
+            color: ConsumerColors.ink,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+          icon: const Icon(LucideIcons.arrowLeft, color: ConsumerColors.ink),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.wine))
+          ? const Center(
+              child: CircularProgressIndicator(color: ConsumerColors.wine),
+            )
           : _reviews.isEmpty
-              ? _buildEmptyState(context)
-              : ListView.builder(
-                  padding: const EdgeInsets.all(22),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: _reviews.length,
-                  itemBuilder: (context, index) {
-                    final review = Map<String, dynamic>.from(_reviews[index] as Map);
-                    return _buildReviewCard(context, review);
-                  },
-                ),
+          ? _buildEmptyState(context)
+          : ListView.builder(
+              padding: const EdgeInsets.all(22),
+              physics: const BouncingScrollPhysics(),
+              itemCount: _reviews.length,
+              itemBuilder: (context, index) {
+                final review = Map<String, dynamic>.from(
+                  _reviews[index] as Map,
+                );
+                return _buildReviewCard(context, review);
+              },
+            ),
     );
   }
 
@@ -162,11 +230,22 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.star_outline_rounded, size: 64, color: AppColors.inkSoft),
+            const Icon(
+              LucideIcons.star,
+              size: 64,
+              color: ConsumerColors.inkSoft,
+            ),
             const SizedBox(height: 24),
-            Text('No tienes reseñas', style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              'No tienes reseñas',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 12),
-            Text('Aún no has calificado ningún restaurante. ¡Anímate a compartir tus experiencias!', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              'Aún no has calificado ningún restaurante. ¡Anímate a compartir tus experiencias!',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
       ),
@@ -177,17 +256,20 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
     final restaurante = review['restaurante'];
     final calificacion = review['calificacion'] ?? 0;
     final comentario = review['comentario'] ?? '';
-    final fecha = review['fecha'] != null ? DateTime.parse(review['fecha']) : DateTime.now();
-    final fechaStr = '${fecha.day.toString().padLeft(2,'0')}/${fecha.month.toString().padLeft(2,'0')}/${fecha.year}';
+    final fecha = review['fecha'] != null
+        ? DateTime.parse(review['fecha'])
+        : DateTime.now();
+    final fechaStr =
+        '${fecha.day.toString().padLeft(2, '0')}/${fecha.month.toString().padLeft(2, '0')}/${fecha.year}';
     final respuesta = review['respuesta'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: ConsumerColors.card,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: AppShadows.cardSoft,
+        boxShadow: ConsumerShadows.cardSoft,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +280,9 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
               Expanded(
                 child: Text(
                   restaurante != null ? restaurante['nombre'] : 'Restaurante',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontSize: 16),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -206,51 +290,83 @@ class _UserReviewsScreenState extends State<UserReviewsScreen> {
               if (respuesta == null)
                 PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
-                  onSelected: (value) => value == 'editar' ? _editarResena(review) : _eliminarResena(review),
+                  onSelected: (value) => value == 'editar'
+                      ? _editarResena(review)
+                      : _eliminarResena(review),
                   itemBuilder: (_) => const [
                     PopupMenuItem(value: 'editar', child: Text('Editar')),
                     PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
                   ],
                 ),
-              Text(fechaStr, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12)),
+              Text(
+                fechaStr,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontSize: 12),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
-            children: List.generate(5, (index) => Icon(
-              index < calificacion ? Icons.star_rounded : Icons.star_border_rounded,
-              color: AppColors.gold,
-              size: 16,
-            )),
+            children: List.generate(
+              5,
+              (index) => Icon(
+                index < calificacion ? Icons.star_rounded : LucideIcons.star,
+                color: ConsumerColors.gold,
+                size: 16,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
-          Text(comentario, style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 14)),
-          
+          Text(
+            comentario,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(fontSize: 14),
+          ),
+
           if (respuesta != null) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.wineSoft.withOpacity(0.05),
+                color: ConsumerColors.wineSoft.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.wineSoft.withOpacity(0.1)),
+                border: Border.all(
+                  color: ConsumerColors.wineSoft.withOpacity(0.1),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.reply_rounded, size: 16, color: AppColors.wine),
+                      const Icon(
+                        LucideIcons.reply,
+                        size: 16,
+                        color: ConsumerColors.wine,
+                      ),
                       const SizedBox(width: 6),
-                      Text('Respuesta del restaurante', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12, color: AppColors.wine)),
+                      Text(
+                        'Respuesta del restaurante',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontSize: 12,
+                          color: ConsumerColors.wine,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(respuesta['texto'], style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                  Text(
+                    respuesta['texto'],
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(fontSize: 13),
+                  ),
                 ],
               ),
             ),
-          ]
+          ],
         ],
       ),
     );

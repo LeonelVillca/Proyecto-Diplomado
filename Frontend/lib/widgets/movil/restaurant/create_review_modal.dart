@@ -1,5 +1,6 @@
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
-import 'package:frontend/core/movil/theme.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/services/movil/restaurante_cliente_service.dart';
@@ -69,7 +70,7 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
         messenger.showSnackBar(
           const SnackBar(
             content: Text('Reseña publicada con éxito.'),
-            backgroundColor: AppColors.sage,
+            backgroundColor: ConsumerColors.sage,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -100,7 +101,7 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       decoration: const BoxDecoration(
-        color: AppColors.paper,
+        color: ConsumerColors.paper,
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       constraints: BoxConstraints(
@@ -121,8 +122,8 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
                 ),
                 IconButton(
                   icon: const Icon(
-                    Icons.close_rounded,
-                    color: AppColors.inkSoft,
+                    LucideIcons.x,
+                    color: ConsumerColors.inkSoft,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -155,10 +156,8 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
                   iconSize: 40,
                   padding: EdgeInsets.zero,
                   icon: Icon(
-                    index < _rating
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    color: AppColors.gold,
+                    index < _rating ? Icons.star_rounded : LucideIcons.star,
+                    color: ConsumerColors.gold,
                   ),
                   onPressed: () {
                     setState(() => _rating = index + 1);
@@ -179,9 +178,9 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
               maxLines: 4,
               decoration: InputDecoration(
                 hintText: '¿Qué fue lo que más te gustó? ¿Algo podría mejorar?',
-                hintStyle: const TextStyle(color: AppColors.inkSoft),
+                hintStyle: const TextStyle(color: ConsumerColors.inkSoft),
                 filled: true,
-                fillColor: AppColors.paperDeep,
+                fillColor: ConsumerColors.paperDeep,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -199,8 +198,8 @@ class _CreateReviewModalState extends State<CreateReviewModal> {
                     ? null
                     : _submitReview,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.wine,
-                  disabledBackgroundColor: AppColors.wineSoft.withValues(
+                  backgroundColor: ConsumerColors.wine,
+                  disabledBackgroundColor: ConsumerColors.wineSoft.withValues(
                     alpha: 0.5,
                   ),
                   shape: RoundedRectangleBorder(
