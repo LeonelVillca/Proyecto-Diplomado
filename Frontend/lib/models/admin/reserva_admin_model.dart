@@ -1,3 +1,5 @@
+import 'package:frontend/core/utils/network/api_endpoints.dart';
+
 class ReservaAdminModel {
   final int id;
   final String estado;
@@ -8,6 +10,9 @@ class ReservaAdminModel {
   final DateTime fechaHora;
   final int cantidadPersonas;
   final String? requerimientosEspeciales;
+  final String? restauranteFoto;
+  final String? restauranteLogo;
+  final String? numeroMesa;
 
   ReservaAdminModel({
     required this.id,
@@ -19,9 +24,22 @@ class ReservaAdminModel {
     required this.fechaHora,
     required this.cantidadPersonas,
     this.requerimientosEspeciales,
+    this.restauranteFoto,
+    this.restauranteLogo,
+    this.numeroMesa,
   });
 
   factory ReservaAdminModel.fromJson(Map<String, dynamic> json) {
+    final restaurante = json['mesa']?['restaurante'];
+
+    String? restauranteImageUrl(dynamic value) {
+      final path = value?.toString().trim();
+      if (path == null || path.isEmpty) return null;
+      final uri = Uri.tryParse(path);
+      if (uri != null && uri.hasScheme) return path;
+      return Uri.parse(ApiEndpoints.baseUrl).resolve(path).toString();
+    }
+
     // Parse fecha and hora into a single DateTime
     DateTime parseFechaHora() {
       try {
@@ -39,10 +57,14 @@ class ReservaAdminModel {
       idUsuario: json['usuario']?['id'] ?? 0,
       idMesa: json['mesa']?['id'] ?? 0,
       idRestaurante: json['mesa']?['restaurante']?['id'] ?? 0,
-      restauranteNombre: json['mesa']?['restaurante']?['nombre'] ?? 'Restaurante',
+      restauranteNombre:
+          json['mesa']?['restaurante']?['nombre'] ?? 'Restaurante',
       fechaHora: parseFechaHora(),
       cantidadPersonas: json['numeroPersonas'] ?? 1,
       requerimientosEspeciales: json['comentarios'],
+      restauranteFoto: restauranteImageUrl(restaurante?['fotoPortada']),
+      restauranteLogo: restauranteImageUrl(restaurante?['logo']),
+      numeroMesa: json['mesa']?['numeroMesa']?.toString(),
     );
   }
 }

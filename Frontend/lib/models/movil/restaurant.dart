@@ -40,6 +40,7 @@ class Restaurant {
     this.lat,
     this.lng,
     this.address,
+    this.phone,
     this.schedule = const [],
   });
 
@@ -68,6 +69,7 @@ class Restaurant {
   final double? lat;
   final double? lng;
   final String? address;
+  final String? phone;
   final List<ScheduleDay> schedule;
 
   /// Representación breve del precio: "$", "$$" o "$$$".

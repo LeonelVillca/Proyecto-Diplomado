@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart'
 import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter/services.dart' show NetworkAssetBundle;
 
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
@@ -26,7 +27,9 @@ class _LocationScreenState extends State<LocationScreen>
   GoogleMapController? _mapCtrl;
   late final AnimationController _pinPulse;
   String _searchQuery = '';
-  BitmapDescriptor? _customIcon;
+  Cuisine? _selectedCuisine;
+  final Map<String, BitmapDescriptor> _restaurantMarkerIcons = {};
+  final Set<String> _loadingMarkerIcons = {};
   Restaurant? _selectedRestaurant;
 
   // El mapa solo funciona en Web, Android e iOS.
@@ -42,7 +45,6 @@ class _LocationScreenState extends State<LocationScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1700),
     );
-    _initMarker();
   }
 
   @override
@@ -51,91 +53,69 @@ class _LocationScreenState extends State<LocationScreen>
     super.dispose();
   }
 
-  Future<void> _initMarker() async {
-    final int size = 96;
-    final ui.PictureRecorder pictureRecorder = ui.PictureRecorder();
-    final Canvas canvas = Canvas(pictureRecorder);
+  Future<void> _loadRestaurantMarkerIcon(Restaurant restaurant) async {
+    final imageUrls = <String>{
+      if (restaurant.logoUrl?.isNotEmpty == true) restaurant.logoUrl!,
+      if (restaurant.photoUrl?.isNotEmpty == true) restaurant.photoUrl!,
+    };
+    if (imageUrls.isEmpty ||
+        _restaurantMarkerIcons.containsKey(restaurant.id) ||
+        !_loadingMarkerIcons.add(restaurant.id)) {
+      return;
+    }
 
-    // Sombra
-    final Paint shadowPaint = Paint()
-      ..color = Colors.black.withAlpha(60)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-    canvas.drawCircle(Offset(size / 2, size / 2 + 4), size / 2.3, shadowPaint);
-
-    // Pin blanco, más ligero y legible sobre el mapa.
-    final Paint paint = Paint()..color = Colors.white;
-    final Path pin = Path()
-      ..moveTo(size / 2, size * .92)
-      ..cubicTo(
-        size * .72,
-        size * .68,
-        size * .80,
-        size * .57,
-        size * .80,
-        size * .42,
-      )
-      ..cubicTo(
-        size * .80,
-        size * .18,
-        size * .66,
-        size * .08,
-        size / 2,
-        size * .08,
-      )
-      ..cubicTo(
-        size * .34,
-        size * .08,
-        size * .20,
-        size * .18,
-        size * .20,
-        size * .42,
-      )
-      ..cubicTo(
-        size * .20,
-        size * .57,
-        size * .28,
-        size * .68,
-        size / 2,
-        size * .92,
-      )
-      ..close();
-    canvas.drawPath(pin, paint);
-
-    final Paint innerPaint = Paint()..color = ConsumerColors.wine;
-    canvas.drawCircle(Offset(size / 2, size * .39), size / 4.5, innerPaint);
-
-    // Ícono central
-    TextPainter textPainter = TextPainter(textDirection: TextDirection.ltr);
-    textPainter.text = TextSpan(
-      text: String.fromCharCode(LucideIcons.utensils.codePoint),
-      style: TextStyle(
-        fontSize: size / 2.5,
-        fontFamily: LucideIcons.utensils.fontFamily,
-        package: LucideIcons.utensils.fontPackage,
-        color: Colors.white,
-      ),
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        size / 2 - textPainter.width / 2,
-        size / 2 - textPainter.height / 2,
-      ),
-    );
-
-    final ui.Image image = await pictureRecorder.endRecording().toImage(
-      size,
-      size,
-    );
-    final ByteData? byteData = await image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-
-    if (mounted && byteData != null) {
-      setState(() {
-        _customIcon = BitmapDescriptor.fromBytes(byteData.buffer.asUint8List());
-      });
+    try {
+      for (final imageUrl in imageUrls) {
+        try {
+          final response = await NetworkAssetBundle(Uri.parse(imageUrl)).load(
+            imageUrl,
+          );
+          final codec = await ui.instantiateImageCodec(
+            response.buffer.asUint8List(),
+            targetWidth: 96,
+            targetHeight: 96,
+          );
+          final frame = await codec.getNextFrame();
+          final recorder = ui.PictureRecorder();
+          final canvas = Canvas(recorder);
+          const center = Offset(48, 48);
+          final shadow = Paint()
+            ..color = Colors.black.withAlpha(55)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+          canvas.drawCircle(const Offset(48, 50), 42, shadow);
+          canvas.drawCircle(center, 43, Paint()..color = Colors.white);
+          canvas.save();
+          canvas.clipPath(
+            Path()..addOval(Rect.fromCircle(center: center, radius: 38)),
+          );
+          canvas.drawImageRect(
+            frame.image,
+            Rect.fromLTWH(
+              0,
+              0,
+              frame.image.width.toDouble(),
+              frame.image.height.toDouble(),
+            ),
+            const Rect.fromLTWH(10, 10, 76, 76),
+            Paint()..filterQuality = FilterQuality.high,
+          );
+          canvas.restore();
+          final image = await recorder.endRecording().toImage(96, 96);
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          if (!mounted || bytes == null) return;
+          setState(() {
+            _restaurantMarkerIcons[restaurant.id] = BitmapDescriptor.fromBytes(
+              bytes.buffer.asUint8List(),
+              size: const Size(40, 40),
+            );
+          });
+          return;
+        } catch (_) {
+          // Si falla el logo, intenta con la foto de portada.
+        }
+      }
+    } finally {
+      _loadingMarkerIcons.remove(restaurant.id);
     }
   }
 
@@ -194,7 +174,22 @@ class _LocationScreenState extends State<LocationScreen>
 
     final query = _searchQuery.trim().toLowerCase();
 
+    final availableCuisines = restaurants.map((r) => r.cuisine).toSet();
+    final categories = <Cuisine>[
+      Cuisine.parrilla,
+      Cuisine.tipico,
+      ...Cuisine.values.where(
+        (cuisine) =>
+            availableCuisines.contains(cuisine) &&
+            cuisine != Cuisine.parrilla &&
+            cuisine != Cuisine.tipico,
+      ),
+    ];
+
     final filteredRestaurants = restaurants.where((r) {
+      if (_selectedCuisine != null && r.cuisine != _selectedCuisine) {
+        return false;
+      }
       if (query.isEmpty) return true;
       return r.name.toLowerCase().contains(query) ||
           r.cuisine.label.toLowerCase().contains(query) ||
@@ -203,14 +198,17 @@ class _LocationScreenState extends State<LocationScreen>
 
     final markers = <Marker>{};
     for (final r in filteredRestaurants) {
+      if ((r.logoUrl ?? r.photoUrl)?.isNotEmpty == true) {
+        _loadRestaurantMarkerIcon(r);
+      }
       if (r.lat != null && r.lng != null) {
         markers.add(
           Marker(
             markerId: MarkerId(r.id),
             position: LatLng(r.lat!, r.lng!),
-            icon:
-                _customIcon ??
+            icon: _restaurantMarkerIcons[r.id] ??
                 BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRose),
+            anchor: const Offset(0.5, 0.5),
             onTap: () => _onMarkerTap(r),
           ),
         );
@@ -218,6 +216,7 @@ class _LocationScreenState extends State<LocationScreen>
     }
 
     return Stack(
+      fit: StackFit.expand,
       children: [
         // ── Mapa o fallback
         Positioned.fill(
@@ -263,7 +262,11 @@ class _LocationScreenState extends State<LocationScreen>
         ),
 
         // ── UI flotante superior (solo barra de búsqueda + chips)
-        SafeArea(
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Column(
@@ -276,32 +279,61 @@ class _LocationScreenState extends State<LocationScreen>
                     });
                   },
                 ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 38,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      _MapCuisineChip(
+                        label: 'Todos',
+                        icon: Icons.grid_view_rounded,
+                        selected: _selectedCuisine == null,
+                        onTap: () => setState(() => _selectedCuisine = null),
+                      ),
+                      ...categories.map(
+                        (cuisine) => _MapCuisineChip(
+                          label: cuisine == Cuisine.tipico
+                              ? 'Típica'
+                              : cuisine.label,
+                          icon: cuisine.icon,
+                          selected: _selectedCuisine == cuisine,
+                          onTap: () => setState(
+                            () => _selectedCuisine = cuisine,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
+            ),
             ),
           ),
         ),
 
         // ── Panel deslizable inferior con padding de nav bar
-        DraggableScrollableSheet(
-          initialChildSize: 0.18,
-          minChildSize: 0.14,
-          maxChildSize: 0.88,
-          builder: (_, ctrl) => Padding(
-            padding: EdgeInsets.only(bottom: bottomPad),
-            child: _BottomSheet(
-              ctrl: ctrl,
-              restaurants: filteredRestaurants,
-              onCardTap: _onMarkerTap,
+        if (_selectedRestaurant == null)
+          DraggableScrollableSheet(
+            initialChildSize: 0.18,
+            minChildSize: 0.14,
+            maxChildSize: 0.88,
+            builder: (_, ctrl) => Padding(
+              padding: EdgeInsets.only(bottom: bottomPad),
+              child: _BottomSheet(
+                ctrl: ctrl,
+                restaurants: filteredRestaurants,
+                onCardTap: _onMarkerTap,
+              ),
             ),
           ),
-        ),
 
         // Tarjeta de selección integrada: mantiene el mapa visible y evita el scrim oscuro.
         if (_selectedRestaurant != null)
           Positioned(
             left: 16,
             right: 16,
-            bottom: bottomPad - 16,
+            bottom: bottomPad + 8,
             child: _MapMarkerModal(
               restaurant: _selectedRestaurant!,
               onClose: _closeRestaurantModal,
@@ -389,16 +421,6 @@ class _BottomSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  '${restaurants.length} Restaurantes cerca',
-                  style: TextStyle(
-                    fontFamily: 'Fraunces',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black54,
-                  ),
-                ),
               ],
             ),
           ),
@@ -413,6 +435,46 @@ class _BottomSheet extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MapCuisineChip extends StatelessWidget {
+  const _MapCuisineChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        selected: selected,
+        onSelected: (_) => onTap(),
+        avatar: Icon(icon, size: 15),
+        label: Text(label),
+        labelStyle: TextStyle(
+          color: selected ? Colors.white : ConsumerColors.inkSoft,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        backgroundColor: Colors.white,
+        selectedColor: ConsumerColors.wine,
+        side: BorderSide(
+          color: selected ? ConsumerColors.wine : const Color(0xFFE8E0D4),
+        ),
+        shape: const StadiumBorder(),
+        showCheckmark: false,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
       ),
     );
   }
@@ -437,125 +499,116 @@ class _MapMarkerModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = restaurant.photoUrl ?? restaurant.logoUrl;
     return Material(
       color: ConsumerColors.card,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      borderRadius: BorderRadius.circular(24),
       elevation: 10,
+      clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Spacer(),
-                Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD8CDBC),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: _RoundIconButton(
-                      icon: LucideIcons.x,
-                      onTap: onClose,
-                    ),
-                  ),
-                ),
-              ],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: SizedBox(
+                width: 100,
+                height: 108,
+                child: imageUrl == null
+                    ? _placeholderImage()
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _placeholderImage(),
+                      ),
+              ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: SizedBox(
-                    width: 112,
-                    height: 118,
-                    child: restaurant.photoUrl == null
-                        ? _placeholderImage()
-                        : Image.network(
-                            restaurant.photoUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _placeholderImage(),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        restaurant.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Fraunces',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: ConsumerColors.ink,
-                        ),
-                      ),
-                      if (restaurant.reviewCount > 0) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star_rounded,
-                              size: 16,
-                              color: ConsumerColors.gold,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              restaurant.rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: ConsumerColors.ink,
-                              ),
-                            ),
-                            Text(
-                              ' (' + restaurant.reviewCount.toString() + ')',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: ConsumerColors.inkSoft,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        restaurant.cuisine.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: ConsumerColors.inkSoft,
-                        ),
-                      ),
-                      const SizedBox(height: 9),
-                      SizedBox(
-                        height: 38,
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: () => _goToDetails(context),
-                          child: const Text(
-                            'Ver restaurante',
-                            style: TextStyle(fontSize: 12),
+                      Expanded(
+                        child: Text(
+                          restaurant.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Fraunces',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: ConsumerColors.ink,
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: onClose,
+                        borderRadius: BorderRadius.circular(20),
+                        child: const Padding(
+                          padding: EdgeInsets.all(3),
+                          child: Icon(LucideIcons.x, size: 16),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(Icons.star_rounded, size: 15, color: ConsumerColors.gold),
+                      const SizedBox(width: 3),
+                      Expanded(
+                        child: Text(
+                          '${restaurant.rating.toStringAsFixed(1)} (${restaurant.reviewCount} reseñas)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11, color: ConsumerColors.ink),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${restaurant.cuisine.label} · ${restaurant.zone}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: ConsumerColors.inkSoft),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: restaurant.isOpen
+                          ? ConsumerColors.successSoft
+                          : ConsumerColors.paperDeep,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      restaurant.isOpen ? 'Abierto ahora' : 'Cerrado ahora',
+                      style: TextStyle(
+                        color: restaurant.isOpen
+                            ? ConsumerColors.success
+                            : ConsumerColors.inkSoft,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  SizedBox(
+                    height: 34,
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => _goToDetails(context),
+                      child: const Text('Ver restaurante', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -567,27 +620,6 @@ class _MapMarkerModal extends StatelessWidget {
     color: ConsumerColors.paperDeep,
     child: Center(
       child: Icon(LucideIcons.utensils, size: 36, color: ConsumerColors.wine),
-    ),
-  );
-}
-
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({required this.icon, required this.onTap});
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.white.withAlpha(235),
-    shape: const CircleBorder(),
-    child: InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: SizedBox(
-        width: 44,
-        height: 44,
-        child: Icon(icon, size: 18, color: ConsumerColors.ink),
-      ),
     ),
   );
 }

@@ -513,7 +513,8 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
           headers: {'Authorization': 'Bearer $previous'}).timeout(const Duration(seconds: 10));
         if (response.statusCode != 200) throw StateError('No se pudieron cerrar las sesiones remotas');
       } catch (_) {
-        _errorMessage = 'Se cerró la sesión en este dispositivo, pero no se pudo confirmar el cierre en los demás.';
+        // El cierre local continúa aunque falle el cierre remoto; no mostramos
+        // este fallo después de volver a Login.
       }
     }
     try {

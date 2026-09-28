@@ -9,10 +9,14 @@ import 'package:frontend/screens/movil/profile/profile_screen.dart';
 import 'package:frontend/screens/movil/reservations/reservations_screen.dart';
 
 /// Contenedor principal tras iniciar sesión: pestañas + barra flotante.
-///
-/// Usa [IndexedStack] para conservar el estado de cada pestaña al navegar.
+/// Usa IndexedStack para conservar el estado de cada pestaña.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
+
+  static _MainShellState? _activeState;
+
+  static void openReservations() => _activeState?._showReservations();
+  static void openHome() => _activeState?._showHome();
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -21,10 +25,25 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   HomeTab _tab = HomeTab.inicio;
 
-  static const _screens = [
+  @override
+  void initState() {
+    super.initState();
+    MainShell._activeState = this;
+  }
+
+  @override
+  void dispose() {
+    if (identical(MainShell._activeState, this)) MainShell._activeState = null;
+    super.dispose();
+  }
+
+  void _showReservations() => setState(() => _tab = HomeTab.reservas);
+  void _showHome() => setState(() => _tab = HomeTab.inicio);
+
+  List<Widget> get _screens => [
     HomeScreen(),
     LocationScreen(),
-    ReservationsScreen(),
+    ReservationsScreen(isActive: _tab == HomeTab.reservas),
     ProfileScreen(),
   ];
 
@@ -34,7 +53,6 @@ class _MainShellState extends State<MainShell> {
       backgroundColor: ConsumerColors.background,
       extendBody: true,
       body: IndexedStack(index: _tab.index, children: _screens),
-
       bottomNavigationBar: AppBottomNav(
         current: _tab,
         onSelected: (tab) => setState(() => _tab = tab),

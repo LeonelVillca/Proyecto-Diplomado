@@ -8,6 +8,7 @@ import 'package:frontend/screens/movil/reservations/reservation_screen.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_menu_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_info_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_reviews_tab.dart';
+import 'package:frontend/widgets/movil/restaurant/create_review_modal.dart';
 import 'package:frontend/screens/movil/restaurantes/galeria_screen.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
@@ -19,9 +20,14 @@ class RestaurantDetailScreen extends StatefulWidget {
 }
 
 class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
+  static const double _heroHeight = 325;
+  static const double _summaryHeight = 174;
+  static const double _summaryOverlap = 28;
+
   int _activeTab = 0;
   List<DishItem>? _dishes;
   List<ReviewItem>? _reviews;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -30,6 +36,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       _loadDishes();
       _loadReviews();
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDishes() async {
@@ -50,205 +62,225 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final openStatus = _openStatus();
     return Scaffold(
       backgroundColor: ConsumerColors.paper,
-      body: Stack(
-        children: [
-          // La imagen se desplaza y desaparece; el título queda fijado en la barra.
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              SliverAppBar(
-                pinned: true,
-                expandedHeight: 225,
-                collapsedHeight: 72,
-                backgroundColor: ConsumerColors.paper,
-                elevation: innerBoxIsScrolled ? 2 : 0,
-                automaticallyImplyLeading: false,
-                leading: _RoundBtn(
-                  icon: LucideIcons.arrowLeft,
-                  onTap: () => Navigator.pop(context),
-                ),
-                flexibleSpace: FlexibleSpaceBar(
-                  // El nombre vive debajo de la foto; solo reaparece en la
-                  // barra compacta cuando el usuario ya empezó a desplazarse.
-                  title: innerBoxIsScrolled
-                      ? Text(
-                          widget.restaurant.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: ConsumerColors.ink,
-                                fontWeight: FontWeight.w800,
-                              ),
-                        )
-                      : null,
-                  titlePadding: const EdgeInsetsDirectional.only(
-                    start: 58,
-                    end: 24,
-                    bottom: 16,
-                  ),
-                  background: _HeroSection(restaurant: widget.restaurant),
-                ),
-              ),
-            ],
-            body: SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: ConsumerColors.paper,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const ClampingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: _heroHeight + _summaryHeight - _summaryOverlap,
+                child: Stack(
                   children: [
-                    // Tirador
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 12, bottom: 20),
-                        width: 38,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: _heroHeight,
+                      child: _HeroSection(restaurant: widget.restaurant),
+                    ),
+                    Positioned(
+                      top: 10,
+                      left: 8,
+                      child: _RoundBtn(
+                        icon: LucideIcons.arrowLeft,
+                        onTap: () => Navigator.pop(context),
                       ),
                     ),
-
-                    // Título editorial fuera de la imagen: más legible y
-                    // sin competir con las miniaturas de la galería.
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 0, 22, 18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.restaurant.name,
-                            style: const TextStyle(
-                              fontFamily: 'Fraunces',
-                              fontSize: 30,
-                              height: 1.05,
-                              fontWeight: FontWeight.w700,
-                              color: ConsumerColors.ink,
-                            ),
-                          ),
-                          const SizedBox(height: 7),
-                          Row(
-                            children: [
-                              const Icon(
-                                LucideIcons.mapPin,
-                                size: 15,
-                                color: ConsumerColors.wine,
-                              ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: Text(
-                                  widget.restaurant.zone,
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: ConsumerColors.inkSoft,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    Positioned(
+                      top: _heroHeight - _summaryOverlap,
+                      left: 0,
+                      right: 0,
+                      child: _buildRestaurantSummary(context, openStatus),
                     ),
-                    _StickyReserveBar(restaurant: widget.restaurant),
-
-                    // Badges dinámicos del restaurante
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 22),
-                      child: Row(children: [_buildCuisineBadge()]),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Chips horizontales
-                    SizedBox(
-                      height: 36,
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 22),
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          if (widget.restaurant.reviewCount > 0) ...[
-                            _IconChip(
-                              icon: Icons.star_rounded,
-                              label:
-                                  '${widget.restaurant.rating.toStringAsFixed(1)} (${widget.restaurant.reviewCount})',
-                              iconColor: ConsumerColors.gold,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          _IconChip(
-                            icon: LucideIcons.utensils,
-                            label: widget.restaurant.cuisine.label,
-                            iconColor: ConsumerColors.inkSoft,
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Direccion
-                    if (widget.restaurant.address != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 22),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(
-                              LucideIcons.mapPin,
-                              size: 18,
-                              color: ConsumerColors.inkSoft,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                widget.restaurant.address!,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                    const SizedBox(height: 24),
-
-                    // 3. Selector segmentado
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 22),
-                      child: _SegmentedSelector(
-                        tabs: const ['Menú', 'Información', 'Reseñas'],
-                        activeIndex: _activeTab,
-                        onChanged: (idx) => setState(() => _activeTab = idx),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Contenido de la tab activa
-                    _buildTabContent(),
-
-                    // Espacio al final
-                    const SizedBox(height: 30),
                   ],
                 ),
               ),
             ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _RestaurantTabsHeader(
+                activeIndex: _activeTab,
+                onChanged: _selectTab,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  _activeTab == 0 ? 0 : 20,
+                  14,
+                  _activeTab == 0 ? 0 : 20,
+                  20,
+                ),
+                child: KeyedSubtree(
+                  key: ValueKey(_activeTab),
+                  child: _buildTabContent(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _activeTab == 2
+          ? _StickyReviewBar(onTap: () => _showCreateReview(context))
+          : _StickyReserveBar(restaurant: widget.restaurant),
+    );
+  }
+
+  void _selectTab(int index) {
+    if (index == _activeTab) return;
+    setState(() => _activeTab = index);
+    final tabsTop = _heroHeight + _summaryHeight - _summaryOverlap;
+    if (_scrollController.hasClients && _scrollController.offset > tabsTop) {
+      _scrollController.jumpTo(tabsTop);
+    }
+  }
+
+  Widget _buildRestaurantSummary(BuildContext context, String? openStatus) {
+    return Container(
+      width: double.infinity,
+      height: _summaryHeight,
+      decoration: const BoxDecoration(
+        color: ConsumerColors.paper,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.restaurant.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Fraunces',
+              fontSize: 23,
+              height: 1.1,
+              fontWeight: FontWeight.w700,
+              color: ConsumerColors.ink,
+            ),
           ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 7,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (widget.restaurant.reviewCount > 0)
+                _RatingSummary(restaurant: widget.restaurant),
+              _buildCuisineBadge(),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(
+                  LucideIcons.mapPin,
+                  size: 16,
+                  color: ConsumerColors.wine,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  widget.restaurant.address ?? widget.restaurant.zone,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: ConsumerColors.inkSoft,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (openStatus != null) ...[
+            const SizedBox(height: 8),
+            _OpenStatusChip(label: openStatus),
+          ],
         ],
+      ),
+    );
+  }
+
+  String? _openStatus() {
+    final schedules = widget.restaurant.schedule;
+    if (schedules.isEmpty) return null;
+
+    final now = DateTime.now();
+    const days = [
+      'lunes',
+      'martes',
+      'miercoles',
+      'jueves',
+      'viernes',
+      'sabado',
+      'domingo',
+    ];
+    String normalize(String value) => value
+        .trim()
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u');
+    int? toMinutes(String value) {
+      final parts = value.split(':');
+      if (parts.length < 2) return null;
+      final hour = int.tryParse(parts[0]);
+      final minute = int.tryParse(parts[1]);
+      if (hour == null ||
+          minute == null ||
+          hour > 24 ||
+          minute > 59 ||
+          (hour == 24 && minute != 0)) {
+        return null;
+      }
+      return hour * 60 + minute;
+    }
+
+    final today = now.weekday - 1;
+    final yesterday = (today + 6) % 7;
+    final current = now.hour * 60 + now.minute;
+    var hasValidSchedule = false;
+    for (final item in schedules) {
+      final day = days.indexOf(normalize(item.dayLabel));
+      final opens = toMinutes(item.openTime);
+      final closes = toMinutes(item.closeTime);
+      if (day < 0 || opens == null || closes == null || opens == closes) {
+        continue;
+      }
+      hasValidSchedule = true;
+
+      if (day == today) {
+        final isOpen = closes > opens
+            ? current >= opens && current < closes
+            : current >= opens;
+        if (isOpen) {
+          return 'Abierto ahora · hasta ${item.closeTime.substring(0, 5)}';
+        }
+      }
+      if (day == yesterday && closes < opens && current < closes) {
+        return 'Abierto ahora · hasta ${item.closeTime.substring(0, 5)}';
+      }
+    }
+    return hasValidSchedule ? 'Cerrado ahora' : null;
+  }
+
+  void _showCreateReview(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => CreateReviewModal(
+        restaurantId: widget.restaurant.id,
+        onSuccess: _loadReviews,
       ),
     );
   }
@@ -261,6 +293,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
             LucideIcons.utensils,
@@ -312,10 +345,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       }
 
       return DetailReviewsTab(
-        restaurantId: widget.restaurant.id,
         reviews: _reviews!,
         avgRating: avg > 0 ? avg : widget.restaurant.rating,
-        onReviewAdded: _loadReviews,
       );
     }
   }
@@ -344,7 +375,7 @@ class _HeroSectionState extends State<_HeroSection> {
         : (images.isNotEmpty ? images.first : null);
 
     return Container(
-      height: 300, // un poco mas de 260px para el overlap
+      height: 244,
       width: double.infinity,
       decoration: BoxDecoration(
         color: ConsumerColors.wineSoft,
@@ -368,8 +399,9 @@ class _HeroSectionState extends State<_HeroSection> {
           // Miniaturas de galeria (solo si hay fotos)
           if (images.length > 1)
             Positioned(
-              bottom: 40,
-              left: 22,
+              bottom: 36,
+              // Reserva el lado izquierdo para el botón de volver de la barra.
+              left: 76,
               child: Row(
                 children: List.generate(images.length > 4 ? 4 : images.length, (
                   idx,
@@ -444,57 +476,131 @@ class _RoundBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: ConsumerColors.paper.withOpacity(0.92),
-      shape: const CircleBorder(),
-      elevation: 3,
-      shadowColor: ConsumerColors.wine.withOpacity(0.22),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        customBorder: const CircleBorder(),
+        borderRadius: BorderRadius.circular(14),
         child: SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(icon, color: ConsumerColors.wine, size: 23),
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: ConsumerColors.paper.withOpacity(0.96),
+                borderRadius: BorderRadius.circular(13),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: ConsumerColors.ink, size: 19),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _IconChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color iconColor;
-  const _IconChip({
-    required this.icon,
-    required this.label,
-    required this.iconColor,
-  });
+class _RatingSummary extends StatelessWidget {
+  const _RatingSummary({required this.restaurant});
+  final Restaurant restaurant;
 
   @override
   Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star_rounded, color: ConsumerColors.gold, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          restaurant.rating.toStringAsFixed(1),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12),
+        ),
+        const SizedBox(width: 3),
+        Text(
+          '(${restaurant.reviewCount} reseñas)',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11),
+        ),
+      ],
+    );
+  }
+}
+
+class _OpenStatusChip extends StatelessWidget {
+  const _OpenStatusChip({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isOpen = label.startsWith('Abierto');
+    final color = isOpen ? ConsumerColors.success : ConsumerColors.inkSoft;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: ConsumerColors.paperDeep,
-        borderRadius: BorderRadius.circular(12),
+        color: isOpen ? ConsumerColors.successSoft : ConsumerColors.paperDeep,
+        borderRadius: BorderRadius.circular(99),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: iconColor, size: 14),
-          const SizedBox(width: 6),
+          Icon(LucideIcons.clock3, size: 13, color: color),
+          const SizedBox(width: 5),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontSize: 12,
-              color: ConsumerColors.ink,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _RestaurantTabsHeader extends SliverPersistentHeaderDelegate {
+  _RestaurantTabsHeader({required this.activeIndex, required this.onChanged});
+
+  final int activeIndex;
+  final ValueChanged<int> onChanged;
+
+  @override
+  double get minExtent => 58;
+
+  @override
+  double get maxExtent => 58;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(
+      color: ConsumerColors.paper,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: _SegmentedSelector(
+          tabs: const ['Menú', 'Información', 'Reseñas'],
+          activeIndex: activeIndex,
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _RestaurantTabsHeader oldDelegate) =>
+      activeIndex != oldDelegate.activeIndex ||
+      onChanged != oldDelegate.onChanged;
 }
 
 class _SegmentedSelector extends StatelessWidget {
@@ -575,6 +681,42 @@ class _SegmentedSelector extends StatelessWidget {
   }
 }
 
+class _StickyReviewBar extends StatelessWidget {
+  const _StickyReviewBar({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: ConsumerColors.paper,
+        border: Border(top: BorderSide(color: ConsumerColors.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: onTap,
+              icon: const Icon(LucideIcons.penLine, size: 17),
+              label: const Text('Escribir una reseña'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: ConsumerColors.wine,
+                side: const BorderSide(color: ConsumerColors.wine),
+                backgroundColor: ConsumerColors.card,
+                shape: const StadiumBorder(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _StickyReserveBar extends StatelessWidget {
   final Restaurant restaurant;
   const _StickyReserveBar({required this.restaurant});
@@ -589,18 +731,23 @@ class _StickyReserveBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 0, 22, 18),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: FilledButton(
-          onPressed: () => _openReservationScreen(context),
-          child: Text(
-            'Reservar una mesa',
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(color: Colors.white),
+    return Container(
+      decoration: const BoxDecoration(
+        color: ConsumerColors.paper,
+        border: Border(top: BorderSide(color: ConsumerColors.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: FilledButton.icon(
+              onPressed: () => _openReservationScreen(context),
+              icon: const Icon(LucideIcons.calendarCheck, size: 18),
+              label: const Text('Reservar una mesa'),
+            ),
           ),
         ),
       ),

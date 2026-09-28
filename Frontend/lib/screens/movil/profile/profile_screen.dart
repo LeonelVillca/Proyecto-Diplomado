@@ -88,63 +88,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final initial = displayName.isNotEmpty ? displayName[0].toUpperCase() : 'C';
 
     return SafeArea(
+      bottom: false,
       child: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título principal
-                  Text(
-                    'Perfil',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      fontSize: 28,
-                      color: ConsumerColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (_statsError != null) ...[
-                    InlineErrorBanner(message: _statsError!),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Identidad de la cuenta
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: ConsumerColors.card,
-                      border: Border.all(color: ConsumerColors.line),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: ConsumerShadows.cardStrong,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Avatar
-                        Container(
-                          width: 88,
-                          height: 88,
-                          decoration: BoxDecoration(
-                            color: ConsumerColors.sage,
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(color: Colors.white, width: 5),
-                          ),
-                          child: Center(
-                            child: auth.photoUrl != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(23),
-                                    child: Image.network(
-                                      auth.photoUrl!,
-                                      fit: BoxFit.cover,
-                                      width: 78,
-                                      height: 78,
-                                    ),
-                                  )
-                                : Text(
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 88),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                if (_statsError != null) ...[
+                  InlineErrorBanner(message: _statsError!),
+                  const SizedBox(height: 14),
+                ],
+                Center(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 78,
+                        height: 78,
+                        decoration: BoxDecoration(
+                          color: ConsumerColors.sage,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: ConsumerShadows.cardStrong,
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: auth.photoUrl == null
+                            ? Center(
+                                child: Text(
+                                  initial,
+                                  style: const TextStyle(
+                                    fontFamily: 'Fraunces',
+                                    fontSize: 32,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Image.network(
+                                auth.photoUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => Center(
+                                  child: Text(
                                     initial,
                                     style: const TextStyle(
                                       fontFamily: 'Fraunces',
@@ -152,221 +136,387 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       color: Colors.white,
                                     ),
                                   ),
-                          ),
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        displayName,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontSize: 21,
+                          color: ConsumerColors.ink,
                         ),
-                        const SizedBox(width: 16),
-                        // Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                displayName,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineMedium
-                                    ?.copyWith(
-                                      color: ConsumerColors.ink,
-                                      fontSize: 22,
-                                    ),
+                      ),
+                      if (auth.email != null) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.mail_outline_rounded,
+                              size: 14,
+                              color: ConsumerColors.inkSoft,
+                            ),
+                            const SizedBox(width: 5),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 260),
+                              child: Text(
+                                auth.email!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              if (auth.email != null)
-                                Text(
-                                  auth.email!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: ConsumerColors.inkSoft,
                                 ),
-                              const SizedBox(height: 12),
-                              // Badges (Píldoras)
-                              Row(
-                                children: [
-                                  _buildBadge(
-                                    context,
-                                    LucideIcons.calendar,
-                                    '$_reservasCount Reservas',
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              const UserReviewsScreen(),
-                                        ),
-                                      );
-                                    },
-                                    child: _buildBadge(
-                                      context,
-                                      Icons.star_rounded,
-                                      '$_resenasCount Reseñas',
-                                    ),
-                                  ),
-                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Sección: Mi cuenta
-                  Text(
-                    'Mi cuenta',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleSmall?.copyWith(fontSize: 14),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSettingRow(
-                    context,
-                    Icons.star_rounded,
-                    'Mis Reseñas',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const UserReviewsScreen(),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: ConsumerColors.wineSoft,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                      );
-                    },
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.restaurant_menu_rounded, size: 13, color: ConsumerColors.wine),
+                            SizedBox(width: 5),
+                            Text(
+                              'Comensal desde 2024',
+                              style: TextStyle(
+                                color: ConsumerColors.wineDark,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 24),
-
-                  // Sección: Ayuda
-                  Text(
-                    'Ayuda',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleSmall?.copyWith(fontSize: 14),
+                ),
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: ConsumerColors.card,
+                    border: Border.all(color: ConsumerColors.line),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(height: 12),
-                  _buildSettingRow(
-                    context,
-                    LucideIcons.headset,
-                    'Centro de ayuda',
-                    onTap: () {
-                      Navigator.push(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ProfileStat(
+                          value: '$_reservasCount',
+                          label: 'Reservas',
+                        ),
+                      ),
+                      const _ProfileStatDivider(),
+                      Expanded(
+                        child: _ProfileStat(
+                          value: '$_resenasCount',
+                          label: 'Reseñas',
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const UserReviewsScreen(),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const _ProfileStatDivider(),
+                      const Expanded(
+                        child: _ProfileStat(value: '0', label: 'Favoritos'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const _ProfileSectionLabel('MI CUENTA'),
+                const SizedBox(height: 8),
+                _ProfileMenuGroup(
+                  children: [
+                    _ProfileMenuRow(
+                      icon: Icons.person_add_alt_1_rounded,
+                      iconColor: ConsumerColors.wine,
+                      iconBackground: ConsumerColors.wineSoft,
+                      label: 'Datos personales',
+                    ),
+                    _ProfileMenuRow(
+                      icon: Icons.notifications_none_rounded,
+                      iconColor: ConsumerColors.sage,
+                      iconBackground: const Color(0xFFE8EFE1),
+                      label: 'Notificaciones',
+                      trailing: _StatusPill(
+                        label: 'Activas',
+                        color: ConsumerColors.success,
+                        background: ConsumerColors.successSoft,
+                      ),
+                      showDivider: false,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const _ProfileSectionLabel('MÁS'),
+                const SizedBox(height: 8),
+                _ProfileMenuGroup(
+                  children: [
+                    _ProfileMenuRow(
+                      icon: Icons.support_agent_rounded,
+                      iconColor: const Color(0xFF6968A5),
+                      iconBackground: const Color(0xFFE9E8F6),
+                      label: 'Centro de ayuda',
+                      onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const UserSupportScreen(),
                         ),
-                      );
-                    },
+                      ),
+                    ),
+                    _ProfileMenuRow(
+                      icon: Icons.description_outlined,
+                      iconColor: ConsumerColors.inkSoft,
+                      iconBackground: ConsumerColors.paperDeep,
+                      label: 'Términos y políticas',
+                    ),
+                    _ProfileMenuRow(
+                      icon: Icons.info_outline_rounded,
+                      iconColor: ConsumerColors.inkSoft,
+                      iconBackground: ConsumerColors.paperDeep,
+                      label: 'Acerca de',
+                      trailing: const Text(
+                        'v1.0.0',
+                        style: TextStyle(
+                          color: ConsumerColors.inkSoft,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      showDivider: false,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: auth.signOut,
+                  icon: const Icon(Icons.logout_rounded, size: 19),
+                  label: const Text('Cerrar sesión'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(54),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    side: const BorderSide(
+                      color: Color(0xFFE7B8A8),
+                      width: 1.2,
+                    ),
+                    foregroundColor: ConsumerColors.wineDark,
+                    backgroundColor: ConsumerColors.card,
+                    shape: const StadiumBorder(),
+                    textStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-
-                  const SizedBox(height: 32),
-
-                  // Botón cerrar sesión (adaptado al estilo minimalista)
-                  _buildSettingRow(
-                    context,
-                    LucideIcons.logOut,
-                    'Cerrar sesión',
-                    isDestructive: true,
-                    onTap: () async {
-                      final messenger = ScaffoldMessenger.of(context);
-                      await auth.signOut();
-                      if (auth.errorMessage != null && messenger.mounted) {
-                        messenger.showMaterialBanner(
-                          MaterialBanner(
-                            content: Text(auth.errorMessage!),
-                            backgroundColor: ConsumerColors.errorSoft,
-                            actions: [
-                              TextButton(
-                                onPressed: messenger.hideCurrentMaterialBanner,
-                                child: const Text('Cerrar'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-                    },
-                  ),
-
-                  const SizedBox(height: 120),
-                ],
-              ),
+                ),
+              ]),
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildBadge(BuildContext context, IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: ConsumerColors.wineSoft,
-        borderRadius: BorderRadius.circular(12),
+class _ProfileSectionLabel extends StatelessWidget {
+  const _ProfileSectionLabel(this.label);
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 3),
+    child: Text(
+      label,
+      style: const TextStyle(
+        color: ConsumerColors.inkSoft,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1,
       ),
-      child: Row(
+    ),
+  );
+}
+
+class _ProfileMenuGroup extends StatelessWidget {
+  const _ProfileMenuGroup({required this.children});
+  final List<_ProfileMenuRow> children;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: ConsumerColors.card,
+      border: Border.all(color: ConsumerColors.line),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(19),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: ConsumerColors.wine, size: 14),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: ConsumerColors.wineDark,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          for (var i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i < children.length - 1)
+              const Divider(height: 1, thickness: 1, indent: 64, color: ConsumerColors.hairline),
+          ],
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildSettingRow(
-    BuildContext context,
-    IconData icon,
-    String label, {
-    bool isDestructive = false,
-    VoidCallback? onTap,
-  }) {
-    final color = isDestructive ? Colors.redAccent : ConsumerColors.ink;
-    final iconColor = isDestructive ? Colors.redAccent : ConsumerColors.gold;
+class _ProfileMenuRow extends StatelessWidget {
+  const _ProfileMenuRow({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.label,
+    this.trailing,
+    this.onTap,
+    this.showDivider = true,
+  });
 
-    return GestureDetector(
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String label;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        decoration: BoxDecoration(
-          color: ConsumerColors.card,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: ConsumerShadows.cardSoft,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: iconColor, size: 22),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontSize: 15, color: color),
+      child: SizedBox(
+        height: 61,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: iconBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 18),
               ),
-            ),
-            if (!isDestructive)
-              const Icon(
-                LucideIcons.chevronRight,
-                color: ConsumerColors.inkSoft,
-                size: 20,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: ConsumerColors.ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-          ],
+              if (trailing != null) ...[
+                trailing!,
+                if (showDivider) const SizedBox(width: 6),
+              ],
+              if (trailing == null || showDivider)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFFD2C4B3),
+                  size: 20,
+                ),
+            ],
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+class _ProfileStat extends StatelessWidget {
+  const _ProfileStat({
+    required this.value,
+    required this.label,
+    this.onTap,
+  });
+
+  final String value;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'Fraunces',
+            fontSize: 23,
+            fontWeight: FontWeight.w600,
+            color: ConsumerColors.ink,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: ConsumerColors.inkSoft,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ProfileStatDivider extends StatelessWidget {
+  const _ProfileStatDivider();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+    height: 42,
+    child: VerticalDivider(width: 1, thickness: 1, color: ConsumerColors.hairline),
+  );
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.label,
+    required this.color,
+    required this.background,
+  });
+
+  final String label;
+  final Color color;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(20)),
+    child: Text(
+      label,
+      style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w700),
+    ),
+  );
 }

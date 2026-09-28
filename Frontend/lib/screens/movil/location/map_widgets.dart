@@ -32,13 +32,19 @@ class MapSearchBar extends StatelessWidget {
           Expanded(
             child: TextField(
               onChanged: onChanged,
-              decoration: InputDecoration.collapsed(
+              decoration: InputDecoration(
                 hintText: 'Buscar restaurante o zona...',
                 hintStyle: TextStyle(
                   fontFamily: 'InstrumentSans',
                   fontSize: 13,
                   color: Colors.black38,
                 ),
+                filled: false,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
             ),
           ),
@@ -60,6 +66,7 @@ class RestaurantMapCard extends StatelessWidget {
     final String tags = restaurant.tags != null && restaurant.tags.isNotEmpty
         ? restaurant.tags.first
         : 'Restaurante';
+    final String? imageUrl = restaurant.photoUrl ?? restaurant.logoUrl;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -78,11 +85,11 @@ class RestaurantMapCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (restaurant.photoUrl != null)
+            if (imageUrl != null)
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(
-                  restaurant.photoUrl!,
+                  imageUrl,
                   width: 68,
                   height: 68,
                   fit: BoxFit.cover,

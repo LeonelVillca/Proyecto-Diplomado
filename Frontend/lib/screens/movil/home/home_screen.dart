@@ -56,6 +56,63 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  List<Cuisine> _homeCategories(List<Restaurant> restaurants) {
+    final available = restaurants.map((r) => r.cuisine).toSet();
+    return [
+      Cuisine.parrilla,
+      Cuisine.tipico,
+      ...Cuisine.values.where(
+        (cuisine) =>
+            available.contains(cuisine) &&
+            cuisine != Cuisine.parrilla &&
+            cuisine != Cuisine.tipico,
+      ),
+    ];
+  }
+
+  void _showCategoryFilter(BuildContext context, List<Restaurant> restaurants) {
+    final categories = _homeCategories(restaurants);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _C.surface,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          children: [
+            Text('Filtrar por categoría', style: _sectionTitle()),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(LucideIcons.layoutGrid),
+              title: const Text('Todos'),
+              trailing: _selected == null
+                  ? const Icon(LucideIcons.check, color: _C.accent)
+                  : null,
+              onTap: () {
+                setState(() => _selected = null);
+                Navigator.pop(sheetContext);
+              },
+            ),
+            ...categories.map(
+              (cuisine) => ListTile(
+                leading: Icon(cuisine.icon),
+                title: Text(cuisine.label),
+                trailing: _selected == cuisine
+                    ? const Icon(LucideIcons.check, color: _C.accent)
+                    : null,
+                onTap: () {
+                  setState(() => _selected = cuisine);
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final restauranteCtrl = RestauranteScope.of(context);
@@ -101,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
                 child: _SearchBar(
                   onChanged: (q) => setState(() => _searchQuery = q),
+                  onFilterTap: () => _showCategoryFilter(context, allRestaurants),
                 ),
               ),
             ),
@@ -109,10 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (allRestaurants.isNotEmpty)
               SliverToBoxAdapter(
                 child: _CategoryChips(
-                  categories: allRestaurants
-                      .map((r) => r.cuisine)
-                      .toSet()
-                      .toList(),
+                  categories: _homeCategories(allRestaurants),
                   selected: _selected,
                   onSelect: (c) =>
                       setState(() => _selected = _selected == c ? null : c),
@@ -163,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 156,
+                    height: 180,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -308,6 +363,37 @@ class _HomeHeader extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: IconButton(
+              tooltip: 'Notificaciones',
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  backgroundColor: _C.surface,
+                  title: const Text('Notificaciones'),
+                  content: const Text('No tienes notificaciones por ahora.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Entendido'),
+                    ),
+                  ],
+                ),
+              ),
+              style: IconButton.styleFrom(
+                backgroundColor: _C.surface,
+                foregroundColor: _C.textMid,
+                side: const BorderSide(color: ConsumerColors.line),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              icon: const Icon(LucideIcons.bell, size: 20),
+            ),
+          ),
         ],
       ),
     );
@@ -319,44 +405,72 @@ class _HomeHeader extends StatelessWidget {
 // ──────────────────────────────────────────────────────────────────────
 class _SearchBar extends StatelessWidget {
   final ValueChanged<String> onChanged;
-  const _SearchBar({required this.onChanged});
+  final VoidCallback onFilterTap;
+  const _SearchBar({required this.onChanged, required this.onFilterTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        color: _C.surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: ConsumerColors.line),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          const Icon(LucideIcons.search, color: _C.textSoft, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 48,
             child: TextField(
               onChanged: onChanged,
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'InstrumentSans',
                 fontSize: 14,
                 color: _C.text,
               ),
               decoration: InputDecoration(
                 hintText: 'Buscar restaurantes...',
-                hintStyle: TextStyle(
+                hintStyle: const TextStyle(
                   fontFamily: 'InstrumentSans',
                   fontSize: 14,
                   color: _C.textSoft,
                 ),
-                border: InputBorder.none,
-                isDense: true,
+                prefixIcon: const Icon(
+                  LucideIcons.search,
+                  color: _C.textSoft,
+                  size: 18,
+                ),
+                filled: true,
+                fillColor: _C.surface,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: const BorderSide(color: ConsumerColors.line),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: const BorderSide(color: ConsumerColors.line),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(17),
+                  borderSide: const BorderSide(color: ConsumerColors.wine),
+                ),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 48,
+          height: 48,
+          child: IconButton.filled(
+            tooltip: 'Filtrar por categoría',
+            onPressed: onFilterTap,
+            style: IconButton.styleFrom(
+              backgroundColor: _C.accent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            icon: const Icon(LucideIcons.slidersHorizontal, size: 19),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -452,6 +566,7 @@ class _RecommendedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isOpenNow = _restaurantOpenNow(restaurant);
     return SizedBox(
       width: 300,
       child: Material(
@@ -472,7 +587,7 @@ class _RecommendedCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: SizedBox(
                     width: 112,
-                    height: 118,
+                    height: 148,
                     child: restaurant.photoUrl == null
                         ? const ColoredBox(
                             color: ConsumerColors.paperDeep,
@@ -498,7 +613,7 @@ class _RecommendedCard extends StatelessWidget {
                     children: [
                       Text(
                         restaurant.name,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Fraunces',
@@ -526,13 +641,18 @@ class _RecommendedCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              ' (' + restaurant.reviewCount.toString() + ')',
+                              ' (${restaurant.reviewCount} ${restaurant.reviewCount == 1 ? 'reseña' : 'reseñas'})',
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: _C.textSoft,
                               ),
                             ),
                           ],
+                        )
+                      else
+                        const Text(
+                          'Sin reseñas',
+                          style: TextStyle(fontSize: 11, color: _C.textSoft),
                         ),
                       const SizedBox(height: 3),
                       Text(
@@ -544,6 +664,44 @@ class _RecommendedCard extends StatelessWidget {
                           color: _C.textSoft,
                         ),
                       ),
+                      if (isOpenNow != null) ...[
+                        const SizedBox(height: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isOpenNow
+                                ? ConsumerColors.successSoft
+                                : ConsumerColors.paperDeep,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.clock3,
+                                size: 12,
+                                color: isOpenNow
+                                    ? ConsumerColors.success
+                                    : _C.textMid,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isOpenNow ? 'Abierto ahora' : 'Cerrado ahora',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: isOpenNow
+                                      ? ConsumerColors.success
+                                      : _C.textMid,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -573,6 +731,66 @@ class _RecommendedCard extends StatelessWidget {
       ),
     );
   }
+}
+
+bool? _restaurantOpenNow(Restaurant restaurant, [DateTime? currentTime]) {
+  if (restaurant.schedule.isEmpty) return null;
+
+  final now = currentTime ?? DateTime.now();
+  final dayNames = const [
+    'lunes',
+    'martes',
+    'miercoles',
+    'jueves',
+    'viernes',
+    'sabado',
+    'domingo',
+  ];
+  String normalize(String value) => value
+      .trim()
+      .toLowerCase()
+      .replaceAll('á', 'a')
+      .replaceAll('é', 'e')
+      .replaceAll('í', 'i')
+      .replaceAll('ó', 'o')
+      .replaceAll('ú', 'u');
+  int? parseMinutes(String value) {
+    final parts = value.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null ||
+        minute == null ||
+        hour > 24 ||
+        minute > 59 ||
+        (hour == 24 && minute != 0)) {
+      return null;
+    }
+    return hour * 60 + minute;
+  }
+
+  final today = now.weekday - 1;
+  final yesterday = (today + 6) % 7;
+  final minuteNow = now.hour * 60 + now.minute;
+  var hasValidSchedule = false;
+  for (final schedule in restaurant.schedule) {
+    final day = dayNames.indexOf(normalize(schedule.dayLabel));
+    final opens = parseMinutes(schedule.openTime);
+    final closes = parseMinutes(schedule.closeTime);
+    if (day < 0 || opens == null || closes == null || opens == closes) continue;
+    hasValidSchedule = true;
+
+    if (day == today) {
+      if (closes > opens && minuteNow >= opens && minuteNow < closes) {
+        return true;
+      }
+      if (closes < opens && minuteNow >= opens) return true;
+    }
+    if (day == yesterday && closes < opens && minuteNow < closes) {
+      return true;
+    }
+  }
+  return hasValidSchedule ? false : null;
 }
 // El _ExploreCard fue extraído a lib/widgets/movil/restaurant/explore_card.dart
 // El ExploreCard fue extraído a lib/widgets/movil/restaurant/explore_card.dart
