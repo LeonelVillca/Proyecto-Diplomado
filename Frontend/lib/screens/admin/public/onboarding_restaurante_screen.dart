@@ -135,6 +135,32 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
     ],
   );
 
+  String _mensajeErrorApi(int statusCode, List<int> bodyBytes) {
+    try {
+      final body = jsonDecode(utf8.decode(bodyBytes));
+      final message = body is Map ? body['message'] : null;
+      if (message is String && message.isNotEmpty) return message;
+      if (message is List && message.isNotEmpty) return message.join(', ');
+    } catch (_) {
+      // El servidor pudo responder un texto no JSON.
+    }
+    return 'El servidor rechazó la solicitud (HTTP $statusCode).';
+  }
+
+  Future<void> _verificarCarga(
+    http.StreamedResponse response,
+    String operacion,
+  ) async {
+    if (response.statusCode == 200 ||
+        response.statusCode == 201 ||
+        response.statusCode == 204) {
+      await response.stream.drain<void>();
+      return;
+    }
+    final bytes = await response.stream.toBytes();
+    throw Exception('$operacion: ${_mensajeErrorApi(response.statusCode, bytes)}');
+  }
+
   @override
   void dispose() {
     _nombreCtrl.dispose();
@@ -293,6 +319,12 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
       if (mounted) AdminNotificationModal.info(context, 'Configura la capacidad de tu salón (mesas y comensales).');
       return;
     }
+    final mesasTotal = int.tryParse(_mesasTotalCtrl.text.trim());
+    final capacidadTotal = int.tryParse(_capacidadTotalCtrl.text.trim());
+    if (mesasTotal == null || capacidadTotal == null || mesasTotal < 1 || capacidadTotal < mesasTotal) {
+      if (mounted) AdminNotificationModal.info(context, 'La capacidad total debe ser un número igual o mayor que la cantidad de mesas.');
+      return;
+    }
     if (_selectedGallery.length < 5) {
       if (mounted) AdminNotificationModal.info(context, 'Sube al menos 5 fotografías en la galería.');
       return;
@@ -319,15 +351,18 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
                   'horaFin': horario['horaFin'],
                 })
             .toList(),
-        'mesasTotal': int.tryParse(_mesasTotalCtrl.text),
-        'capacidadTotal': int.tryParse(_capacidadTotalCtrl.text),
+        'mesasTotal': mesasTotal,
+        'capacidadTotal': capacidadTotal,
       };
 
-      await http.patch(
+      final patchResponse = await http.patch(
         url,
         headers: {'Authorization': 'Bearer $token', 'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
+      if (patchResponse.statusCode != 200) {
+        throw Exception(_mensajeErrorApi(patchResponse.statusCode, patchResponse.bodyBytes));
+      }
 
       if (_selectedImageBytes != null) {
         final photoUrl = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/${widget.restaurante.id}/portada');
@@ -336,7 +371,7 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
         final ext = _selectedImage!.name.split('.').last.toLowerCase();
         final mimeType = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
         photoReq.files.add(http.MultipartFile.fromBytes('file', _selectedImageBytes!, filename: _selectedImage!.name, contentType: MediaType('image', mimeType)));
-        await photoReq.send();
+        await _verificarCarga(await photoReq.send(), 'No se pudo guardar la portada');
       }
 
       if (_selectedLogoBytes != null) {
@@ -346,7 +381,7 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
         final ext = _selectedLogo!.name.split('.').last.toLowerCase();
         final mimeType = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
         logoReq.files.add(http.MultipartFile.fromBytes('file', _selectedLogoBytes!, filename: _selectedLogo!.name, contentType: MediaType('image', mimeType)));
-        await logoReq.send();
+        await _verificarCarga(await logoReq.send(), 'No se pudo guardar el logo');
       }
 
       if (_selectedGalleryBytes.isNotEmpty) {
@@ -358,7 +393,7 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
            final mimeType = ext == 'png' ? 'png' : (ext == 'webp' ? 'webp' : 'jpeg');
            galReq.files.add(http.MultipartFile.fromBytes('files', _selectedGalleryBytes[i], filename: _selectedGallery[i].name, contentType: MediaType('image', mimeType)));
         }
-        await galReq.send();
+        await _verificarCarga(await galReq.send(), 'No se pudo guardar la galería');
       }
 
       if (mounted) {
@@ -368,7 +403,10 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
     } catch (e) {
       debugPrint('Error: $e');
       if (mounted) {
-        AdminNotificationModal.error(context, 'Ocurrió un error al guardar el perfil.');
+        AdminNotificationModal.error(
+          context,
+          e.toString().replaceFirst('Exception: ', ''),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
