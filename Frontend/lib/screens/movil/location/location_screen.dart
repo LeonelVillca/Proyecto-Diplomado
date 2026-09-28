@@ -174,25 +174,22 @@ class _LocationScreenState extends State<LocationScreen>
 
     final query = _searchQuery.trim().toLowerCase();
 
-    final availableCuisines = restaurants.map((r) => r.cuisine).toSet();
-    final categories = <Cuisine>[
-      Cuisine.parrilla,
-      Cuisine.tipico,
-      ...Cuisine.values.where(
-        (cuisine) =>
-            availableCuisines.contains(cuisine) &&
-            cuisine != Cuisine.parrilla &&
-            cuisine != Cuisine.tipico,
-      ),
-    ];
+    final availableCuisines = restaurants
+        .expand((r) => r.cuisines.isEmpty ? [r.cuisine] : r.cuisines)
+        .toSet();
+    final categories = Cuisine.values
+        .where(availableCuisines.contains)
+        .toList();
 
     final filteredRestaurants = restaurants.where((r) {
-      if (_selectedCuisine != null && r.cuisine != _selectedCuisine) {
+      if (_selectedCuisine != null &&
+          !((r.cuisines.isEmpty ? [r.cuisine] : r.cuisines)
+              .contains(_selectedCuisine))) {
         return false;
       }
       if (query.isEmpty) return true;
       return r.name.toLowerCase().contains(query) ||
-          r.cuisine.label.toLowerCase().contains(query) ||
+          r.cuisineLabel.toLowerCase().contains(query) ||
           (r.address ?? r.zone).toLowerCase().contains(query);
     }).toList();
 
@@ -293,9 +290,7 @@ class _LocationScreenState extends State<LocationScreen>
                       ),
                       ...categories.map(
                         (cuisine) => _MapCuisineChip(
-                          label: cuisine == Cuisine.tipico
-                              ? 'Típica'
-                              : cuisine.label,
+                          label: cuisine.label,
                           icon: cuisine.icon,
                           selected: _selectedCuisine == cuisine,
                           onTap: () => setState(
@@ -573,7 +568,7 @@ class _MapMarkerModal extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '${restaurant.cuisine.label} · ${restaurant.zone}',
+                    '${restaurant.cuisineLabel} · ${restaurant.zone}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, color: ConsumerColors.inkSoft),

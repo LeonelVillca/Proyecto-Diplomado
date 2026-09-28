@@ -98,7 +98,7 @@ class RestaurantCard extends StatelessWidget {
                         ),
                         _MetaTag(
                           icon: restaurant.cuisine.icon,
-                          label: restaurant.cuisine.label,
+                          label: restaurant.cuisineLabel,
                           emphasize: true,
                         ),
                         if (restaurant.isBestSeller)

@@ -12,6 +12,7 @@ import {
   Min,
   ValidateNested,
   IsArray,
+  ArrayUnique,
 } from 'class-validator';
 
 export class HorarioAtencionDto {
@@ -45,6 +46,14 @@ export class CrearRestauranteDto {
   @IsString()
   @MaxLength(100)
   tipoComida?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @Type(() => Number)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  tiposComidaIds?: number[];
 
   @IsOptional()
   @IsString()

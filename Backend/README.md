@@ -27,8 +27,9 @@
 2. Usa almacenamiento **persistente** para `Backend/storage`. En un alojamiento gratuito con disco efímero se perderían documentos e imágenes al reiniciar o redesplegar; si no ofrece un volumen persistente, hay que integrar almacenamiento externo antes de guardar datos reales.
 3. Rota las credenciales anteriormente expuestas y la contraseña del administrador. No ejecutes `npm run seed` contra la base real.
 4. Tras hacer una copia de seguridad de la base, ejecuta `node scripts/apply-security-migration.cjs --apply`. La migración añade protección de sesiones, reservas duplicadas, control de reseñas y confirmación de correo; si encuentra datos incompatibles, detente y resuélvelos antes de continuar.
-5. Ejecuta `npm run build`, luego `npm run preflight:prod` (solo lectura) y finalmente `npm run start:prod`.
-6. Compila Flutter con `--dart-define=API_BASE_URL=https://TU_BACKEND`; una build de producción no acepta HTTP ni una URL vacía.
+5. Para desplegar el catálogo de tipos de comida, después de la migración de seguridad ejecuta `node scripts/apply-security-migration.cjs --tipos-comida --apply`. La migración crea el catálogo, asigna categorías reconocibles y deja los valores ambiguos como “Por definir” para editarlos desde el perfil.
+6. Ejecuta `npm run build`, luego `npm run preflight:prod` (solo lectura) y finalmente `npm run start:prod`.
+7. Compila Flutter con `--dart-define=API_BASE_URL=https://TU_BACKEND`; una build de producción no acepta HTTP ni una URL vacía.
 
 El formulario público requiere confirmar el correo antes de aprobar una solicitud. El enlace vence en 24 horas y puede reenviarse. La app limita envíos por IP, pero en una publicación abierta aún conviene añadir defensa contra abuso distribuido. Prueba los flujos con datos de prueba y vigila los registros tras el despliegue.
 

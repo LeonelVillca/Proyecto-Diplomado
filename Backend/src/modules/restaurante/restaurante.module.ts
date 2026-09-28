@@ -11,6 +11,7 @@ import { Imagen } from '../imagen/imagen.entity';
 import { Resena } from '../resenas/resena.entity';
 import { CloudinaryService } from '../../core/storage/cloudinary.service';
 import { UsuarioRestaurante } from '../usuario-restaurante/usuario-restaurante.entity';
+import { TipoComida } from './tipo-comida.entity';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { UsuarioRestaurante } from '../usuario-restaurante/usuario-restaurante.e
       Imagen,
       Resena,
       UsuarioRestaurante,
+      TipoComida,
     ]),
   ],
   controllers: [RestauranteController],

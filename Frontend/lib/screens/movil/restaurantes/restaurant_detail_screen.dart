@@ -302,7 +302,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           ),
           const SizedBox(width: 6),
           Text(
-            widget.restaurant.cuisine.label,
+            widget.restaurant.cuisineLabel,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
               color: ConsumerColors.wine,
               fontSize: 11,

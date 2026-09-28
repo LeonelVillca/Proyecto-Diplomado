@@ -4,10 +4,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  ManyToMany,
+  JoinTable,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { Solicitud } from '../solicitud/solicitud.entity';
+import { TipoComida } from './tipo-comida.entity';
 
 @Entity('restaurante')
 export class Restaurante {
@@ -23,6 +26,17 @@ export class Restaurante {
 
   @Column({ name: 'tipo_comida', type: 'varchar', length: 100, nullable: true })
   tipoComida: string | null;
+
+  @ManyToMany(() => TipoComida)
+  @JoinTable({
+    name: 'restaurante_tipo_comida',
+    joinColumn: { name: 'id_restaurante', referencedColumnName: 'id' },
+    inverseJoinColumn: {
+      name: 'id_tipo_comida',
+      referencedColumnName: 'id',
+    },
+  })
+  tiposComida: TipoComida[];
 
   @Column({ name: 'descripcion', type: 'text', nullable: true })
   descripcion: string | null;

@@ -7,6 +7,16 @@ import 'package:frontend/core/utils/network/api_endpoints.dart';
 import 'package:frontend/models/admin/perfil_restaurante_model.dart';
 
 class RestauranteRepository {
+  Future<List<Map<String, dynamic>>> obtenerTiposComida(String token) async {
+    final res = await http.get(
+      Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/tipos-comida'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (res.statusCode != 200) throw Exception('No se pudieron cargar los tipos de comida');
+    final data = jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
+    return data.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+  }
+
   Future<PerfilRestauranteModel?> obtenerMiRestaurante(String token) async {
     try {
       final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/mis-restaurantes');

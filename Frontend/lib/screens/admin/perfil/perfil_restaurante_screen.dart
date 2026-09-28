@@ -25,6 +25,8 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
   bool _isSaving = false;
   PerfilRestauranteModel? _restaurante;
   final RestauranteRepository _repository = RestauranteRepository();
+  List<Map<String, dynamic>> _catalogoTiposComida = [];
+  final Set<int> _tiposComidaSeleccionados = {};
 
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nombreCtrl;
@@ -98,11 +100,17 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
     try {
       final token = AuthScope.of(context, listen: false).token;
       final restaurante = await _repository.obtenerMiRestaurante(token!);
+      _catalogoTiposComida = await _repository.obtenerTiposComida(token);
 
       if (restaurante != null) {
         _restaurante = restaurante;
         _nombreCtrl.text = _restaurante!.nombre;
         _tipoComidaCtrl.text = _restaurante!.tipoComida ?? '';
+        _tiposComidaSeleccionados
+          ..clear()
+          ..addAll(_restaurante!.tiposComida
+              .map((tipo) => int.tryParse(tipo['id']?.toString() ?? ''))
+              .whereType<int>());
         _descripcionCtrl.text = _restaurante!.descripcion ?? '';
         _telefonoCtrl.text = _restaurante!.telefono ?? '';
         _correoCtrl.text = _restaurante!.correo ?? '';
@@ -230,6 +238,58 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
     ));
   }
 
+  Widget _buildTiposComidaSelector() {
+    if (_catalogoTiposComida.isEmpty) {
+      return const Align(
+        alignment: Alignment.centerLeft,
+        child: Text('No se pudieron cargar los tipos de comida.'),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Tipos de comida', style: AdminTheme.bodyStyle.copyWith(fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text('Puedes elegir varios para que aparezcan en los filtros.', style: AdminTheme.bodyStyle.copyWith(fontSize: 12)),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: _catalogoTiposComida.map((tipo) {
+            final id = int.tryParse(tipo['id']?.toString() ?? '');
+            if (id == null) return const SizedBox.shrink();
+            final selected = _tiposComidaSeleccionados.contains(id);
+            return FilterChip(
+              label: Text(tipo['nombre']?.toString() ?? ''),
+              selected: selected,
+              onSelected: (value) => setState(() {
+                if (value) {
+                  if (tipo['slug'] != 'por-definir') {
+                    _tiposComidaSeleccionados.removeWhere((selectedId) =>
+                        _catalogoTiposComida.any((entry) =>
+                            entry['id'] == selectedId &&
+                            entry['slug'] == 'por-definir'));
+                  } else {
+                    _tiposComidaSeleccionados.clear();
+                  }
+                  _tiposComidaSeleccionados.add(id);
+                } else {
+                  _tiposComidaSeleccionados.remove(id);
+                }
+              }),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Future<void> _abrirMapaModal() async {
     LatLng tempLoc = _selectedLocation ?? const LatLng(-21.5354, -64.7295);
     GoogleMapController? tempCtrl;
@@ -287,6 +347,11 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
   Future<void> _guardarPerfil() async {
     if (!_formKey.currentState!.validate() || _restaurante == null) return;
 
+    if (_tiposComidaSeleccionados.isEmpty) {
+      if (mounted) AdminNotificationModal.info(context, 'Selecciona al menos un tipo de comida.');
+      return;
+    }
+
     if (_horarios.isEmpty) {
       if (mounted) AdminNotificationModal.info(context, 'Debes configurar al menos un horario de atención.');
       return;
@@ -308,7 +373,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
       
       final body = {
         'nombre': _nombreCtrl.text.trim(),
-        'tipoComida': _tipoComidaCtrl.text.trim(),
+        'tiposComidaIds': _tiposComidaSeleccionados.toList(),
         'descripcion': _descripcionCtrl.text.trim(),
         'telefono': _telefonoCtrl.text.trim(),
         'correo': _correoCtrl.text.trim(),
@@ -449,7 +514,7 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
                           children: [
                             _buildTextField('Nombre del Restaurante', _nombreCtrl),
                             const SizedBox(height: 16),
-                            _buildTextField('Tipo de Comida (Ej: Carnes, Vegetariano)', _tipoComidaCtrl),
+                            _buildTiposComidaSelector(),
                             const SizedBox(height: 16),
                             _buildTextField('Descripción / Historia', _descripcionCtrl, maxLines: 4),
                           ],

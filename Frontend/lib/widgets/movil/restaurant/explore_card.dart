@@ -68,7 +68,7 @@ class ExploreCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    restaurant.cuisine.label,
+                    restaurant.cuisineLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(

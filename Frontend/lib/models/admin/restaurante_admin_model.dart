@@ -2,6 +2,7 @@ class RestauranteAdminModel {
   final int id;
   final String nombre;
   final String? tipoComida;
+  final List<String> tiposComida;
   final String? correo;
   final String? telefono;
   final bool estado;
@@ -12,6 +13,7 @@ class RestauranteAdminModel {
     required this.id,
     required this.nombre,
     this.tipoComida,
+    this.tiposComida = const [],
     this.correo,
     this.telefono,
     required this.estado,
@@ -24,6 +26,11 @@ class RestauranteAdminModel {
       id: json['id'] ?? 0,
       nombre: json['nombre'] ?? 'Sin nombre',
       tipoComida: json['tipoComida'],
+      tiposComida: (json['tiposComida'] as List? ?? const [])
+          .whereType<Map>()
+          .map((tipo) => tipo['nombre']?.toString() ?? '')
+          .where((nombre) => nombre.isNotEmpty)
+          .toList(),
       correo: json['correo'],
       telefono: json['telefono'],
       estado: json['estado'] == true,
@@ -33,4 +40,8 @@ class RestauranteAdminModel {
           : null,
     );
   }
+
+  String get tipoComidaLabel => tiposComida.isEmpty
+      ? tipoComida ?? 'Por definir'
+      : tiposComida.join(' · ');
 }

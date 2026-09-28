@@ -40,7 +40,9 @@ async function main() {
   try {
     await client.connect();
     await client.query("SET lock_timeout = '5s'");
-    const files = process.argv.includes('--normalize')
+    const files = process.argv.includes('--tipos-comida')
+      ? ['20260928-tipos-comida.sql']
+      : process.argv.includes('--normalize')
       ? [
           '20260921-normalizacion-integridad.sql',
           '20260922-consistencia-seguridad.sql',

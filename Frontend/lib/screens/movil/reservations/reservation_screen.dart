@@ -543,7 +543,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    widget.restaurant.cuisine.label +
+                                    widget.restaurant.cuisineLabel +
                                         ' · ' +
                                         widget.restaurant.zone,
                                     maxLines: 1,

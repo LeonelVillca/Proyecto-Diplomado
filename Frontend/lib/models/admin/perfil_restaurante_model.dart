@@ -2,6 +2,7 @@ class PerfilRestauranteModel {
   final int id;
   final String nombre;
   final String? tipoComida;
+  final List<Map<String, dynamic>> tiposComida;
   final String? descripcion;
   final String? telefono;
   final String? correo;
@@ -19,6 +20,7 @@ class PerfilRestauranteModel {
     required this.id,
     required this.nombre,
     this.tipoComida,
+    this.tiposComida = const [],
     this.descripcion,
     this.telefono,
     this.correo,
@@ -38,6 +40,10 @@ class PerfilRestauranteModel {
       id: json['id'],
       nombre: json['nombre'],
       tipoComida: json['tipoComida'],
+      tiposComida: (json['tiposComida'] as List? ?? const [])
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList(),
       descripcion: json['descripcion'],
       telefono: json['telefono'],
       correo: json['correo'],

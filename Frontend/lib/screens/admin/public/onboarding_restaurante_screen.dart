@@ -30,6 +30,8 @@ class OnboardingRestauranteScreen extends StatefulWidget {
 class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScreen> {
   int _currentStep = 0;
   bool _isLoading = false;
+  List<Map<String, dynamic>> _catalogoTiposComida = [];
+  final Set<int> _tiposComidaSeleccionados = {};
 
   late TextEditingController _nombreCtrl;
   late TextEditingController _tipoComidaCtrl;
@@ -74,7 +76,64 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
     _mesasTotalCtrl = TextEditingController();
     _capacidadTotalCtrl = TextEditingController();
     _horariosCtrl = TextEditingController(text: '08:00 - 22:00');
+    _tiposComidaSeleccionados.addAll(widget.restaurante.tiposComida
+        .map((tipo) => int.tryParse(tipo['id']?.toString() ?? ''))
+        .whereType<int>());
+    _cargarTiposComida();
   }
+
+  Future<void> _cargarTiposComida() async {
+    try {
+      final token = AuthScope.of(context, listen: false).token;
+      final response = await http.get(
+        Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/tipos-comida'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200 && mounted) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
+        setState(() => _catalogoTiposComida = data
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList());
+      }
+    } catch (e) {
+      debugPrint('Error cargando tipos de comida: $e');
+    }
+  }
+
+  Widget _buildTiposComidaSelector() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text('Tipos de comida'),
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: _catalogoTiposComida.map((tipo) {
+          final id = int.tryParse(tipo['id']?.toString() ?? '');
+          if (id == null) return const SizedBox.shrink();
+          return FilterChip(
+            label: Text(tipo['nombre']?.toString() ?? ''),
+            selected: _tiposComidaSeleccionados.contains(id),
+            onSelected: (selected) => setState(() {
+              if (selected) {
+                if (tipo['slug'] != 'por-definir') {
+                  _tiposComidaSeleccionados.removeWhere((selectedId) =>
+                      _catalogoTiposComida.any((entry) =>
+                          entry['id'] == selectedId &&
+                          entry['slug'] == 'por-definir'));
+                } else {
+                  _tiposComidaSeleccionados.clear();
+                }
+                _tiposComidaSeleccionados.add(id);
+              } else {
+                _tiposComidaSeleccionados.remove(id);
+              }
+            }),
+          );
+        }).toList(),
+      ),
+    ],
+  );
 
   @override
   void dispose() {
@@ -214,6 +273,10 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
   }
 
   Future<void> _finalizar() async {
+    if (_tiposComidaSeleccionados.isEmpty) {
+      if (mounted) AdminNotificationModal.info(context, 'Selecciona al menos un tipo de comida.');
+      return;
+    }
     if (_selectedImage == null) {
       if (mounted) AdminNotificationModal.info(context, 'La foto de portada es obligatoria.');
       return;
@@ -242,7 +305,7 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
       final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/restaurante/${widget.restaurante.id}');
       final body = {
         'nombre': _nombreCtrl.text.trim(),
-        'tipoComida': _tipoComidaCtrl.text.trim(),
+        'tiposComidaIds': _tiposComidaSeleccionados.toList(),
         'descripcion': _descripcionCtrl.text.trim(),
         'telefono': _telefonoCtrl.text.trim(),
         'correo': _correoCtrl.text.trim(),
@@ -486,13 +549,9 @@ class _OnboardingRestauranteScreenState extends State<OnboardingRestauranteScree
           ],
         ),
         const SizedBox(height: 50),
-        Row(
-          children: [
-            Expanded(child: _buildTextField('Nombre del Restaurante', _nombreCtrl)),
-            const SizedBox(width: 16),
-            Expanded(child: _buildTextField('Tipo de Comida', _tipoComidaCtrl)),
-          ],
-        ),
+        _buildTextField('Nombre del Restaurante', _nombreCtrl),
+        const SizedBox(height: 16),
+        _buildTiposComidaSelector(),
         const SizedBox(height: 16),
         _buildTextField('Descripción', _descripcionCtrl, maxLines: 3),
         const SizedBox(height: 16),

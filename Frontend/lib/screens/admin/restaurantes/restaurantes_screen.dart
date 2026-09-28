@@ -23,6 +23,7 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
   bool _cargando = true;
   List<RestauranteAdminModel> _restaurantes = [];
   String _busqueda = '';
+  String? _categoriaSeleccionada;
 
   @override
   void didChangeDependencies() {
@@ -154,10 +155,18 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
   Widget build(BuildContext context) {
     final lista = _restaurantes.where((restaurante) {
       final query = _busqueda.toLowerCase();
-      return query.isEmpty ||
+      final coincideCategoria = _categoriaSeleccionada == null ||
+          restaurante.tiposComida.contains(_categoriaSeleccionada);
+      return coincideCategoria && (query.isEmpty ||
           restaurante.nombre.toLowerCase().contains(query) ||
-          (restaurante.correo ?? '').toLowerCase().contains(query);
+          (restaurante.correo ?? '').toLowerCase().contains(query) ||
+          restaurante.tipoComidaLabel.toLowerCase().contains(query));
     }).toList();
+    final categorias = _restaurantes
+        .expand((restaurante) => restaurante.tiposComida)
+        .toSet()
+        .toList()
+      ..sort();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(34, 30, 34, 34),
@@ -179,6 +188,27 @@ class _RestaurantesScreenState extends State<RestaurantesScreen> {
               hintText: 'Buscar por restaurante o correo...',
             ),
           ),
+          if (categorias.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                ChoiceChip(
+                  label: const Text('Todos'),
+                  selected: _categoriaSeleccionada == null,
+                  onSelected: (_) => setState(() => _categoriaSeleccionada = null),
+                ),
+                ...categorias.map((categoria) => ChoiceChip(
+                      label: Text(categoria),
+                      selected: _categoriaSeleccionada == categoria,
+                      onSelected: (_) => setState(() =>
+                          _categoriaSeleccionada =
+                              _categoriaSeleccionada == categoria ? null : categoria),
+                    )),
+              ],
+            ),
+          ],
           const SizedBox(height: 18),
           Expanded(
             child: AdminSurface(
@@ -289,7 +319,7 @@ class _RestaurantTableRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Expanded(flex: 2, child: Text(restaurant.tipoComida ?? 'Sin categoría', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontWeight: FontWeight.w600))),
+              Expanded(flex: 2, child: Text(restaurant.tipoComidaLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontWeight: FontWeight.w600))),
               Expanded(
                 flex: 2,
                 child: AdminStatusChip(

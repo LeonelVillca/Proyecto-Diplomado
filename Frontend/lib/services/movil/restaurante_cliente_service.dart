@@ -207,26 +207,41 @@ class RestauranteClienteService {
   }
 
   Restaurant _mapToRestaurant(Map<String, dynamic> json) {
-    Cuisine cuisine = Cuisine.tipico;
+    final cuisines = <Cuisine>[];
+    final rawCuisines = json['tiposComida'];
+    if (rawCuisines is List) {
+      for (final raw in rawCuisines) {
+        if (raw is Map) {
+          final cuisine = Cuisine.fromSlug(raw['slug']?.toString());
+          if (cuisine != null && !cuisines.contains(cuisine)) {
+            cuisines.add(cuisine);
+          }
+        }
+      }
+    }
+    Cuisine cuisine = cuisines.isNotEmpty ? cuisines.first : Cuisine.tipico;
     if (json['tipoComida'] != null) {
       final tc = json['tipoComida'].toString().toLowerCase();
-      if (tc.contains('parrilla') || tc.contains('carne'))
+      if (cuisines.isEmpty && (tc.contains('hamburg') || tc.contains('burger')))
+        cuisine = Cuisine.hamburguesas;
+      else if (cuisines.isEmpty && (tc.contains('parrilla') || tc.contains('carne')))
         cuisine = Cuisine.parrilla;
-      else if (tc.contains('vino') || tc.contains('bar'))
+      else if (cuisines.isEmpty && (tc.contains('vino') || tc.contains('bar')))
         cuisine = Cuisine.vinoBar;
-      else if (tc.contains('cafe') || tc.contains('café'))
+      else if (cuisines.isEmpty && (tc.contains('cafe') || tc.contains('café')))
         cuisine = Cuisine.cafe;
-      else if (tc.contains('pizza'))
+      else if (cuisines.isEmpty && tc.contains('pizza'))
         cuisine = Cuisine.pizzeria;
-      else if (tc.contains('pasta'))
+      else if (cuisines.isEmpty && (tc.contains('pasta') || tc.contains('ital')))
         cuisine = Cuisine.pastas;
-      else if (tc.contains('postre') || tc.contains('helado'))
+      else if (cuisines.isEmpty && (tc.contains('postre') || tc.contains('helado')))
         cuisine = Cuisine.postres;
-      else if (tc.contains('sana') ||
+      else if (cuisines.isEmpty && (tc.contains('sana') ||
           tc.contains('healthy') ||
-          tc.contains('ensalada'))
+          tc.contains('ensalada')))
         cuisine = Cuisine.healthy;
     }
+    if (cuisines.isEmpty) cuisines.add(cuisine);
 
     String? photoUrl;
     if (json['fotoPortada'] != null) {
@@ -295,6 +310,7 @@ class RestauranteClienteService {
       id: json['id'].toString(),
       name: json['nombre'] ?? 'Restaurante',
       cuisine: cuisine,
+      cuisines: cuisines,
       rating: (json['rating'] ?? 0.0).toDouble(),
       reviewCount: json['reviewCount'] ?? 0,
       priceLevel: 1,

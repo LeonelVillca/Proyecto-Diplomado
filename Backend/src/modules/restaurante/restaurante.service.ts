@@ -18,6 +18,7 @@ import { Mesa } from '../mesa/mesa.entity';
 import { Imagen } from '../imagen/imagen.entity';
 import { Resena } from '../resenas/resena.entity';
 import { UsuarioRestaurante } from '../usuario-restaurante/usuario-restaurante.entity';
+import { TipoComida } from './tipo-comida.entity';
 
 @Injectable()
 export class RestauranteService {
@@ -56,10 +57,20 @@ export class RestauranteService {
         }
       }
 
-      const { idSolicitud, ...datos } = dto;
+      const { idSolicitud, tiposComidaIds, ...datos } = dto;
+      const tiposComida = tiposComidaIds?.length
+        ? await manager.find(TipoComida, {
+            where: { id: In(tiposComidaIds), activo: true },
+          })
+        : [];
+      if (tiposComidaIds && tiposComida.length !== tiposComidaIds.length) {
+        throw new BadRequestException('Uno o más tipos de comida no existen');
+      }
       const guardado = await manager.save(
         manager.create(Restaurante, {
           ...datos,
+          tipoComida: tiposComida[0]?.nombre ?? datos.tipoComida,
+          tiposComida,
           solicitud: idSolicitud ? { id: idSolicitud } : null,
           estado: false,
         }),
@@ -80,7 +91,7 @@ export class RestauranteService {
 
   async listarTodos(): Promise<any[]> {
     const restaurantes = await this.restauranteRepository.find({
-      relations: { solicitud: true },
+      relations: { solicitud: true, tiposComida: true },
     });
 
     // Adjuntar la ubicación e imágenes al resultado para el frontend móvil
@@ -132,7 +143,7 @@ export class RestauranteService {
 
   async listarParaAdministrador(): Promise<any[]> {
     const restaurantes = await this.restauranteRepository.find({
-      relations: { solicitud: { usuario: true } },
+      relations: { solicitud: { usuario: true }, tiposComida: true },
       order: { id: 'DESC' },
     });
 
@@ -140,6 +151,7 @@ export class RestauranteService {
       id: restaurante.id,
       nombre: restaurante.nombre,
       tipoComida: restaurante.tipoComida,
+      tiposComida: restaurante.tiposComida ?? [],
       descripcion: restaurante.descripcion,
       telefono: restaurante.telefono,
       correo: restaurante.correo,
@@ -193,7 +205,9 @@ export class RestauranteService {
     return (
       solicitudAprobada &&
       textoCompleto(restaurante.nombre) &&
-      textoCompleto(restaurante.tipoComida) &&
+      ((Array.isArray(restaurante.tiposComida) &&
+        restaurante.tiposComida.length > 0) ||
+        textoCompleto(restaurante.tipoComida)) &&
       textoCompleto(restaurante.descripcion) &&
       textoCompleto(restaurante.telefono) &&
       textoCompleto(restaurante.correo) &&
@@ -214,7 +228,7 @@ export class RestauranteService {
   private async datosParaPublicacion(id: number): Promise<any | null> {
     const restaurante = await this.restauranteRepository.findOne({
       where: { id },
-      relations: { solicitud: true },
+      relations: { solicitud: true, tiposComida: true },
     });
     if (!restaurante) return null;
 
@@ -272,7 +286,7 @@ export class RestauranteService {
     const restaurantes = ids.length
       ? await this.restauranteRepository.find({
           where: { id: In(ids) },
-          relations: { solicitud: { usuario: true } },
+          relations: { solicitud: { usuario: true }, tiposComida: true },
         })
       : [];
 
@@ -305,7 +319,7 @@ export class RestauranteService {
         );
         const conRelaciones = await this.restauranteRepository.findOne({
           where: { id: guardado.id },
-          relations: { solicitud: { usuario: true } },
+          relations: { solicitud: { usuario: true }, tiposComida: true },
         });
         if (conRelaciones) {
           restaurantes.push(conRelaciones);
@@ -363,7 +377,7 @@ export class RestauranteService {
   async buscarPorId(id: number): Promise<Restaurante> {
     const restaurante = await this.restauranteRepository.findOne({
       where: { id },
-      relations: { solicitud: true },
+      relations: { solicitud: true, tiposComida: true },
     });
     if (!restaurante) {
       throw new NotFoundException(`Restaurante con id ${id} no encontrado`);
@@ -395,6 +409,13 @@ export class RestauranteService {
       throw new NotFoundException(`Restaurante con id ${id} no disponible`);
     }
     return restaurante;
+  }
+
+  async listarTiposComida(): Promise<TipoComida[]> {
+    return this.restauranteRepository.manager.find(TipoComida, {
+      where: { activo: true },
+      order: { nombre: 'ASC' },
+    });
   }
 
   async actualizar(
@@ -435,9 +456,22 @@ export class RestauranteService {
         horarios,
         mesasTotal,
         capacidadTotal,
+        tiposComidaIds,
         ...datos
       } = dto;
       Object.assign(restaurante, datos);
+      if (tiposComidaIds !== undefined) {
+        const tiposComida = tiposComidaIds.length
+          ? await manager.find(TipoComida, {
+              where: { id: In(tiposComidaIds), activo: true },
+            })
+          : [];
+        if (tiposComida.length !== tiposComidaIds.length) {
+          throw new BadRequestException('Uno o más tipos de comida no existen');
+        }
+        restaurante.tiposComida = tiposComida;
+        restaurante.tipoComida = tiposComida[0]?.nombre ?? null;
+      }
       await manager.save(restaurante);
 
       const ubicaciones = manager.getRepository(Ubicacion);

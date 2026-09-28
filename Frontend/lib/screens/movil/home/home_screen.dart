@@ -33,7 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Restaurant> _getFiltered(List<Restaurant> all) {
     var result = all;
     if (_selected != null) {
-      result = result.where((r) => r.cuisine == _selected).toList();
+      result = result
+          .where((r) => (r.cuisines.isEmpty ? [r.cuisine] : r.cuisines)
+              .contains(_selected))
+          .toList();
     }
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
@@ -41,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .where(
             (r) =>
                 r.name.toLowerCase().contains(q) ||
-                r.cuisine.label.toLowerCase().contains(q) ||
+                r.cuisineLabel.toLowerCase().contains(q) ||
                 (r.address ?? r.zone).toLowerCase().contains(q),
           )
           .toList();
@@ -57,17 +60,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Cuisine> _homeCategories(List<Restaurant> restaurants) {
-    final available = restaurants.map((r) => r.cuisine).toSet();
-    return [
-      Cuisine.parrilla,
-      Cuisine.tipico,
-      ...Cuisine.values.where(
-        (cuisine) =>
-            available.contains(cuisine) &&
-            cuisine != Cuisine.parrilla &&
-            cuisine != Cuisine.tipico,
-      ),
-    ];
+    final available = restaurants
+        .expand((r) => r.cuisines.isEmpty ? [r.cuisine] : r.cuisines)
+        .toSet();
+    return Cuisine.values.where(available.contains).toList();
   }
 
   void _showCategoryFilter(BuildContext context, List<Restaurant> restaurants) {
@@ -656,7 +652,7 @@ class _RecommendedCard extends StatelessWidget {
                         ),
                       const SizedBox(height: 3),
                       Text(
-                        restaurant.cuisine.label,
+                        restaurant.cuisineLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

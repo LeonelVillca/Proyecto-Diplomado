@@ -43,7 +43,7 @@ class DetailInfoCard extends StatelessWidget {
             spacing: 14,
             runSpacing: 6,
             children: [
-              _MetaItem(icon: Icons.restaurant_menu_rounded, label: restaurant.cuisine.label),
+              _MetaItem(icon: Icons.restaurant_menu_rounded, label: restaurant.cuisineLabel),
               _MetaItem(icon: Icons.attach_money_rounded, label: restaurant.price),
               _MetaItem(
                 icon: Icons.access_time_rounded,

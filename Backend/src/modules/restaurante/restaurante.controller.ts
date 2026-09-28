@@ -45,6 +45,11 @@ export class RestauranteController {
     return this.restauranteService.obtenerRanking(limiteNumero);
   }
 
+  @Get('tipos-comida')
+  listarTiposComida() {
+    return this.restauranteService.listarTiposComida();
+  }
+
   @Roles('admin_sistema')
   @Get('admin/listado')
   listarParaAdministrador(): Promise<any[]> {
