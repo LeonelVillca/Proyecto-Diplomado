@@ -1,12 +1,12 @@
 import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/movil/profile/user_reviews_screen.dart';
 import 'package:frontend/screens/movil/profile/user_support_screen.dart';
 import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 import 'dart:convert';
 import 'package:frontend/services/shared/secure_http.dart' as http;
+import 'package:frontend/screens/movil/notifications/notifications_screen.dart';
 import 'package:frontend/core/utils/network/api_endpoints.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -145,10 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontSize: 21,
-                          color: ConsumerColors.ink,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontSize: 21, color: ConsumerColors.ink),
                       ),
                       if (auth.email != null) ...[
                         const SizedBox(height: 3),
@@ -167,9 +165,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 auth.email!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: ConsumerColors.inkSoft,
-                                ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: ConsumerColors.inkSoft),
                               ),
                             ),
                           ],
@@ -177,7 +174,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 11,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: ConsumerColors.wineSoft,
                           borderRadius: BorderRadius.circular(20),
@@ -185,7 +185,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.restaurant_menu_rounded, size: 13, color: ConsumerColors.wine),
+                            Icon(
+                              Icons.restaurant_menu_rounded,
+                              size: 13,
+                              color: ConsumerColors.wine,
+                            ),
                             SizedBox(width: 5),
                             Text(
                               'Comensal desde 2024',
@@ -253,10 +257,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       iconColor: ConsumerColors.sage,
                       iconBackground: const Color(0xFFE8EFE1),
                       label: 'Notificaciones',
-                      trailing: _StatusPill(
-                        label: 'Activas',
-                        color: ConsumerColors.success,
-                        background: ConsumerColors.successSoft,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationsScreen(),
+                        ),
                       ),
                       showDivider: false,
                     ),
@@ -373,7 +378,12 @@ class _ProfileMenuGroup extends StatelessWidget {
           for (var i = 0; i < children.length; i++) ...[
             children[i],
             if (i < children.length - 1)
-              const Divider(height: 1, thickness: 1, indent: 64, color: ConsumerColors.hairline),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                indent: 64,
+                color: ConsumerColors.hairline,
+              ),
           ],
         ],
       ),
@@ -450,11 +460,7 @@ class _ProfileMenuRow extends StatelessWidget {
 }
 
 class _ProfileStat extends StatelessWidget {
-  const _ProfileStat({
-    required this.value,
-    required this.label,
-    this.onTap,
-  });
+  const _ProfileStat({required this.value, required this.label, this.onTap});
 
   final String value;
   final String label;
@@ -495,28 +501,10 @@ class _ProfileStatDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const SizedBox(
     height: 42,
-    child: VerticalDivider(width: 1, thickness: 1, color: ConsumerColors.hairline),
-  );
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.label,
-    required this.color,
-    required this.background,
-  });
-
-  final String label;
-  final Color color;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-    decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(20)),
-    child: Text(
-      label,
-      style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w700),
+    child: VerticalDivider(
+      width: 1,
+      thickness: 1,
+      color: ConsumerColors.hairline,
     ),
   );
 }

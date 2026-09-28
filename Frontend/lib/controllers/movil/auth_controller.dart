@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:frontend/services/shared/session_service.dart';
 import 'package:frontend/core/movil/api_config.dart';
+import 'package:frontend/services/movil/notifications_service.dart';
 
 /// Estados posibles del flujo de inicio de sesión.
 enum AuthStatus {
@@ -481,6 +482,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
     _sessionGeneration++;
     _limpiarSesionBackend();
     _status = AuthStatus.idle;
+    await NotificationsService.stop();
     await _session.eliminarToken();
     if (!_disposed) notifyListeners();
   }
@@ -507,6 +509,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
     final previous = _token;
     _errorMessage = null;
     _sessionGeneration++;
+    await NotificationsService.stop(previousToken: previous);
     if (previous != null) {
       try {
         final response = await http.post(Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/cerrar-sesiones'),

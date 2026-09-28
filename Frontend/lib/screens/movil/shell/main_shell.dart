@@ -7,6 +7,7 @@ import 'package:frontend/screens/movil/home/home_tab.dart';
 import 'package:frontend/screens/movil/location/location_screen.dart';
 import 'package:frontend/screens/movil/profile/profile_screen.dart';
 import 'package:frontend/screens/movil/reservations/reservations_screen.dart';
+import 'package:frontend/services/movil/notifications_service.dart';
 
 /// Contenedor principal tras iniciar sesión: pestañas + barra flotante.
 /// Usa IndexedStack para conservar el estado de cada pestaña.
@@ -29,6 +30,27 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     MainShell._activeState = this;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        NotificationsService.start(
+          onOpenReservation: () {
+            if (mounted) _showReservations();
+          },
+          onForegroundNotice: (title) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(title),
+                action: SnackBarAction(
+                  label: 'Ver reservas',
+                  onPressed: _showReservations,
+                ),
+              ),
+            );
+          },
+        );
+      }
+    });
   }
 
   @override

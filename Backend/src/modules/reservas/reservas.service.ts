@@ -14,6 +14,7 @@ import { Mesa } from '../mesa/mesa.entity';
 import { ReservasGateway } from './reservas.gateway';
 import { HorarioAtencion } from '../horario-atencion/horario-atencion.entity';
 import { ExcepcionHorario } from '../horario-atencion/excepcion-horario.entity';
+import { NotificacionesService } from '../notificaciones/notificaciones.service';
 
 @Injectable()
 export class ReservasService {
@@ -29,6 +30,7 @@ export class ReservasService {
     @InjectRepository(ExcepcionHorario)
     private readonly excepcionesRepo: Repository<ExcepcionHorario>,
     private readonly reservasGateway: ReservasGateway,
+    private readonly notificaciones: NotificacionesService,
   ) {}
 
   async crear(dto: CrearReservaDto): Promise<Reserva> {
@@ -191,7 +193,7 @@ export class ReservasService {
       reserva.mesa = mesa;
     }
 
-    const changed = dto.estado && dto.estado !== reserva.estado;
+    let changed = dto.estado && dto.estado !== reserva.estado;
     if (dto.estado) reserva.estado = dto.estado;
 
     if (dto.fecha) reserva.fecha = dto.fecha;
@@ -227,8 +229,39 @@ export class ReservasService {
     }
 
     let saved: Reserva;
+    let nuevaNotificacion: Awaited<
+      ReturnType<NotificacionesService['crearPorCambioDeReserva']>
+    > | null = null;
     try {
-      saved = await this.reservasRepo.save(reserva);
+      if (
+        changed &&
+        (reserva.estado === 'confirmada' || reserva.estado === 'rechazada')
+      ) {
+        const resultado = await this.reservasRepo.manager.transaction(
+          async (manager) => {
+            const estadoActual = await manager.findOne(Reserva, {
+              where: { id },
+              lock: { mode: 'pessimistic_write' },
+            });
+            if (!estadoActual)
+              throw new NotFoundException(`Reserva #${id} no encontrada`);
+            const reservaGuardada = await manager.save(Reserva, reserva);
+            const cambioReal = estadoActual.estado !== reserva.estado;
+            const aviso = cambioReal
+              ? await this.notificaciones.crearPorCambioDeReserva(
+                  manager,
+                  reservaGuardada,
+                )
+              : null;
+            return { reservaGuardada, aviso, cambioReal };
+          },
+        );
+        saved = resultado.reservaGuardada;
+        nuevaNotificacion = resultado.aviso;
+        changed = resultado.cambioReal;
+      } else {
+        saved = await this.reservasRepo.save(reserva);
+      }
     } catch (error) {
       if (this.isSlotConflict(error)) {
         throw new BadRequestException(
@@ -237,6 +270,8 @@ export class ReservasService {
       }
       throw error;
     }
+    if (nuevaNotificacion)
+      void this.notificaciones.enviarPush(nuevaNotificacion);
     if (changed)
       await this.reservasGateway.emitActualizacionReserva(
         saved.id,

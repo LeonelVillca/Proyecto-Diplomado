@@ -8,6 +8,8 @@ import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/movil/restaurantes/restaurant_detail_screen.dart';
 import 'package:frontend/widgets/movil/restaurant/explore_card.dart';
 import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
+import 'package:frontend/screens/movil/notifications/notifications_screen.dart';
+import 'package:frontend/services/movil/notifications_service.dart';
 
 // ── Aliases de la paleta oficial Mesa Chapaca ────────────────────────
 class _C {
@@ -34,8 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
     var result = all;
     if (_selected != null) {
       result = result
-          .where((r) => (r.cuisines.isEmpty ? [r.cuisine] : r.cuisines)
-              .contains(_selected))
+          .where(
+            (r) => (r.cuisines.isEmpty ? [r.cuisine] : r.cuisines).contains(
+              _selected,
+            ),
+          )
           .toList();
     }
     if (_searchQuery.trim().isNotEmpty) {
@@ -154,7 +159,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
                 child: _SearchBar(
                   onChanged: (q) => setState(() => _searchQuery = q),
-                  onFilterTap: () => _showCategoryFilter(context, allRestaurants),
+                  onFilterTap: () =>
+                      _showCategoryFilter(context, allRestaurants),
                 ),
               ),
             ),
@@ -363,31 +369,48 @@ class _HomeHeader extends StatelessWidget {
           SizedBox(
             width: 48,
             height: 48,
-            child: IconButton(
-              tooltip: 'Notificaciones',
-              onPressed: () => showDialog<void>(
-                context: context,
-                builder: (dialogContext) => AlertDialog(
-                  backgroundColor: _C.surface,
-                  title: const Text('Notificaciones'),
-                  content: const Text('No tienes notificaciones por ahora.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(dialogContext),
-                      child: const Text('Entendido'),
+            child: ValueListenableBuilder<int>(
+              valueListenable: NotificationsService.unread,
+              builder: (context, count, _) => Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    tooltip: 'Notificaciones',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
                     ),
-                  ],
-                ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: _C.surface,
+                      foregroundColor: _C.textMid,
+                      side: const BorderSide(color: ConsumerColors.line),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: const Icon(LucideIcons.bell, size: 20),
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      top: -3,
+                      right: -3,
+                      child: CircleAvatar(
+                        radius: 10,
+                        backgroundColor: _C.accent,
+                        child: Text(
+                          count > 9 ? '9+' : '$count',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              style: IconButton.styleFrom(
-                backgroundColor: _C.surface,
-                foregroundColor: _C.textMid,
-                side: const BorderSide(color: ConsumerColors.line),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              icon: const Icon(LucideIcons.bell, size: 20),
             ),
           ),
         ],

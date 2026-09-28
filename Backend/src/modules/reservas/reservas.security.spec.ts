@@ -26,6 +26,7 @@ describe('Reservas: concurrencia y acceso', () => {
       {} as any,
       {} as any,
       gateway as any,
+      {} as any,
     );
     await expect(
       service.crear({
