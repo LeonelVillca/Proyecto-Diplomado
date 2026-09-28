@@ -380,7 +380,13 @@ class _PerfilRestauranteScreenState extends State<PerfilRestauranteScreen> {
         'direccion': _direccionCtrl.text.trim(),
         'latitud': _selectedLocation?.latitude,
         'longitud': _selectedLocation?.longitude,
-        'horarios': _horarios,
+        'horarios': _horarios
+            .map((horario) => {
+                  'diaSemana': horario['diaSemana'],
+                  'horaInicio': horario['horaInicio'],
+                  'horaFin': horario['horaFin'],
+                })
+            .toList(),
         'mesasTotal': int.tryParse(_mesasTotalCtrl.text),
         'capacidadTotal': int.tryParse(_capacidadTotalCtrl.text),
       };
