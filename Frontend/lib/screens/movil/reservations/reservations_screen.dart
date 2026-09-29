@@ -1,5 +1,7 @@
-import 'package:frontend/core/movil/consumer_design.dart';
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
@@ -19,13 +21,16 @@ class ReservationsScreen extends StatefulWidget {
   State<ReservationsScreen> createState() => _ReservationsScreenState();
 }
 
-class _ReservationsScreenState extends State<ReservationsScreen> {
+class _ReservationsScreenState extends State<ReservationsScreen>
+    with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _showPast = false;
+  int? _cancelandoId;
   String? _errorMessage;
   List<ReservaAdminModel> _reservas = [];
   io.Socket? _socket;
   String? _socketToken;
+  Timer? _cancelCutoffTimer;
 
   List<ReservaAdminModel> get proximas => _reservas
       .where((r) => r.estado == 'pendiente' || r.estado == 'confirmada')
@@ -37,6 +42,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarDatos();
       _conectarSocket();
@@ -51,9 +57,40 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _cancelCutoffTimer?.cancel();
     _socket?.disconnect();
     _socket?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _programarLimiteCancelacion();
+      if (mounted) setState(() {});
+    }
+  }
+
+  DateTime _limiteCancelacion(ReservaAdminModel reserva) =>
+      reserva.cancelarHasta ??
+      reserva.fechaHora.subtract(const Duration(minutes: 15));
+
+  void _programarLimiteCancelacion() {
+    _cancelCutoffTimer?.cancel();
+    final now = DateTime.now();
+    final limites =
+        proximas
+            .map(_limiteCancelacion)
+            .where((limite) => limite.isAfter(now))
+            .toList()
+          ..sort();
+    if (limites.isEmpty) return;
+    _cancelCutoffTimer = Timer(limites.first.difference(now), () {
+      if (!mounted) return;
+      setState(() {});
+      _programarLimiteCancelacion();
+    });
   }
 
   @override
@@ -128,6 +165,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
         _reservas = data.map((e) => ReservaAdminModel.fromJson(e)).toList();
         _reservas.sort((a, b) => b.fechaHora.compareTo(a.fechaHora));
+        _programarLimiteCancelacion();
       } else {
         if (mounted)
           setState(() => _errorMessage = 'No se pudieron cargar tus reservas.');
@@ -487,31 +525,24 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               ),
             ),
           ],
-          if (reserva.estado == 'pendiente' ||
-              reserva.estado == 'confirmada') ...[
+          if ((status == 'pendiente' || status == 'confirmada') &&
+              DateTime.now().isBefore(_limiteCancelacion(reserva))) ...[
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showActionNotice(context, 'reprogramar'),
-                    icon: const Icon(LucideIcons.calendarClock, size: 15),
-                    label: const Text('Reprogramar'),
-                  ),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _cancelandoId == null
+                    ? () => _cancelarReserva(reserva)
+                    : null,
+                icon: const Icon(LucideIcons.x, size: 15),
+                label: Text(
+                  _cancelandoId == reserva.id ? 'Cancelando...' : 'Cancelar',
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _showActionNotice(context, 'cancelar'),
-                    icon: const Icon(LucideIcons.x, size: 15),
-                    label: const Text('Cancelar'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ConsumerColors.error,
-                      side: const BorderSide(color: Color(0xFFF0CFC6)),
-                    ),
-                  ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ConsumerColors.error,
+                  side: const BorderSide(color: Color(0xFFF0CFC6)),
                 ),
-              ],
+              ),
             ),
           ],
         ],
@@ -557,13 +588,79 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     );
   }
 
-  void _showActionNotice(BuildContext context, String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('La opción para $action todavía no está disponible.'),
-        behavior: SnackBarBehavior.floating,
+  Future<void> _cancelarReserva(ReservaAdminModel reserva) async {
+    if (_cancelandoId != null) return;
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancelar reserva'),
+        content: const Text(
+          '¿Quieres cancelar esta reserva? Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Volver'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cancelar reserva'),
+          ),
+        ],
       ),
     );
+    if (!mounted || confirmado != true) return;
+    if (!DateTime.now().isBefore(_limiteCancelacion(reserva))) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Solo puedes cancelar hasta 15 minutos antes de la reserva.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _cancelandoId = reserva.id);
+    try {
+      final response = await http.patch(
+        Uri.parse(
+          '${ApiEndpoints.baseUrl}/api/v1/reservas/${reserva.id}/cancelar',
+        ),
+        headers: {
+          'Authorization':
+              'Bearer ${AuthScope.of(context, listen: false).token}',
+        },
+      );
+      if (response.statusCode != 200) {
+        String message = 'No se pudo cancelar la reserva.';
+        try {
+          final body = jsonDecode(utf8.decode(response.bodyBytes));
+          if (body is Map && body['message'] is String) {
+            message = body['message'] as String;
+          }
+        } catch (_) {}
+        throw StateError(message);
+      }
+      await _cargarDatos();
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Reserva cancelada.')));
+      }
+    } catch (error) {
+      if (mounted) {
+        final message = error is StateError
+            ? error.message
+            : 'No se pudo cancelar la reserva. Inténtalo nuevamente.';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } finally {
+      if (mounted) setState(() => _cancelandoId = null);
+    }
   }
 }
 

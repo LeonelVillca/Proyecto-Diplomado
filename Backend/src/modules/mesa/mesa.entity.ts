@@ -31,4 +31,7 @@ export class Mesa {
 
   @Column({ name: 'estado', type: 'varchar', length: 20, default: 'libre' })
   estado: (typeof ESTADO_MESA)[number];
+
+  @Column({ name: 'estado_hasta', type: 'timestamptz', nullable: true })
+  estadoHasta: Date | null;
 }

@@ -901,8 +901,14 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
 
   Widget _buildMesaCard(Map<String, dynamic> datosMesa) {
     final idMesa = (datosMesa['idMesa'] as num).toInt();
-    final mesa = _mesas.firstWhere((item) => item.id == idMesa);
+    final mesaGuardada = _mesas.firstWhere((item) => item.id == idMesa);
     final estado = _estadoEnConsulta(datosMesa);
+    final mesa = MesaAdminModel(
+      id: mesaGuardada.id,
+      numeroMesa: mesaGuardada.numeroMesa,
+      capacidad: mesaGuardada.capacidad,
+      estado: estado,
+    );
     final reserva = datosMesa['reserva'] as Map<String, dynamic>?;
     final horaReserva = reserva?['hora']?.toString() ?? '';
     final color = _getColorEstado(estado);

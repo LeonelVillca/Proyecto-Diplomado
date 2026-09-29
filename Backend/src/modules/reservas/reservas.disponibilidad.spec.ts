@@ -31,6 +31,7 @@ function crearServicio(idsOcupadas: number[]) {
         idsOcupadas.map((idMesa) => ({ idMesa: String(idMesa) })),
       ),
     getMany: jest.fn().mockResolvedValue([]),
+    getCount: jest.fn().mockResolvedValue(0),
   };
   const reservasRepo = {
     createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
@@ -40,6 +41,7 @@ function crearServicio(idsOcupadas: number[]) {
   const mesasRepo = {
     find: jest.fn().mockResolvedValue(mesas),
     findOne: jest.fn(),
+    update: jest.fn().mockResolvedValue({ affected: 0 }),
   };
   const usuariosRepo = { findOne: jest.fn() };
   const manager = {
@@ -60,7 +62,7 @@ function crearServicio(idsOcupadas: number[]) {
     mesasRepo as any,
     { find: jest.fn().mockResolvedValue([horario]) } as any,
     { findOne: jest.fn().mockResolvedValue(null) } as any,
-    {} as any,
+    { emitNuevaReserva: jest.fn() } as any,
   );
   return {
     service,
@@ -82,7 +84,7 @@ describe('Disponibilidad de reservas', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           restaurante: { id: 7 },
-          estado: 'libre',
+          estado: expect.any(Object),
         }),
       }),
     );
@@ -114,6 +116,82 @@ describe('Disponibilidad de reservas', () => {
     await expect(service.consultarDisponibilidad(consulta)).resolves.toEqual({
       mesas: [],
     });
+  });
+
+  it('no deja que una marca manual de ahora bloquee las reservas de mañana', async () => {
+    const { service, mesasRepo } = crearServicio([]);
+    mesasRepo.find.mockResolvedValue([
+      {
+        id: 1,
+        numeroMesa: 'A',
+        capacidad: 2,
+        estado: 'reservada',
+        estadoHasta: new Date(Date.now() + 30 * 60 * 1000),
+        restaurante: { id: 7, zonaHoraria: 'America/La_Paz' },
+      },
+    ] as any);
+
+    await expect(
+      service.consultarDisponibilidad({
+        ...consulta,
+        fecha: '2026-09-30',
+        hora: '13:00',
+      }),
+    ).resolves.toEqual({
+      mesas: [{ idMesa: 1, numeroMesa: 'A', capacidad: 2 }],
+    });
+  });
+
+  it('bloquea solo el horario que cruza la hora manual de ocupación', async () => {
+    const { service, mesasRepo } = crearServicio([]);
+    mesasRepo.find.mockResolvedValue([
+      {
+        id: 1,
+        numeroMesa: 'A',
+        capacidad: 2,
+        estado: 'ocupada',
+        estadoHasta: new Date('2026-09-25T18:00:00.000Z'),
+        restaurante: { id: 7, zonaHoraria: 'America/La_Paz' },
+      },
+    ] as any);
+
+    await expect(
+      service.consultarDisponibilidad({ ...consulta, hora: '13:00' }),
+    ).resolves.toEqual({ mesas: [] });
+    await expect(
+      service.consultarDisponibilidad({ ...consulta, hora: '14:00' }),
+    ).resolves.toEqual({
+      mesas: [{ idMesa: 1, numeroMesa: 'A', capacidad: 2 }],
+    });
+  });
+
+  it('permite reservar mañana una mesa marcada manualmente como ocupada ahora', async () => {
+    const { service, reservasRepo, mesasRepo, usuariosRepo } = crearServicio(
+      [],
+    );
+    const mesa = {
+      id: 1,
+      capacidad: 2,
+      estado: 'ocupada',
+      estadoHasta: new Date(Date.now() + 30 * 60 * 1000),
+      restaurante: { id: 7, zonaHoraria: 'America/La_Paz' },
+    };
+    mesasRepo.findOne.mockResolvedValue(mesa as any);
+    usuariosRepo.findOne.mockResolvedValue({ id: 3 } as any);
+    reservasRepo.save.mockImplementation(async (reserva) => ({
+      ...reserva,
+      id: 90,
+    }));
+
+    await expect(
+      service.crear({
+        idUsuario: 3,
+        idMesa: 1,
+        fecha: '2026-09-30',
+        hora: '13:00',
+        numeroPersonas: 2,
+      }),
+    ).resolves.toMatchObject({ estado: 'pendiente', duracionMinutos: 60 });
   });
 
   it('devuelve la mesa y la reserva activa que bloquea el horario consultado', async () => {
@@ -202,7 +280,8 @@ describe('Disponibilidad de reservas', () => {
         id: 1,
         capacidad: 2,
         estado,
-        restaurante: { id: 7 },
+        estadoHasta: new Date('2026-09-25T18:00:00.000Z'),
+        restaurante: { id: 7, zonaHoraria: 'America/La_Paz' },
       } as any);
 
       await expect(

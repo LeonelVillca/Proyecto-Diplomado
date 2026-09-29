@@ -127,6 +127,14 @@ export class ReservasController {
     return this.reservasService.actualizar(id, dto);
   }
 
+  @Patch(':id/cancelar')
+  cancelarPorUsuario(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: { user: { id: number } },
+  ) {
+    return this.reservasService.cancelarPorUsuario(id, req.user.id);
+  }
+
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('reserva')
   @Delete(':id')

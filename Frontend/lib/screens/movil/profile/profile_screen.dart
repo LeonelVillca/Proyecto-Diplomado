@@ -190,15 +190,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               size: 13,
                               color: ConsumerColors.wine,
                             ),
-                            SizedBox(width: 5),
-                            Text(
-                              'Comensal desde 2024',
-                              style: TextStyle(
-                                color: ConsumerColors.wineDark,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
                           ],
                         ),
                       ),

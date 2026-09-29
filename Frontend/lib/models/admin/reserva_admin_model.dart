@@ -8,6 +8,7 @@ class ReservaAdminModel {
   final int idRestaurante;
   final String restauranteNombre;
   final DateTime fechaHora;
+  final DateTime? cancelarHasta;
   final int cantidadPersonas;
   final String? requerimientosEspeciales;
   final String? restauranteFoto;
@@ -22,6 +23,7 @@ class ReservaAdminModel {
     required this.idRestaurante,
     required this.restauranteNombre,
     required this.fechaHora,
+    this.cancelarHasta,
     required this.cantidadPersonas,
     this.requerimientosEspeciales,
     this.restauranteFoto,
@@ -60,6 +62,7 @@ class ReservaAdminModel {
       restauranteNombre:
           json['mesa']?['restaurante']?['nombre'] ?? 'Restaurante',
       fechaHora: parseFechaHora(),
+      cancelarHasta: DateTime.tryParse(json['cancelarHasta']?.toString() ?? ''),
       cantidadPersonas: json['numeroPersonas'] ?? 1,
       requerimientosEspeciales: json['comentarios'],
       restauranteFoto: restauranteImageUrl(restaurante?['fotoPortada']),

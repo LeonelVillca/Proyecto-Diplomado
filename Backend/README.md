@@ -29,8 +29,9 @@
 4. Tras hacer una copia de seguridad de la base, ejecuta `node scripts/apply-security-migration.cjs --apply`. La migración añade protección de sesiones, reservas duplicadas, control de reseñas y confirmación de correo; si encuentra datos incompatibles, detente y resuélvelos antes de continuar.
 5. Para desplegar el catálogo de tipos de comida, después de la migración de seguridad ejecuta `node scripts/apply-security-migration.cjs --tipos-comida --apply`. La migración crea el catálogo, asigna categorías reconocibles y deja los valores ambiguos como “Por definir” para editarlos desde el perfil.
 6. Para fijar las reservas a una hora y aplicar el margen previo de disponibilidad, ejecuta `node scripts/apply-security-migration.cjs --reserva-horario --apply`. Haz antes una copia de seguridad; la migración aborta si encuentra reservas activas incompatibles y estandariza las duraciones existentes a 60 minutos.
-7. Ejecuta `npm run build`, luego `npm run preflight:prod` (solo lectura) y finalmente `npm run start:prod`.
-8. Compila Flutter con `--dart-define=API_BASE_URL=https://TU_BACKEND`; una build de producción no acepta HTTP ni una URL vacía.
+7. Para hacer que los estados manuales “ocupada” y “reservada” venzan en una hora, ejecuta `node scripts/apply-security-migration.cjs --mesa-estado-temporal --apply`. Haz una copia de seguridad antes de aplicar la migración.
+8. Ejecuta `npm run build`, luego `npm run preflight:prod` (solo lectura) y finalmente `npm run start:prod`.
+9. Compila Flutter con `--dart-define=API_BASE_URL=https://TU_BACKEND`; una build de producción no acepta HTTP ni una URL vacía.
 
 El formulario público requiere confirmar el correo antes de aprobar una solicitud. El enlace vence en 24 horas y puede reenviarse. La app limita envíos por IP, pero en una publicación abierta aún conviene añadir defensa contra abuso distribuido. Prueba los flujos con datos de prueba y vigila los registros tras el despliegue.
 
