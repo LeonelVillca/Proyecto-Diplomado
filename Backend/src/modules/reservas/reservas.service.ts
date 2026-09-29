@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThanOrEqual, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import { MoreThanOrEqual, Repository, SelectQueryBuilder } from 'typeorm';
 import { Reserva } from './reserva.entity';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
@@ -120,7 +120,10 @@ export class ReservasService {
     const mesas = await this.mesasRepo.find({
       where: {
         restaurante: { id: dto.idRestaurante },
-        estado: Not('inactiva'),
+        // Solo las mesas marcadas como libres pueden recibir nuevas reservas.
+        // "ocupada" y "reservada" son estados operativos persistidos en mesa,
+        // mientras que las reservas por fecha/hora se validan debajo.
+        estado: 'libre',
         capacidad: MoreThanOrEqual(dto.numeroPersonas),
       },
       order: { capacidad: 'ASC', id: 'ASC' },
@@ -149,6 +152,90 @@ export class ReservasService {
           numeroMesa: mesa.numeroMesa,
           capacidad: mesa.capacidad!,
         })),
+    };
+  }
+
+  async consultarOcupacionRestaurante(
+    idRestaurante: number,
+    fecha: string,
+    hora: string,
+    duracionMinutos = 120,
+  ): Promise<{
+    fecha: string;
+    hora: string;
+    duracionMinutos: number;
+    mesas: Array<{
+      idMesa: number;
+      numeroMesa: string;
+      capacidad: number;
+      estado: Mesa['estado'];
+      disponible: boolean;
+      reserva: null | {
+        id: number;
+        estado: string;
+        fecha: string;
+        hora: string;
+        duracionMinutos: number;
+        numeroPersonas: number;
+        cliente: string;
+      };
+    }>;
+  }> {
+    const mesas = await this.mesasRepo.find({
+      where: { restaurante: { id: idRestaurante } },
+      order: { id: 'ASC' },
+    });
+    if (mesas.length === 0) {
+      return { fecha, hora, duracionMinutos, mesas: [] };
+    }
+
+    const reservas = await this.consultaSolapamientos(
+      fecha,
+      hora,
+      duracionMinutos,
+    )
+      .leftJoinAndSelect('reserva.mesa', 'mesa')
+      .leftJoinAndSelect('reserva.usuario', 'usuario')
+      .andWhere('reserva.id_mesa IN (:...ids)', {
+        ids: mesas.map((mesa) => mesa.id),
+      })
+      .orderBy('reserva.fecha', 'ASC')
+      .addOrderBy('reserva.hora', 'ASC')
+      .getMany();
+    const reservaPorMesa = new Map<number, Reserva>();
+    for (const reserva of reservas) {
+      if (reserva.mesa && !reservaPorMesa.has(reserva.mesa.id)) {
+        reservaPorMesa.set(reserva.mesa.id, reserva);
+      }
+    }
+
+    return {
+      fecha,
+      hora,
+      duracionMinutos,
+      mesas: mesas.map((mesa) => {
+        const reserva = reservaPorMesa.get(mesa.id);
+        const disponible = mesa.estado === 'libre' && !reserva;
+        return {
+          idMesa: mesa.id,
+          numeroMesa: mesa.numeroMesa,
+          capacidad: mesa.capacidad ?? 0,
+          estado: mesa.estado,
+          disponible,
+          reserva: reserva
+            ? {
+                id: reserva.id,
+                estado: reserva.estado,
+                fecha: reserva.fecha,
+                hora: reserva.hora,
+                duracionMinutos: reserva.duracionMinutos,
+                numeroPersonas: reserva.numeroPersonas,
+                cliente:
+                  `${reserva.usuario?.nombre ?? ''} ${reserva.usuario?.apellido ?? ''}`.trim(),
+              }
+            : null,
+        };
+      }),
     };
   }
 
@@ -206,7 +293,16 @@ export class ReservasService {
     // La reserva nunca puede superar la capacidad real de la mesa, tampoco
     // cuando un administrador cambia mesa, horario, comensales o estado.
     if (['pendiente', 'confirmada'].includes(reserva.estado)) {
-      this.validarCapacidadYEstadoMesa(reserva.mesa, reserva.numeroPersonas);
+      const cambiaMesaUHorario =
+        dto.idMesa !== undefined ||
+        dto.fecha !== undefined ||
+        dto.hora !== undefined ||
+        dto.duracionMinutos !== undefined;
+      this.validarCapacidadYEstadoMesa(
+        reserva.mesa,
+        reserva.numeroPersonas,
+        cambiaMesaUHorario,
+      );
       await this.validarHorarioRestaurante(
         reserva.mesa.restaurante.id,
         reserva.fecha,
@@ -346,8 +442,12 @@ export class ReservasService {
   private validarCapacidadYEstadoMesa(
     mesa: Mesa,
     numeroPersonas: number,
+    requiereMesaLibre = true,
   ): void {
-    if (mesa.estado === 'inactiva') {
+    if (
+      mesa.estado === 'inactiva' ||
+      (requiereMesaLibre && mesa.estado !== 'libre')
+    ) {
       throw new BadRequestException('La mesa seleccionada no está disponible');
     }
     if (!mesa.capacidad || numeroPersonas > mesa.capacidad) {

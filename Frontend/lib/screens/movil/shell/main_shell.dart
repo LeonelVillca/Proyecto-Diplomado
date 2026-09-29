@@ -23,30 +23,19 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   HomeTab _tab = HomeTab.inicio;
 
   @override
   void initState() {
     super.initState();
     MainShell._activeState = this;
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         NotificationsService.start(
           onOpenReservation: () {
             if (mounted) _showReservations();
-          },
-          onForegroundNotice: (title) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(title),
-                action: SnackBarAction(
-                  label: 'Ver reservas',
-                  onPressed: _showReservations,
-                ),
-              ),
-            );
           },
         );
       }
@@ -54,7 +43,15 @@ class _MainShellState extends State<MainShell> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      NotificationsService.refreshDeviceRegistration();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (identical(MainShell._activeState, this)) MainShell._activeState = null;
     super.dispose();
   }

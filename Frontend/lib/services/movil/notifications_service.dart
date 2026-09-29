@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:frontend/core/movil/api_config.dart';
 import 'package:frontend/services/shared/secure_http.dart' as http;
 
@@ -44,6 +45,20 @@ class NotificationsService {
   static StreamSubscription<RemoteMessage>? _openedSubscription;
   static StreamSubscription<String>? _tokenSubscription;
   static bool _started = false;
+  static VoidCallback? _onOpenReservation;
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+  static const String _reservationChannelId = 'reserva_estado';
+  static const String _reservationChannelName = 'Estado de reservas';
+  static const String _reservationChannelDescription =
+      'Avisos cuando una reserva es confirmada o rechazada.';
+  static const AndroidNotificationChannel _reservationChannel =
+      AndroidNotificationChannel(
+        _reservationChannelId,
+        _reservationChannelName,
+        description: _reservationChannelDescription,
+        importance: Importance.max,
+      );
 
   static Uri get _url =>
       Uri.parse('${ApiConfig.baseUrl}/api/v1/notificaciones');
@@ -76,18 +91,37 @@ class NotificationsService {
     changed.value++;
   }
 
-  static Future<void> start({
-    required VoidCallback onOpenReservation,
-    required void Function(String) onForegroundNotice,
-  }) async {
+  static Future<void> start({required VoidCallback onOpenReservation}) async {
     if (_started || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
     _started = true;
+    _onOpenReservation = onOpenReservation;
     unawaited(fetch().catchError((_) => <ReservationNotice>[]));
     try {
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission();
+      await _initializeSystemNotifications();
+      final settings = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (Platform.isIOS) {
+        await messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      }
       final token = await messaging.getToken();
-      if (token != null) await _register(token);
+      if (token != null &&
+          settings.authorizationStatus != AuthorizationStatus.denied) {
+        try {
+          await _register(token);
+        } catch (error) {
+          debugPrint('No se pudo registrar el dispositivo para avisos: $error');
+        }
+      } else if (settings.authorizationStatus == AuthorizationStatus.denied) {
+        debugPrint('Permiso de notificaciones desactivado en el teléfono.');
+      }
       _tokenSubscription = messaging.onTokenRefresh.listen((token) {
         unawaited(
           _register(token).catchError((error) {
@@ -97,7 +131,9 @@ class NotificationsService {
           }),
         );
       });
-      _foregroundSubscription = FirebaseMessaging.onMessage.listen((message) {
+      _foregroundSubscription = FirebaseMessaging.onMessage.listen((
+        message,
+      ) async {
         if (_isReservationNotice(message)) {
           unawaited(
             fetch()
@@ -106,9 +142,7 @@ class NotificationsService {
                 })
                 .catchError((_) {}),
           );
-          onForegroundNotice(
-            message.notification?.title ?? 'Tu reserva fue actualizada',
-          );
+          if (Platform.isAndroid) await _showSystemNotification(message);
         }
       });
       _openedSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
@@ -126,6 +160,55 @@ class NotificationsService {
     } catch (error) {
       _started = false;
       debugPrint('Avisos push no disponibles: $error');
+    }
+  }
+
+  static Future<void> _initializeSystemNotifications() async {
+    await _localNotifications.initialize(
+      settings: const InitializationSettings(
+        android: AndroidInitializationSettings('ic_notification'),
+        iOS: DarwinInitializationSettings(),
+      ),
+      onDidReceiveNotificationResponse: (_) => _onOpenReservation?.call(),
+    );
+    final android = _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await android?.createNotificationChannel(_reservationChannel);
+  }
+
+  static Future<void> _showSystemNotification(RemoteMessage message) async {
+    final title = message.notification?.title ?? 'Estado de tu reserva';
+    final body = message.notification?.body ?? 'Tu reserva fue actualizada.';
+    await _localNotifications.show(
+      id: message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _reservationChannelId,
+          _reservationChannelName,
+          channelDescription: _reservationChannelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+          icon: 'ic_notification',
+        ),
+      ),
+      payload: message.data['idReserva']?.toString(),
+    );
+  }
+
+  static Future<void> refreshDeviceRegistration() async {
+    if (!_started || kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) return;
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.getNotificationSettings();
+      if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+      final token = await messaging.getToken();
+      if (token != null) await _register(token);
+    } catch (error) {
+      debugPrint('No se pudo actualizar el registro de notificaciones: $error');
     }
   }
 
