@@ -16,6 +16,7 @@ import { Roles } from '../../core/decorators/roles.decorator';
 import { MesaService } from './mesa.service';
 import { CrearMesaDto } from './dto/crear-mesa.dto';
 import { ActualizarMesaDto } from './dto/actualizar-mesa.dto';
+import { ActualizarEstadoHorarioDto } from './dto/actualizar-estado-horario.dto';
 import { Mesa } from './mesa.entity';
 
 @Controller('mesa')
@@ -45,6 +46,16 @@ export class MesaController {
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Mesa> {
     return this.mesaService.buscarPorId(id);
+  }
+
+  @Roles('admin_restaurante', 'admin_sistema')
+  @CheckOwnership('mesa')
+  @Patch(':id/estado-horario')
+  actualizarEstadoHorario(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarEstadoHorarioDto,
+  ) {
+    return this.mesaService.actualizarEstadoHorario(id, dto);
   }
 
   @Roles('admin_restaurante', 'admin_sistema')

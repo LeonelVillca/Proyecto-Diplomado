@@ -68,6 +68,18 @@ export class ReservasService {
             },
             dto.numeroPersonas,
           );
+          if (
+            (
+              await this.bloqueosManualesEnHorario(
+                [dto.idMesa], dto.fecha, dto.hora, 60,
+                (sql, params) => manager.query(sql, params),
+              )
+            ).length
+          ) {
+            throw new BadRequestException(
+              'La mesa está bloqueada manualmente en ese horario',
+            );
+          }
 
           const usuario = await usuariosRepo.findOne({
             where: { id: dto.idUsuario },
@@ -167,6 +179,12 @@ export class ReservasService {
     );
     if (mesasDisponiblesPorEstado.length === 0) return { mesas: [] };
 
+    const bloqueos = await this.bloqueosManualesEnHorario(
+      mesasDisponiblesPorEstado.map((mesa) => mesa.id),
+      dto.fecha, dto.hora, dto.duracionMinutos,
+    );
+    const idsBloqueadas = new Set(bloqueos.map((bloqueo) => bloqueo.id_mesa));
+
     const ocupadas = await this.consultaSolapamientos(
       dto.fecha,
       dto.hora,
@@ -183,7 +201,7 @@ export class ReservasService {
 
     return {
       mesas: mesasDisponiblesPorEstado
-        .filter((mesa) => !idsOcupadas.has(mesa.id))
+        .filter((mesa) => !idsOcupadas.has(mesa.id) && !idsBloqueadas.has(mesa.id))
         .map((mesa) => ({
           idMesa: mesa.id,
           numeroMesa: mesa.numeroMesa,
@@ -207,6 +225,7 @@ export class ReservasService {
       capacidad: number;
       estado: Mesa['estado'];
       disponible: boolean;
+      bloqueoHora: string | null;
       reserva: null | {
         id: number;
         estado: string;
@@ -244,13 +263,21 @@ export class ReservasService {
       }
     }
 
+    const bloqueos = await this.bloqueosManualesEnHorario(
+      mesas.map((mesa) => mesa.id), fecha, hora, 0,
+    );
+    const bloqueoPorMesa = new Map(bloqueos.map((bloqueo) => [bloqueo.id_mesa, bloqueo]));
+
     return {
       fecha,
       hora,
       duracionMinutos,
       mesas: mesas.map((mesa) => {
         const reserva = reservaPorMesa.get(mesa.id);
-        const estado = this.estadoMesaEnHorario(mesa, fecha, hora, 0);
+        const bloqueo = bloqueoPorMesa.get(mesa.id);
+        const estadoBase = this.estadoMesaEnHorario(mesa, fecha, hora, 0);
+        const estado = estadoBase === 'inactiva'
+          ? 'inactiva' : bloqueo?.estado ?? estadoBase;
         const disponible = estado === 'libre' && !reserva;
         return {
           idMesa: mesa.id,
@@ -258,6 +285,7 @@ export class ReservasService {
           capacidad: mesa.capacidad ?? 0,
           estado,
           disponible,
+          bloqueoHora: estadoBase === 'inactiva' ? null : bloqueo?.hora ?? null,
           reserva: reserva
             ? {
                 id: reserva.id,
@@ -386,6 +414,20 @@ export class ReservasService {
               reserva.numeroPersonas,
               cambiaMesaUHorario,
             );
+            if (
+              cambiaMesaUHorario &&
+              (
+                await this.bloqueosManualesEnHorario(
+                  [reserva.mesa.id], reserva.fecha, reserva.hora,
+                  reserva.duracionMinutos,
+                  (sql, params) => manager.query(sql, params),
+                )
+              ).length
+            ) {
+              throw new BadRequestException(
+                'La mesa está bloqueada manualmente en ese horario',
+              );
+            }
             await this.validarHorarioRestaurante(
               reserva.mesa.restaurante.id,
               reserva.fecha,
@@ -533,6 +575,30 @@ export class ReservasService {
       consulta.andWhere('reserva.id_reserva <> :excluirId', { excluirId });
     }
     return (await consulta.getCount()) > 0;
+  }
+
+  private async bloqueosManualesEnHorario(
+    idsMesa: number[],
+    fecha: string,
+    hora: string,
+    duracionMinutos: number,
+    query: (sql: string, parameters: unknown[]) => Promise<Array<{
+      id_mesa: number;
+      estado: 'ocupada' | 'reservada';
+      hora: string;
+    }>> = (sql, parameters) => this.mesasRepo.query(sql, parameters),
+  ) {
+    if (!idsMesa.length) return [];
+    const inicio = 'CAST($2 AS date) + CAST($3 AS time)';
+    return query(
+      `SELECT id_mesa, estado, to_char(hora, 'HH24:MI') AS hora
+       FROM mesa_bloqueo_horario
+       WHERE id_mesa = ANY($1::int[])
+         AND fecha + hora ${duracionMinutos === 0 ? '<=' : '<'}
+           ${inicio} + ($4 * INTERVAL '1 minute')
+         AND fecha + hora + INTERVAL '60 minutes' > ${inicio}`,
+      [idsMesa, fecha, hora, duracionMinutos],
+    );
   }
 
   private consultaSolapamientos(

@@ -40,8 +40,10 @@ async function main() {
   try {
     await client.connect();
     await client.query("SET lock_timeout = '5s'");
-    const files = process.argv.includes('--reserva-horario')
-      ? ['20260929-reserva-horario.sql']
+    const files = process.argv.includes('--mesa-bloqueos-horarios')
+      ? ['20261001-mesa-bloqueos-horarios.sql']
+      : process.argv.includes('--reserva-horario')
+        ? ['20260929-reserva-horario.sql']
       : process.argv.includes('--mesa-estado-temporal')
         ? ['20260930-mesa-estado-temporal.sql']
         : process.argv.includes('--notificaciones')

@@ -141,6 +141,8 @@ El backend requiere PostgreSQL, variables de producción, conexión HTTPS y alma
 
 Antes de publicar, realiza una copia de seguridad de la base, revisa y aplica las migraciones pendientes, y sigue la guía de [Backend/docs/security-hardening.md](Backend/docs/security-hardening.md). Desde `Backend/`, los comandos previstos son:
 
+Para los bloqueos manuales por fecha y hora, ejecuta `npm run migrate:mesa-bloqueos -- --apply` antes de desplegar el backend. Si `DB_USER` es distinto del usuario de migración, ejecuta después `npm run db:configure-runtime-role -- --apply` para conceder acceso a la tabla nueva. Publica también el frontend actualizado.
+
 ```bash
 npm ci
 npm run build

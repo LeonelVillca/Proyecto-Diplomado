@@ -24,6 +24,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
   int? _idRestaurante;
   List<MesaAdminModel> _mesas = [];
   List<Map<String, dynamic>> _ocupacion = [];
+  final Set<int> _mesasActualizando = {};
   String _filtroEstado = 'todas';
   DateTime _fechaConsulta = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _horaConsulta = const TimeOfDay(hour: 14, minute: 0);
@@ -236,10 +237,8 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
 
   List<Map<String, dynamic>> get _mesasFiltradas {
     return _ocupacion.where((mesa) {
-      final idMesa = (mesa['idMesa'] as num).toInt();
-      final estadoActual = _mesas.firstWhere((item) => item.id == idMesa).estado;
       return _filtroEstado == 'todas' ||
-          estadoActual == _filtroEstado;
+          _estadoEnConsulta(mesa) == _filtroEstado;
     }).toList();
   }
 
@@ -279,7 +278,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
   }
 
   int _countForState(String state) =>
-      _mesas.where((mesa) => mesa.estado == state).length;
+      _ocupacion.where((mesa) => _estadoEnConsulta(mesa) == state).length;
 
   List<DateTime> get _diasProximos {
     final today = DateTime.now();
@@ -287,42 +286,45 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     return List.generate(7, (index) => start.add(Duration(days: index)));
   }
 
-  Future<void> _cambiarEstadoMesa(MesaAdminModel mesa) async {
+  Future<void> _cambiarEstadoMesa(Map<String, dynamic> datosMesa) async {
+    final idMesa = (datosMesa['idMesa'] as num).toInt();
+    if (_mesasActualizando.contains(idMesa)) return;
+    final estado = _estadoEnConsulta(datosMesa);
     String nuevoEstado = 'libre';
-    if (mesa.estado == 'libre') {
+    if (estado == 'libre') {
       nuevoEstado = 'ocupada';
-    } else if (mesa.estado == 'ocupada') {
+    } else if (estado == 'ocupada') {
       nuevoEstado = 'reservada';
-    } else if (mesa.estado == 'reservada') {
+    } else if (estado == 'reservada') {
       nuevoEstado = 'libre';
-    } else if (mesa.estado == 'inactiva') {
+    } else if (estado == 'inactiva' || datosMesa['reserva'] != null) {
       return;
     }
 
-    // El estado manual es el estado actual; la ocupación consultada puede ser futura.
-    final originalMesas = List<MesaAdminModel>.from(_mesas);
+    final originalOcupacion = [for (final item in _ocupacion) Map<String, dynamic>.from(item)];
+    final fecha = reservationDateKey(_fechaConsulta);
+    final hora = datosMesa['bloqueoHora'] as String? ??
+        '${_horaConsulta.hour.toString().padLeft(2, '0')}:${_horaConsulta.minute.toString().padLeft(2, '0')}';
     setState(() {
-      final idx = _mesas.indexWhere((m) => m.id == mesa.id);
-      if (idx != -1) {
-        _mesas[idx] = MesaAdminModel(
-          id: mesa.id,
-          numeroMesa: mesa.numeroMesa,
-          capacidad: mesa.capacidad,
-          estado: nuevoEstado,
-        );
-      }
+      _mesasActualizando.add(idMesa);
+      _ocupacion = [
+        for (final item in _ocupacion)
+          if (item['idMesa'] == idMesa)
+            {...item, 'estado': nuevoEstado, 'disponible': nuevoEstado == 'libre', 'bloqueoHora': nuevoEstado == 'libre' ? null : hora}
+          else item,
+      ];
     });
 
     try {
       final token = AuthScope.of(context, listen: false).token;
-      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/mesa/${mesa.id}');
+      final url = Uri.parse('${ApiEndpoints.baseUrl}/api/v1/mesa/$idMesa/estado-horario');
       final res = await http.patch(
         url,
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({'estado': nuevoEstado}),
+        body: jsonEncode({'fecha': fecha, 'hora': hora, 'estado': nuevoEstado}),
       );
       if (res.statusCode != 200 && res.statusCode != 201) {
         final body = jsonDecode(utf8.decode(res.bodyBytes));
@@ -335,12 +337,14 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     } catch (e) {
       debugPrint('Error: $e');
       if (mounted) {
-        setState(() => _mesas = originalMesas);
+        setState(() => _ocupacion = originalOcupacion);
         AdminNotificationModal.error(
           context,
           e.toString().replaceFirst('Exception: ', ''),
         );
       }
+    } finally {
+      if (mounted) setState(() => _mesasActualizando.remove(idMesa));
     }
   }
 
@@ -358,7 +362,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     final capacidadCtrl = TextEditingController(
       text: mesa?.capacidad.toString() ?? '4',
     );
-    String estadoSeleccionado = mesa?.estado ?? 'libre';
+    String estadoSeleccionado = mesa?.estado == 'inactiva' ? 'inactiva' : 'libre';
 
     AdminModal.show(
       context: context,
@@ -412,15 +416,10 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
                   fontSize: 14,
                 ),
                 decoration: AdminInputDecoration.get(
-                  labelText: 'Estado Inicial',
+                  labelText: 'Estado general',
                 ),
                 items: const [
                   DropdownMenuItem(value: 'libre', child: Text('Libre')),
-                  DropdownMenuItem(value: 'ocupada', child: Text('Ocupada')),
-                  DropdownMenuItem(
-                    value: 'reservada',
-                    child: Text('Reservada'),
-                  ),
                   DropdownMenuItem(value: 'inactiva', child: Text('Inactiva')),
                 ],
                 onChanged: (v) => estadoSeleccionado = v!,
@@ -538,12 +537,10 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
   @override
   Widget build(BuildContext context) {
     int capacidadTotal = _mesas.fold(0, (sum, m) => sum + m.capacidad);
-    int libres = _countForState('libre');
+    int libres = _ocupacion.where((m) => m['disponible'] == true).length;
     int reservadas = _countForState('reservada');
     int ocupadas = _countForState('ocupada');
     int inactivas = _countForState('inactiva');
-    int disponiblesEnConsulta =
-        _ocupacion.where((m) => m['disponible'] == true).length;
     final mesasFiltradas = _mesasFiltradas;
     final fechaLabel =
         '${_fechaConsulta.day.toString().padLeft(2, '0')}/${_fechaConsulta.month.toString().padLeft(2, '0')}/${_fechaConsulta.year}';
@@ -553,9 +550,9 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
 
     final stats = [
       ('Capacidad total', '$capacidadTotal', Icons.people_alt_outlined, AdminTheme.textMuted),
-      ('Libres ahora', '$libres', Icons.chair_alt_rounded, AdminTheme.success),
-      ('Ocupadas ahora', '$ocupadas', Icons.restaurant_rounded, AdminTheme.primaryColor),
-      ('Reservadas ahora', '$reservadas', Icons.event_available_rounded, AdminTheme.gold),
+      ('Libres', '$libres', Icons.chair_alt_rounded, AdminTheme.success),
+      ('Ocupadas', '$ocupadas', Icons.restaurant_rounded, AdminTheme.primaryColor),
+      ('Reservadas', '$reservadas', Icons.event_available_rounded, AdminTheme.gold),
       ('Inactivas', '$inactivas', Icons.block_rounded, AdminTheme.textMuted),
     ];
 
@@ -573,7 +570,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
                   kicker: 'SALÓN',
                   titleBefore: 'Gestión de ',
                   titleEmphasis: 'Mesas.',
-                  description: 'Cambia el estado actual de cada mesa y consulta su disponibilidad por fecha y hora.',
+                  description: 'Toca una mesa para cambiar su estado solo en el horario elegido (1 hora).',
                   actions: [
                     FilledButton.icon(
                       onPressed: () => _abrirModalMesa(),
@@ -605,7 +602,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
                           TextSpan(text: _nombreDia(_fechaConsulta), style: const TextStyle(fontWeight: FontWeight.w800, color: AdminTheme.textDark)),
                           const TextSpan(text: ' · '),
                           TextSpan(text: horaLabel, style: const TextStyle(fontWeight: FontWeight.w800, color: AdminTheme.textDark)),
-                          TextSpan(text: ' · $disponiblesEnConsulta disponibles'),
+                          TextSpan(text: ' · $libres disponibles'),
                         ]),
                         style: AdminTheme.bodyStyle.copyWith(fontSize: 13),
                       ),
@@ -638,10 +635,10 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
                   child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(children: [
-                      _buildFiltroPill('Todos ahora', 'todas', _mesas.length),
+                      _buildFiltroPill('Todos', 'todas', _ocupacion.length),
                       _buildFiltroPill('Libres', 'libre', _countForState('libre')),
-                      _buildFiltroPill('Ocupadas ahora', 'ocupada', _countForState('ocupada')),
-                      _buildFiltroPill('Reservadas ahora', 'reservada', _countForState('reservada')),
+                      _buildFiltroPill('Ocupadas', 'ocupada', _countForState('ocupada')),
+                      _buildFiltroPill('Reservadas', 'reservada', _countForState('reservada')),
                       _buildFiltroPill('Inactivas', 'inactiva', _countForState('inactiva')),
                     ]),
                   ),
@@ -891,7 +888,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
         child: Wrap(spacing: 20, runSpacing: 10, children: [
           _buildStatusLegend(AdminTheme.success, 'Libre', 'disponible para reservar'),
           _buildStatusLegend(AdminTheme.primaryColor, 'Ocupada', 'comensales en mesa'),
-          _buildStatusLegend(AdminTheme.gold, 'Reservada', 'con reserva asignada'),
+          _buildStatusLegend(AdminTheme.gold, 'Reservada', 'reserva o bloqueo manual'),
           _buildStatusLegend(AdminTheme.textMuted, 'Inactiva', 'fuera de servicio'),
         ]),
       );
@@ -905,20 +902,13 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
   Widget _buildMesaCard(Map<String, dynamic> datosMesa) {
     final idMesa = (datosMesa['idMesa'] as num).toInt();
     final mesa = _mesas.firstWhere((item) => item.id == idMesa);
-    final estado = mesa.estado;
-    final estadoConsulta = _estadoEnConsulta(datosMesa);
+    final estado = _estadoEnConsulta(datosMesa);
     final reserva = datosMesa['reserva'] as Map<String, dynamic>?;
     final horaReserva = reserva?['hora']?.toString() ?? '';
     final color = _getColorEstado(estado);
     final icon = _getIconEstado(estado);
 
     final stateLabel = switch (estado) {
-      'libre' => 'Libre',
-      'ocupada' => 'Ocupada',
-      'reservada' => 'Reservada',
-      _ => 'Inactiva',
-    };
-    final consultaLabel = switch (estadoConsulta) {
       'libre' => 'Libre',
       'ocupada' => 'Ocupada',
       'reservada' => 'Reservada',
@@ -932,7 +922,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: estado == 'inactiva' ? null : () => _cambiarEstadoMesa(mesa),
+            onTap: reserva != null || estado == 'inactiva' || _mesasActualizando.contains(idMesa) ? null : () => _cambiarEstadoMesa(datosMesa),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               Container(height: 4, color: color),
               Expanded(
@@ -961,10 +951,12 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
                       const SizedBox(height: 11),
                       Wrap(spacing: 7, runSpacing: 7, children: [
                         _buildSmallChip(Icons.people_alt_outlined, '${mesa.capacidad} personas', AdminTheme.textMuted, AdminTheme.background),
-                        _buildSmallChip(icon, 'Ahora: $stateLabel', color, color.withValues(alpha: .11)),
+                        _buildSmallChip(icon, stateLabel, color, color.withValues(alpha: .11)),
                       ]),
-                      const SizedBox(height: 8),
-                      Text('En la fecha elegida: $consultaLabel', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 11, color: AdminTheme.textMuted)),
+                      if (datosMesa['bloqueoHora'] != null) ...[
+                        const SizedBox(height: 8),
+                        Text('Bloqueo manual desde ${datosMesa['bloqueoHora']} · 1 hora', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 11, color: AdminTheme.textMuted)),
+                      ],
                       if (reserva != null) ...[
                         const SizedBox(height: 10),
                         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -977,7 +969,7 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
                         Row(children: [
                           Icon(estado == 'inactiva' ? Icons.block_outlined : Icons.schedule_rounded, size: 14, color: AdminTheme.textMuted),
                           const SizedBox(width: 5),
-                          Expanded(child: Text(estado == 'inactiva' ? 'Fuera de servicio' : 'Comensales en mesa', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 11))),
+                          Expanded(child: Text(estado == 'inactiva' ? 'Fuera de servicio' : estado == 'ocupada' ? 'Comensales en mesa' : 'Horario reservado', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 11))),
                         ]),
                       ],
                     ]),

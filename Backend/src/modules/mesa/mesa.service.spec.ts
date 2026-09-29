@@ -1,6 +1,43 @@
 import { MesaService } from './mesa.service';
 
 describe('MesaService', () => {
+  it('guarda un bloqueo solo para la mesa, fecha y hora seleccionadas', async () => {
+    const query = jest.fn()
+      .mockResolvedValueOnce([{ id_mesa: 4, estado: 'libre' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    const repository = { manager: { transaction: jest.fn((callback) => callback({ query })) } };
+    const service = new MesaService(repository as any, {} as any);
+
+    await expect(service.actualizarEstadoHorario(4, {
+      fecha: '2026-10-02', hora: '13:00', estado: 'reservada',
+    })).resolves.toEqual({
+      idMesa: 4, fecha: '2026-10-02', hora: '13:00', estado: 'reservada',
+    });
+    expect(query).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO mesa_bloqueo_horario'),
+      [4, '2026-10-02', '13:00', 'reservada'],
+    );
+  });
+
+  it('libera únicamente el bloqueo del horario indicado', async () => {
+    const query = jest.fn()
+      .mockResolvedValueOnce([{ id_mesa: 4, estado: 'libre' }])
+      .mockResolvedValueOnce([]);
+    const repository = { manager: { transaction: jest.fn((callback) => callback({ query })) } };
+    const service = new MesaService(repository as any, {} as any);
+
+    await service.actualizarEstadoHorario(4, {
+      fecha: '2026-10-02', hora: '13:00', estado: 'libre',
+    });
+
+    expect(query).toHaveBeenCalledWith(
+      'DELETE FROM mesa_bloqueo_horario WHERE id_mesa = $1 AND fecha = $2 AND hora = $3',
+      [4, '2026-10-02', '13:00'],
+    );
+  });
+
   it('saves a manual occupied state with a one-hour expiration', async () => {
     const mesa = { id: 4, estado: 'libre', estadoHasta: null };
     const mesaRepository = {

@@ -41,6 +41,13 @@ async function main() {
         to_regclass('solicitud_verificacion') IS NOT NULL AS correo,
         to_regclass('usuario_restaurante') IS NOT NULL AS propietarios,
         to_regclass('auditoria_evento') IS NOT NULL AS auditoria,
+        to_regclass('mesa_bloqueo_horario') IS NOT NULL AS bloqueos_mesa,
+        CASE WHEN to_regclass('mesa_bloqueo_horario') IS NOT NULL
+          THEN has_table_privilege(current_user, 'mesa_bloqueo_horario', 'SELECT')
+            AND has_table_privilege(current_user, 'mesa_bloqueo_horario', 'INSERT')
+            AND has_table_privilege(current_user, 'mesa_bloqueo_horario', 'UPDATE')
+            AND has_table_privilege(current_user, 'mesa_bloqueo_horario', 'DELETE')
+          ELSE false END AS permisos_bloqueos_mesa,
         EXISTS (SELECT 1 FROM information_schema.columns
                 WHERE table_schema = current_schema() AND table_name = 'solicitud'
                   AND column_name = 'correo_verificado_at') AS columna_correo,

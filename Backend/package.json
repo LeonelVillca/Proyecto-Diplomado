@@ -14,6 +14,7 @@
     "start:prod": "node dist/src/main.js",
     "preflight:prod": "node scripts/preflight-production.cjs",
     "migrate:normalize": "node scripts/apply-security-migration.cjs --normalize",
+    "migrate:mesa-bloqueos": "node scripts/apply-security-migration.cjs --mesa-bloqueos-horarios",
     "db:configure-runtime-role": "node scripts/configure-runtime-db-role.cjs",
     "db:verify": "node scripts/verify-database-integrity.cjs",
     "db:preview-normalization": "node scripts/preview-normalization.cjs",
