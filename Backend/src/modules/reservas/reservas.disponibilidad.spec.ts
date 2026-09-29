@@ -43,6 +43,7 @@ function crearServicio(idsOcupadas: number[]) {
   };
   const usuariosRepo = { findOne: jest.fn() };
   const manager = {
+    query: jest.fn().mockResolvedValue([{ id_mesa: 1 }]),
     getRepository: jest.fn((entity) => {
       if (entity === Mesa) return mesasRepo;
       if (entity === Reserva) return reservasRepo;
@@ -61,7 +62,14 @@ function crearServicio(idsOcupadas: number[]) {
     { findOne: jest.fn().mockResolvedValue(null) } as any,
     {} as any,
   );
-  return { service, reservasRepo, mesasRepo, usuariosRepo, queryBuilder };
+  return {
+    service,
+    reservasRepo,
+    mesasRepo,
+    usuariosRepo,
+    queryBuilder,
+    manager,
+  };
 }
 
 describe('Disponibilidad de reservas', () => {
@@ -152,9 +160,8 @@ describe('Disponibilidad de reservas', () => {
   });
 
   it('rechaza el POST aunque el cliente envíe una mesa reservada directamente', async () => {
-    const { service, reservasRepo, usuariosRepo, mesasRepo } = crearServicio(
-      [],
-    );
+    const { service, reservasRepo, usuariosRepo, mesasRepo, manager } =
+      crearServicio([]);
     const getCount = jest.fn().mockResolvedValue(1);
     reservasRepo.createQueryBuilder.mockReturnValue({
       where: jest.fn().mockReturnThis(),
@@ -178,8 +185,9 @@ describe('Disponibilidad de reservas', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(reservasRepo.save).not.toHaveBeenCalled();
-    expect(mesasRepo.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
+    expect(manager.query).toHaveBeenCalledWith(
+      'SELECT id_mesa FROM mesa WHERE id_mesa = $1 FOR UPDATE',
+      [1],
     );
   });
 

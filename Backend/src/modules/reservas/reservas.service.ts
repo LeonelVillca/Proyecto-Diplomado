@@ -41,10 +41,15 @@ export class ReservasService {
           const mesasRepo = manager.getRepository(Mesa);
           const reservasRepo = manager.getRepository(Reserva);
           const usuariosRepo = manager.getRepository(Usuario);
+          // Bloquear la fila base sin relaciones: PostgreSQL no admite FOR
+          // UPDATE sobre el lado nullable del LEFT JOIN que crea TypeORM.
+          await manager.query(
+            'SELECT id_mesa FROM mesa WHERE id_mesa = $1 FOR UPDATE',
+            [dto.idMesa],
+          );
           const mesa = await mesasRepo.findOne({
             where: { id: dto.idMesa },
             relations: { restaurante: true },
-            lock: { mode: 'pessimistic_write' },
           });
           if (!mesa) throw new NotFoundException('Mesa no encontrada');
           this.validarCapacidadYEstadoMesa(mesa, dto.numeroPersonas);
@@ -285,20 +290,26 @@ export class ReservasService {
       const resultado = await this.reservasRepo.manager.transaction(
         async (manager) => {
           const mesasRepo = manager.getRepository(Mesa);
+          await manager.query(
+            'SELECT id_mesa FROM mesa WHERE id_mesa = $1 FOR UPDATE',
+            [idMesaBloqueada],
+          );
           const mesaBloqueada = await mesasRepo.findOne({
             where: { id: idMesaBloqueada },
             relations: { restaurante: true },
-            lock: { mode: 'pessimistic_write' },
           });
           if (!mesaBloqueada) throw new NotFoundException('Mesa no encontrada');
 
+          await manager.query(
+            'SELECT id_reserva FROM reservas WHERE id_reserva = $1 FOR UPDATE',
+            [id],
+          );
           const reserva = await manager.findOne(Reserva, {
             where: { id },
             relations: {
               usuario: true,
               mesa: { restaurante: true },
             },
-            lock: { mode: 'pessimistic_write' },
           });
           if (!reserva)
             throw new NotFoundException(`Reserva #${id} no encontrada`);

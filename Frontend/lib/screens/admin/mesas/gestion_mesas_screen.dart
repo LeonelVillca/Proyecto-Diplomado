@@ -196,21 +196,6 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     }
   }
 
-  Future<void> _seleccionarFecha() async {
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: _fechaConsulta,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (selected == null) return;
-    setState(() {
-      _fechaConsulta = DateTime(selected.year, selected.month, selected.day);
-      _recalcularHorariosDisponibles();
-    });
-    await _consultarOcupacion();
-  }
-
   void _recalcularHorariosDisponibles() {
     final now = DateTime.now();
     final selectedDay = DateTime(
@@ -254,6 +239,50 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
       return _filtroEstado == 'todas' ||
           _estadoEnConsulta(mesa) == _filtroEstado;
     }).toList();
+  }
+
+  List<String> _slotsParaFecha(DateTime date) {
+    final now = DateTime.now();
+    final isToday = date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+    final scheduleNow = isToday ? now : DateTime(date.year, date.month, date.day);
+    final days = reservationDays(
+      now: scheduleNow,
+      weekly: _horariosSemana,
+      exceptions: _excepcionesHorario,
+      horizonDays: 1,
+      durationMinutes: 60,
+    );
+    return days.isEmpty ? const [] : days.first.slots;
+  }
+
+  bool _tieneAtencionConfigurada(DateTime date) {
+    final key = reservationDateKey(date);
+    final exception = _excepcionesHorario.where((item) => item.date == key);
+    if (exception.isNotEmpty) {
+      final special = exception.first;
+      return !special.closed && special.start != null && special.end != null;
+    }
+    return _horariosSemana.any((hours) => hours.weekday == date.weekday - 1);
+  }
+
+  Future<void> _seleccionarDia(DateTime date) async {
+    setState(() {
+      _fechaConsulta = DateTime(date.year, date.month, date.day);
+      _horariosDisponibles = _slotsParaFecha(_fechaConsulta);
+      _recalcularHorariosDisponibles();
+    });
+    await _consultarOcupacion();
+  }
+
+  int _countForState(String state) =>
+      _ocupacion.where((mesa) => _estadoEnConsulta(mesa) == state).length;
+
+  List<DateTime> get _diasProximos {
+    final today = DateTime.now();
+    final start = DateTime(today.year, today.month, today.day);
+    return List.generate(7, (index) => start.add(Duration(days: index)));
   }
 
   Future<void> _cambiarEstadoMesa(MesaAdminModel mesa) async {
@@ -475,15 +504,15 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
   Color _getColorEstado(String estado) {
     switch (estado) {
       case 'libre':
-        return const Color(0xFF2ECC71);
+        return AdminTheme.success;
       case 'ocupada':
-        return const Color(0xFF3498DB);
+        return AdminTheme.primaryColor;
       case 'reservada':
-        return const Color(0xFFF39C12);
+        return AdminTheme.gold;
       case 'inactiva':
-        return const Color(0xFF95A5A6);
+        return AdminTheme.textMuted;
       default:
-        return const Color(0xFF95A5A6);
+        return AdminTheme.textMuted;
     }
   }
 
@@ -520,321 +549,320 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
         ? 'Sin atención'
         : '${_horaConsulta.hour.toString().padLeft(2, '0')}:${_horaConsulta.minute.toString().padLeft(2, '0')}';
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(34, 24, 34, 34),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            AdminPageHeader(
-              kicker: 'SALÓN',
-              titleBefore: 'Gestión de ',
-              titleEmphasis: 'Mesas',
-              description:
-                  'Consulta la disponibilidad real de cada mesa por fecha y hora.',
-              actions: [
-                FilledButton.icon(
-                  onPressed: () => _abrirModalMesa(),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Nueva mesa'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+    final stats = [
+      ('Capacidad total', '$capacidadTotal', Icons.people_alt_outlined, AdminTheme.textMuted),
+      ('Libres', '$libres', Icons.chair_alt_rounded, AdminTheme.success),
+      ('Ocupadas', '$ocupadas', Icons.restaurant_rounded, AdminTheme.primaryColor),
+      ('Reservadas', '$reservadas', Icons.event_available_rounded, AdminTheme.gold),
+      ('Inactivas', '$inactivas', Icons.block_rounded, AdminTheme.textMuted),
+    ];
 
-            AdminSurface(
-              padding: const EdgeInsets.all(18),
-              radius: AdminTheme.mediumRadius,
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    'Ver disponibilidad para',
-                    style: AdminTheme.bodyStyle.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _cargandoOcupacion ? null : _seleccionarFecha,
-                    icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                    label: Text(fechaLabel),
-                  ),
-                  PopupMenuButton<String>(
-                    enabled:
-                        !_cargandoOcupacion && _horariosDisponibles.isNotEmpty,
-                    tooltip: 'Elegir una hora de atención',
-                    onSelected: (hora) {
-                      final partes = hora.split(':').map(int.parse).toList();
-                      setState(
-                        () => _horaConsulta = TimeOfDay(
-                          hour: partes[0],
-                          minute: partes[1],
-                        ),
-                      );
-                      _consultarOcupacion();
-                    },
-                    itemBuilder: (context) => [
-                      for (final hora in _horariosDisponibles)
-                        PopupMenuItem<String>(value: hora, child: Text(hora)),
-                    ],
-                    child: Container(
-                      constraints: const BoxConstraints(
-                        minHeight: 44,
-                        minWidth: 130,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AdminTheme.border),
-                        borderRadius: BorderRadius.circular(12),
-                        color: AdminTheme.surface,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.schedule_outlined,
-                            size: 18,
-                            color: AdminTheme.textMuted,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            horaLabel,
-                            style: AdminTheme.bodyStyle.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 18,
-                            color: AdminTheme.textMuted,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (_cargandoOcupacion)
-                    const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    IconButton(
-                      tooltip: 'Actualizar disponibilidad',
-                      onPressed: _consultarOcupacion,
-                      icon: const Icon(Icons.refresh_rounded),
-                    ),
-                  Text(
-                    'Horario de atención · 1 hora por reserva · bloqueada 30 min antes.',
-                    style: AdminTheme.bodyStyle.copyWith(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-            if (_errorOcupacion != null) ...[
-              const SizedBox(height: 10),
-              AdminSurface(
-                padding: const EdgeInsets.all(14),
-                radius: AdminTheme.mediumRadius,
-                child: Text(
-                  'No se pudo verificar la disponibilidad: $_errorOcupacion',
-                  style: AdminTheme.bodyStyle.copyWith(color: AdminTheme.error),
-                ),
-              ),
-            ],
-            const SizedBox(height: 18),
-
-            // Barra de Resumen Métrico
-            LayoutBuilder(
-              builder: (context, constraints) => Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _buildResumenCard(
-                    'Capacidad',
-                    '$capacidadTotal',
-                    Icons.people_alt_outlined,
-                    AdminTheme.primaryColor,
-                    constraints.maxWidth,
-                  ),
-                  _buildResumenCard(
-                    'Libres',
-                    '$libres',
-                    Icons.check_circle_outline,
-                    AdminTheme.success,
-                    constraints.maxWidth,
-                  ),
-                  _buildResumenCard(
-                    'Ocupadas',
-                    '$ocupadas',
-                    Icons.restaurant_outlined,
-                    AdminTheme.accentColor,
-                    constraints.maxWidth,
-                  ),
-                  _buildResumenCard(
-                    'Reservadas',
-                    '$reservadas',
-                    Icons.event_seat_outlined,
-                    AdminTheme.warning,
-                    constraints.maxWidth,
-                  ),
-                  _buildResumenCard(
-                    'Inactivas',
-                    '$inactivas',
-                    Icons.block_outlined,
-                    AdminTheme.textMuted,
-                    constraints.maxWidth,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Pestañas / Filtros
-            AdminSurface(
-              padding: const EdgeInsets.all(10),
-              radius: AdminTheme.mediumRadius,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _buildFiltroPill('Todas', 'todas'),
-                  _buildFiltroPill('Libres', 'libre'),
-                  _buildFiltroPill('Ocupadas', 'ocupada'),
-                  _buildFiltroPill('Reservadas', 'reservada'),
-                  _buildFiltroPill('Inactivas', 'inactiva'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Grid
-            AdminSurface(
-              child: _isLoading || _cargandoOcupacion
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AdminTheme.primaryColor,
-                      ),
-                    )
-                  : _errorOcupacion != null
-                  ? Center(
-                      child: Text(
-                        'No mostramos disponibilidad sin poder verificarla.',
-                        style: AdminTheme.bodyStyle,
-                      ),
-                    )
-                  : _horariosDisponibles.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Text(
-                          'El restaurante no atiende en la fecha seleccionada.',
-                          style: AdminTheme.bodyStyle,
-                        ),
-                      ),
-                    )
-                  : mesasFiltradas.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.table_restaurant_outlined,
-                            size: 64,
-                            color: AdminTheme.border,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No hay mesas para mostrar.',
-                            style: AdminTheme.bodyStyle,
-                          ),
-                        ],
-                      ),
-                    )
-                  : GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 260,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            mainAxisExtent: 205,
-                          ),
-                      itemCount: mesasFiltradas.length,
-                      itemBuilder: (context, index) {
-                        final mesa = mesasFiltradas[index];
-                        return _buildMesaCard(mesa);
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResumenCard(
-    String titulo,
-    String valor,
-    IconData icon,
-    Color color,
-    double availableWidth,
-  ) {
-    return SizedBox(
-      width: availableWidth < 760
-          ? (availableWidth - 12) / 2
-          : (availableWidth - 36) / 4,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AdminTheme.surface,
-          borderRadius: AdminTheme.mediumRadius,
-          border: Border.all(color: AdminTheme.border),
-          boxShadow: AdminTheme.shadowSm,
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, pageConstraints) {
+        final compact = pageConstraints.maxWidth <= 640;
+        final horizontalPadding = compact ? 18.0 : 34.0;
+        return SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(horizontalPadding, 24, horizontalPadding, 34),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  valor,
-                  style: AdminTheme.titleStyle.copyWith(fontSize: 24),
+                AdminPageHeader(
+                  kicker: 'SALÓN',
+                  titleBefore: 'Gestión de ',
+                  titleEmphasis: 'Mesas.',
+                  description: 'Consulta la disponibilidad real de cada mesa por fecha y hora.',
+                  actions: [
+                    FilledButton.icon(
+                      onPressed: () => _abrirModalMesa(),
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('Nueva mesa'),
+                    ),
+                  ],
                 ),
-                Text(
-                  titulo,
-                  style: AdminTheme.bodyStyle.copyWith(fontSize: 12),
+                const SizedBox(height: 22),
+                _buildSelector(fechaLabel, horaLabel),
+                if (_errorOcupacion != null) ...[
+                  const SizedBox(height: 10),
+                  AdminSurface(
+                    padding: const EdgeInsets.all(14),
+                    radius: AdminTheme.mediumRadius,
+                    child: Text('No se pudo verificar la disponibilidad: $_errorOcupacion',
+                        style: AdminTheme.bodyStyle.copyWith(color: AdminTheme.error)),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.event_available_outlined, size: 17, color: AdminTheme.primaryColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text.rich(
+                        TextSpan(children: [
+                          const TextSpan(text: 'Viendo disponibilidad de '),
+                          TextSpan(text: _nombreDia(_fechaConsulta), style: const TextStyle(fontWeight: FontWeight.w800, color: AdminTheme.textDark)),
+                          const TextSpan(text: ' · '),
+                          TextSpan(text: horaLabel, style: const TextStyle(fontWeight: FontWeight.w800, color: AdminTheme.textDark)),
+                        ]),
+                        style: AdminTheme.bodyStyle.copyWith(fontSize: 13),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 18),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth > 1080 ? 5 : constraints.maxWidth > 640 ? 3 : 2;
+                    final gap = 12.0;
+                    final cardWidth = (constraints.maxWidth - gap * (columns - 1)) / columns;
+                    return Wrap(
+                      spacing: gap,
+                      runSpacing: gap,
+                      children: [
+                        for (var index = 0; index < stats.length; index++)
+                          SizedBox(
+                            width: columns == 2 && index == 4 ? constraints.maxWidth : cardWidth,
+                            child: _buildResumenCard(stats[index].$1, stats[index].$2, stats[index].$3, stats[index].$4),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                AdminSurface(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  radius: AdminTheme.pillRadius,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: [
+                      _buildFiltroPill('Todos', 'todas', _ocupacion.length),
+                      _buildFiltroPill('Libres', 'libre', _countForState('libre')),
+                      _buildFiltroPill('Ocupadas', 'ocupada', _countForState('ocupada')),
+                      _buildFiltroPill('Reservadas', 'reservada', _countForState('reservada')),
+                      _buildFiltroPill('Inactivas', 'inactiva', _countForState('inactiva')),
+                    ]),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                AdminSurface(
+                  padding: const EdgeInsets.all(16),
+                  radius: AdminTheme.mediumRadius,
+                  child: _isLoading || _cargandoOcupacion
+                      ? const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator(color: AdminTheme.primaryColor)))
+                      : _errorOcupacion != null
+                          ? Center(child: Padding(padding: const EdgeInsets.all(28), child: Text('No mostramos disponibilidad sin poder verificarla.', style: AdminTheme.bodyStyle)))
+                          : _horariosDisponibles.isEmpty
+                              ? Center(child: Padding(padding: const EdgeInsets.all(28), child: Text('El restaurante no atiende en la fecha seleccionada.', style: AdminTheme.bodyStyle)))
+                              : mesasFiltradas.isEmpty
+                                  ? Center(child: Padding(padding: const EdgeInsets.all(28), child: Text('No hay mesas para mostrar.', style: AdminTheme.bodyStyle)))
+                                  : GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                                        maxCrossAxisExtent: compact ? 210 : 250,
+                                        mainAxisSpacing: 14,
+                                        crossAxisSpacing: 14,
+                                        mainAxisExtent: 238,
+                                      ),
+                                      itemCount: mesasFiltradas.length,
+                                      itemBuilder: (context, index) => TweenAnimationBuilder<double>(
+                                        key: ValueKey('${_fechaConsulta}_${index}_${mesasFiltradas[index]['idMesa']}'),
+                                        tween: Tween(begin: 0, end: 1),
+                                        duration: Duration(milliseconds: 450 + index * 35),
+                                        curve: Curves.easeOutCubic,
+                                        builder: (context, value, child) => Opacity(
+                                          opacity: value,
+                                          child: Transform.translate(offset: Offset(0, 12 * (1 - value)), child: child),
+                                        ),
+                                        child: _buildMesaCard(mesasFiltradas[index]),
+                                      ),
+                                    ),
+                ),
+                const SizedBox(height: 12),
+                _buildLeyenda(),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSelector(String fechaLabel, String horaLabel) {
+    final selectedDate = DateTime(_fechaConsulta.year, _fechaConsulta.month, _fechaConsulta.day);
+    final lunch = _horariosDisponibles.where((slot) => int.parse(slot.substring(0, 2)) < 17).toList();
+    final dinner = _horariosDisponibles.where((slot) => int.parse(slot.substring(0, 2)) >= 17).toList();
+    return AdminSurface(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 18),
+      radius: AdminTheme.cardRadius,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(color: AdminTheme.primaryLight, borderRadius: BorderRadius.circular(12)),
+              child: const Icon(Icons.calendar_month_rounded, size: 19, color: AdminTheme.primaryColor),
+            ),
+            const SizedBox(width: 11),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('ELIGE CUÁNDO', style: AdminTheme.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.3, color: AdminTheme.primaryColor)),
+              Text('Consulta el salón', style: AdminTheme.bodyStyle.copyWith(fontWeight: FontWeight.w700, color: AdminTheme.textDark)),
+            ]),
+            const Spacer(),
+            if (_cargandoOcupacion)
+              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              IconButton(tooltip: 'Actualizar disponibilidad', onPressed: _consultarOcupacion, icon: const Icon(Icons.refresh_rounded)),
+          ]),
+          const SizedBox(height: 14),
+          _selectorLabel('DÍA', 'Próximos días'),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              for (final day in _diasProximos)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: _buildDayChip(day, selectedDate),
+                ),
+            ]),
+          ),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 13), child: Divider(height: 1, color: AdminTheme.border)),
+          _selectorLabel('HORA', 'Horario de atención · 1 hora por reserva'),
+          const SizedBox(height: 9),
+          if (_horariosDisponibles.isEmpty)
+            Text('Sin horarios disponibles para este día.', style: AdminTheme.bodyStyle.copyWith(fontSize: 12))
+          else ...[
+            if (lunch.isNotEmpty) _buildHourGroup('ALMUERZO', lunch, horaLabel),
+            if (lunch.isNotEmpty && dinner.isNotEmpty) const SizedBox(height: 9),
+            if (dinner.isNotEmpty) _buildHourGroup('CENA', dinner, horaLabel),
           ],
+          const SizedBox(height: 9),
+          Wrap(spacing: 14, runSpacing: 6, children: [
+            _buildDotLegend(const Color(0xFFC4B7A3), 'Sin reservas'),
+            _buildDotLegend(AdminTheme.gold, 'Con reservas'),
+            _buildDotLegend(AdminTheme.error, 'Ocupada'),
+          ]),
+          const SizedBox(height: 7),
+          Text('$fechaLabel · Los indicadores reflejan la consulta seleccionada.', style: AdminTheme.bodyStyle.copyWith(fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  Widget _selectorLabel(String label, String value) => Row(children: [
+        SizedBox(width: 54, child: Text(label, style: AdminTheme.bodyStyle.copyWith(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1, color: AdminTheme.textMuted))),
+        Text(value, style: AdminTheme.bodyStyle.copyWith(fontSize: 12, fontWeight: FontWeight.w700, color: AdminTheme.textDark)),
+      ]);
+
+  Widget _buildDayChip(DateTime date, DateTime selectedDate) {
+    final slots = _slotsParaFecha(date);
+    final isOpen = _tieneAtencionConfigurada(date);
+    final canSelect = slots.isNotEmpty;
+    final active = date == selectedDate;
+    final today = DateTime.now();
+    final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
+    final labels = const ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
+    return Tooltip(
+      message: !isOpen ? 'Cerrado' : canSelect ? _nombreDia(date) : 'Atención finalizada por hoy',
+      child: InkWell(
+        onTap: !canSelect || _cargandoOcupacion ? null : () => _seleccionarDia(date),
+        borderRadius: BorderRadius.circular(15),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 70,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? AdminTheme.primaryColor : isOpen ? AdminTheme.surface : AdminTheme.background,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: active ? AdminTheme.primaryColor : AdminTheme.border, width: 1.4),
+            boxShadow: active ? [const BoxShadow(color: Color(0x4DBE4B24), blurRadius: 12, offset: Offset(0, 4))] : null,
+          ),
+          child: Opacity(
+            opacity: isOpen ? 1 : .5,
+            child: Column(children: [
+              Text(isToday ? 'HOY' : labels[date.weekday - 1], style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: .8, color: active ? Colors.white : AdminTheme.textMuted)),
+              const SizedBox(height: 1),
+              Text('${date.day}', style: TextStyle(fontFamily: 'Fraunces', fontSize: 22, fontWeight: FontWeight.w600, height: 1.1, color: active ? Colors.white : AdminTheme.textDark, decoration: isOpen ? null : TextDecoration.lineThrough, decorationColor: AdminTheme.error)),
+              Text(!isOpen ? 'Cerrado' : !canSelect ? 'Finalizado' : (active ? 'ABIERTO' : 'Abierto'), style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: active ? Colors.white70 : AdminTheme.textMuted)),
+            ]),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFiltroPill(String label, String valor) {
+  Widget _buildHourGroup(String label, List<String> slots, String horaLabel) => Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 7,
+        runSpacing: 7,
+        children: [
+          Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5), decoration: BoxDecoration(color: AdminTheme.background, borderRadius: AdminTheme.pillRadius, border: Border.all(color: AdminTheme.border)), child: Text(label, style: AdminTheme.bodyStyle.copyWith(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: .5))),
+          for (final slot in slots) _buildHourChip(slot, slot == horaLabel),
+        ],
+      );
+
+  Widget _buildHourChip(String slot, bool active) {
+    final hasReservations = _ocupacion.any((mesa) => mesa['reserva'] != null);
+    final isOccupied = _ocupacion.any((mesa) => _estadoEnConsulta(mesa) == 'ocupada');
+    final dotColor = active ? (isOccupied ? AdminTheme.error : hasReservations ? AdminTheme.gold : const Color(0xFFC4B7A3)) : const Color(0xFFC4B7A3);
+    return InkWell(
+      onTap: _cargandoOcupacion ? null : () {
+        final parts = slot.split(':').map(int.parse).toList();
+        setState(() => _horaConsulta = TimeOfDay(hour: parts[0], minute: parts[1]));
+        _consultarOcupacion();
+      },
+      borderRadius: AdminTheme.pillRadius,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(color: active ? AdminTheme.primaryColor : AdminTheme.surface, borderRadius: AdminTheme.pillRadius, border: Border.all(color: active ? AdminTheme.primaryColor : AdminTheme.border), boxShadow: active ? [const BoxShadow(color: Color(0x3DBE4B24), blurRadius: 10, offset: Offset(0, 3))] : null),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 7, height: 7, decoration: BoxDecoration(color: active ? Colors.white : dotColor, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+          Text(slot, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: active ? Colors.white : AdminTheme.textDark)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildDotLegend(Color color, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 5),
+        Text(label, style: AdminTheme.bodyStyle.copyWith(fontSize: 10)),
+      ]);
+
+  String _nombreDia(DateTime date) {
+    const names = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+    return '${names[date.weekday - 1]} ${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  Widget _buildResumenCard(String titulo, String valor, IconData icon, Color color) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: AdminTheme.surface, borderRadius: AdminTheme.mediumRadius, border: Border.all(color: AdminTheme.border), boxShadow: AdminTheme.shadowSm),
+      child: Row(children: [
+        Container(width: 40, height: 40, decoration: BoxDecoration(color: color.withValues(alpha: .11), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 20)),
+        const SizedBox(width: 11),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(valor, style: AdminTheme.titleStyle.copyWith(fontSize: 24)),
+          Text(titulo, maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 11)),
+        ])),
+      ]),
+    );
+  }
+
+  Widget _buildFiltroPill(String label, String valor, int count) {
     final active = _filtroEstado == valor;
     return InkWell(
       onTap: () => setState(() => _filtroEstado = valor),
       borderRadius: BorderRadius.circular(50),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: active ? AdminTheme.primaryColor : AdminTheme.surface,
           borderRadius: BorderRadius.circular(50),
@@ -843,17 +871,33 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
           ),
           boxShadow: active ? AdminTheme.shadowSm : [],
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.manrope(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            color: active ? Colors.white : AdminTheme.textMuted,
-          ),
-        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(valor == 'todas' ? Icons.table_restaurant_outlined : _getIconEstado(valor), size: 14, color: active ? Colors.white : AdminTheme.textMuted),
+          const SizedBox(width: 6),
+          Text(label, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: active ? Colors.white : AdminTheme.textMuted)),
+          const SizedBox(width: 7),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2), decoration: BoxDecoration(color: active ? Colors.white24 : AdminTheme.background, borderRadius: AdminTheme.pillRadius), child: Text('$count', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: active ? Colors.white : AdminTheme.textMuted))),
+        ]),
       ),
     );
   }
+
+  Widget _buildLeyenda() => AdminSurface(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        radius: AdminTheme.mediumRadius,
+        child: Wrap(spacing: 20, runSpacing: 10, children: [
+          _buildStatusLegend(AdminTheme.success, 'Libre', 'disponible para reservar'),
+          _buildStatusLegend(AdminTheme.primaryColor, 'Ocupada', 'comensales en mesa'),
+          _buildStatusLegend(AdminTheme.gold, 'Reservada', 'con reserva asignada'),
+          _buildStatusLegend(AdminTheme.textMuted, 'Inactiva', 'fuera de servicio'),
+        ]),
+      );
+
+  Widget _buildStatusLegend(Color color, String state, String detail) => Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 9, height: 9, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
+        const SizedBox(width: 7),
+        Text('$state — $detail', style: AdminTheme.bodyStyle.copyWith(fontSize: 11)),
+      ]);
 
   Widget _buildMesaCard(Map<String, dynamic> datosMesa) {
     final idMesa = (datosMesa['idMesa'] as num).toInt();
@@ -864,174 +908,84 @@ class _GestionMesasScreenState extends State<GestionMesasScreen> {
     final color = _getColorEstado(estado);
     final icon = _getIconEstado(estado);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AdminTheme.surface,
+    final stateLabel = switch (estado) {
+      'libre' => 'Libre',
+      'ocupada' => 'Ocupada',
+      'reservada' => 'Reservada',
+      _ => 'Inactiva',
+    };
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      decoration: BoxDecoration(color: AdminTheme.surface, borderRadius: AdminTheme.mediumRadius, boxShadow: AdminTheme.shadowSm, border: Border.all(color: AdminTheme.border)),
+      child: ClipRRect(
         borderRadius: AdminTheme.mediumRadius,
-        boxShadow: AdminTheme.shadowSm,
-        border: Border.all(color: AdminTheme.border),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: reserva != null || estado == 'inactiva'
-              ? null
-              : () => _cambiarEstadoMesa(mesa),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: reserva != null || estado == 'inactiva' ? null : () => _cambiarEstadoMesa(mesa),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              Container(height: 4, color: color),
+              Expanded(
+                child: Opacity(
+                  opacity: estado == 'inactiva' ? .55 : 1,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(15, 9, 15, 13),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('MESA', style: AdminTheme.bodyStyle.copyWith(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                          Text(mesa.numeroMesa, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.fraunces(fontSize: 25, fontWeight: FontWeight.w600, height: 1.1, color: AdminTheme.textDark, decoration: estado == 'inactiva' ? TextDecoration.lineThrough : null, decorationThickness: 2)),
+                        ])),
+                        Container(width: 38, height: 38, decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.chair_alt_rounded, color: color, size: 20)),
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 42, minHeight: 42),
+                          icon: const Icon(Icons.more_horiz_rounded, color: AdminTheme.textMuted, size: 20),
+                          onSelected: (val) { if (val == 'edit') _abrirModalMesa(mesa: mesa); if (val == 'delete') _eliminarMesa(mesa.id); },
+                          itemBuilder: (ctx) => [
+                            const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 16), SizedBox(width: 8), Text('Editar')])),
+                            const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, size: 16, color: AdminTheme.error), SizedBox(width: 8), Text('Eliminar', style: TextStyle(color: AdminTheme.error))])),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          mesa.numeroMesa,
-                          style: GoogleFonts.manrope(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AdminTheme.textDark,
-                          ),
-                        ),
+                      ]),
+                      const SizedBox(height: 11),
+                      Wrap(spacing: 7, runSpacing: 7, children: [
+                        _buildSmallChip(Icons.people_alt_outlined, '${mesa.capacidad} personas', AdminTheme.textMuted, AdminTheme.background),
+                        _buildSmallChip(icon, stateLabel, color, color.withValues(alpha: .11)),
+                      ]),
+                      if (reserva != null) ...[
+                        const SizedBox(height: 10),
+                        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Icon(Icons.person_outline_rounded, size: 15, color: AdminTheme.textMuted),
+                          const SizedBox(width: 5),
+                          Expanded(child: Text('${reserva['cliente']?.toString().isNotEmpty == true ? reserva['cliente'] : 'Cliente'} · ${horaReserva.length >= 5 ? horaReserva.substring(0, 5) : horaReserva}', maxLines: 2, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 11, color: AdminTheme.textDark))),
+                        ]),
+                      ] else if (estado != 'libre') ...[
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Icon(estado == 'inactiva' ? Icons.block_outlined : Icons.schedule_rounded, size: 14, color: AdminTheme.textMuted),
+                          const SizedBox(width: 5),
+                          Expanded(child: Text(estado == 'inactiva' ? 'Fuera de servicio' : 'Comensales en mesa', maxLines: 1, overflow: TextOverflow.ellipsis, style: AdminTheme.bodyStyle.copyWith(fontSize: 11))),
+                        ]),
                       ],
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(
-                        Icons.more_vert,
-                        color: Color(0xFFA39C98),
-                        size: 20,
-                      ),
-                      onSelected: (val) {
-                        if (val == 'edit') _abrirModalMesa(mesa: mesa);
-                        if (val == 'delete') _eliminarMesa(mesa.id);
-                      },
-                      itemBuilder: (ctx) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.edit,
-                                size: 16,
-                                color: Color(0xFF6B635E),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Editar',
-                                style: GoogleFonts.manrope(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.delete,
-                                size: 16,
-                                color: Color(0xFFE74C3C),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Eliminar',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 14,
-                                  color: Color(0xFFE74C3C),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    const Icon(Icons.group, size: 16, color: Color(0xFF6B635E)),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${mesa.capacidad} Personas',
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        color: AdminTheme.textMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icon, size: 14, color: color),
-                      const SizedBox(width: 6),
-                      Text(
-                        estado.toUpperCase(),
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: color,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
+                    ]),
                   ),
                 ),
-                if (reserva != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${reserva['estado'] == 'pendiente' ? 'Pendiente' : 'Confirmada'} · ${horaReserva.length >= 5 ? horaReserva.substring(0, 5) : horaReserva} · ${reserva['cliente']?.toString().isNotEmpty == true ? reserva['cliente'] : 'Cliente'} · ${reserva['numeroPersonas']} personas',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
-                      color: AdminTheme.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ] else if (estado != 'libre') ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    estado == 'inactiva'
-                        ? 'Fuera de servicio'
-                        : 'Estado operativo de la mesa',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.manrope(
-                      fontSize: 11,
-                      color: AdminTheme.textMuted,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ]),
           ),
         ),
       ),
     );
   }
+
+  Widget _buildSmallChip(IconData icon, String label, Color foreground, Color background) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(color: background, borderRadius: AdminTheme.pillRadius),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 13, color: foreground),
+          const SizedBox(width: 5),
+          Text(label, style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: foreground)),
+        ]),
+      );
 }
