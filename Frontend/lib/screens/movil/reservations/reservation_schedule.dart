@@ -63,7 +63,7 @@ List<ReservationDay> reservationDays({
   required List<WeeklyHours> weekly,
   required List<HoursException> exceptions,
   int horizonDays = 14,
-  int durationMinutes = 120,
+  int durationMinutes = 60,
 }) {
   final special = {
     for (final exception in exceptions) exception.date: exception,

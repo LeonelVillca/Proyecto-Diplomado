@@ -29,7 +29,7 @@ export class ConsultarDisponibilidadDto {
 
   @Type(() => Number)
   @IsInt()
-  @Min(15)
-  @Max(480)
+  @Min(60)
+  @Max(60)
   duracionMinutos: number;
 }

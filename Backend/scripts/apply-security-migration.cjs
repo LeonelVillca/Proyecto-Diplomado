@@ -40,22 +40,24 @@ async function main() {
   try {
     await client.connect();
     await client.query("SET lock_timeout = '5s'");
-    const files = process.argv.includes('--notificaciones')
-      ? ['20260928-notificaciones-reservas.sql']
-      : process.argv.includes('--tipos-comida')
-      ? ['20260928-tipos-comida.sql']
-      : process.argv.includes('--normalize')
-      ? [
-          '20260921-normalizacion-integridad.sql',
-          '20260922-consistencia-seguridad.sql',
-          '20260922-propietarios-email.sql',
-        ]
-      : [
-          '20260920-session-version.sql',
-          '20260920-reserva-unica.sql',
-          '20260920-resena-control.sql',
-          '20260920-solicitud-correo.sql',
-        ];
+    const files = process.argv.includes('--reserva-horario')
+      ? ['20260929-reserva-horario.sql']
+      : process.argv.includes('--notificaciones')
+        ? ['20260928-notificaciones-reservas.sql']
+        : process.argv.includes('--tipos-comida')
+          ? ['20260928-tipos-comida.sql']
+          : process.argv.includes('--normalize')
+            ? [
+                '20260921-normalizacion-integridad.sql',
+                '20260922-consistencia-seguridad.sql',
+                '20260922-propietarios-email.sql',
+              ]
+            : [
+                '20260920-session-version.sql',
+                '20260920-reserva-unica.sql',
+                '20260920-resena-control.sql',
+                '20260920-solicitud-correo.sql',
+              ];
     for (const file of files) {
       const tableExists = await client.query(
         "SELECT to_regclass('public.schema_migrations') IS NOT NULL AS existe",

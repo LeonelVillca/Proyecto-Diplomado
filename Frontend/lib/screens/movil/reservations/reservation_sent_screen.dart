@@ -118,7 +118,7 @@ class ReservationSentScreen extends StatelessWidget {
                             child: _Detail(
                               icon: Icons.timer_outlined,
                               label: 'Duración',
-                              value: '2 horas',
+                              value: '1 hora',
                             ),
                           ),
                         ],

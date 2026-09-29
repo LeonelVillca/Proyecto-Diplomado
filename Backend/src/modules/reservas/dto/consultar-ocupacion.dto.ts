@@ -21,7 +21,7 @@ export class ConsultarOcupacionDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(15)
-  @Max(480)
-  duracionMinutos = 120;
+  @Min(60)
+  @Max(60)
+  duracionMinutos = 60;
 }

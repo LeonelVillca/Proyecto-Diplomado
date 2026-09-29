@@ -1,4 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
+import { Mesa } from '../mesa/mesa.entity';
+import { Usuario } from '../usuarios/usuario.entity';
+import { Reserva } from './reserva.entity';
 import { ReservasService } from './reservas.service';
 
 const horario = { horaInicio: '12:00', horaFin: '16:00' };
@@ -7,7 +10,7 @@ const consulta = {
   fecha: '2026-09-25',
   hora: '13:00',
   numeroPersonas: 2,
-  duracionMinutos: 120,
+  duracionMinutos: 60,
 };
 const mesas = [
   { id: 1, numeroMesa: 'A', capacidad: 2, estado: 'libre' },
@@ -31,18 +34,34 @@ function crearServicio(idsOcupadas: number[]) {
   };
   const reservasRepo = {
     createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+    create: jest.fn((reserva) => reserva),
     save: jest.fn(),
   };
-  const mesasRepo = { find: jest.fn().mockResolvedValue(mesas) };
+  const mesasRepo = {
+    find: jest.fn().mockResolvedValue(mesas),
+    findOne: jest.fn(),
+  };
+  const usuariosRepo = { findOne: jest.fn() };
+  const manager = {
+    getRepository: jest.fn((entity) => {
+      if (entity === Mesa) return mesasRepo;
+      if (entity === Reserva) return reservasRepo;
+      if (entity === Usuario) return usuariosRepo;
+      throw new Error('Repositorio no preparado en esta prueba');
+    }),
+  };
+  (reservasRepo as any).manager = {
+    transaction: jest.fn((callback) => callback(manager)),
+  };
   const service = new ReservasService(
     reservasRepo as any,
-    {} as any,
+    usuariosRepo as any,
     mesasRepo as any,
     { find: jest.fn().mockResolvedValue([horario]) } as any,
     { findOne: jest.fn().mockResolvedValue(null) } as any,
     {} as any,
   );
-  return { service, reservasRepo, mesasRepo, queryBuilder };
+  return { service, reservasRepo, mesasRepo, usuariosRepo, queryBuilder };
 }
 
 describe('Disponibilidad de reservas', () => {
@@ -67,11 +86,13 @@ describe('Disponibilidad de reservas', () => {
       "reserva.estado IN ('pendiente', 'confirmada')",
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
-      expect.stringContaining('reserva.fecha + reserva.hora <'),
+      expect.stringContaining(
+        "reserva.fecha + reserva.hora - (30 * INTERVAL '1 minute') <",
+      ),
       expect.objectContaining({
         fecha: consulta.fecha,
         hora: consulta.hora,
-        duracionMinutos: 120,
+        duracionMinutos: 60,
       }),
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
@@ -96,7 +117,7 @@ describe('Disponibilidad de reservas', () => {
         estado: 'pendiente',
         fecha: consulta.fecha,
         hora: '13:30',
-        duracionMinutos: 120,
+        duracionMinutos: 60,
         numeroPersonas: 2,
         mesa: { id: 1 },
         usuario: { nombre: 'Ana', apellido: 'Pérez' },
@@ -124,25 +145,29 @@ describe('Disponibilidad de reservas', () => {
       'reserva.id_mesa IN (:...ids)',
       { ids: [1, 2] },
     );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining("INTERVAL '1 minute') <="),
+      expect.objectContaining({ fecha: consulta.fecha, hora: '14:00' }),
+    );
   });
 
   it('rechaza el POST aunque el cliente envíe una mesa reservada directamente', async () => {
-    const { service, reservasRepo } = crearServicio([]);
+    const { service, reservasRepo, usuariosRepo, mesasRepo } = crearServicio(
+      [],
+    );
     const getCount = jest.fn().mockResolvedValue(1);
     reservasRepo.createQueryBuilder.mockReturnValue({
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       getCount,
     });
-    (service as any).usuariosRepo.findOne = jest
-      .fn()
-      .mockResolvedValue({ id: 3 });
-    (service as any).mesasRepo.findOne = jest.fn().mockResolvedValue({
+    usuariosRepo.findOne.mockResolvedValue({ id: 3 } as any);
+    mesasRepo.findOne.mockResolvedValue({
       id: 1,
       capacidad: 2,
       estado: 'libre',
       restaurante: { id: 7 },
-    });
+    } as any);
     await expect(
       service.crear({
         idUsuario: 3,
@@ -153,21 +178,24 @@ describe('Disponibilidad de reservas', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(reservasRepo.save).not.toHaveBeenCalled();
+    expect(mesasRepo.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
+    );
   });
 
   it.each(['ocupada', 'reservada', 'inactiva'])(
     'no permite reservar una mesa con estado %s',
     async (estado) => {
-      const { service, reservasRepo } = crearServicio([]);
-      (service as any).usuariosRepo.findOne = jest
-        .fn()
-        .mockResolvedValue({ id: 3 });
-      (service as any).mesasRepo.findOne = jest.fn().mockResolvedValue({
+      const { service, reservasRepo, usuariosRepo, mesasRepo } = crearServicio(
+        [],
+      );
+      usuariosRepo.findOne.mockResolvedValue({ id: 3 } as any);
+      mesasRepo.findOne.mockResolvedValue({
         id: 1,
         capacidad: 2,
         estado,
         restaurante: { id: 7 },
-      });
+      } as any);
 
       await expect(
         service.crear({

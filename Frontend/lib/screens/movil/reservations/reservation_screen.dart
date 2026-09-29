@@ -22,7 +22,7 @@ class ReservationScreen extends StatefulWidget {
 }
 
 class _ReservationScreenState extends State<ReservationScreen> {
-  static const int _durationMinutes = 120;
+  static const int _durationMinutes = 60;
   final _commentController = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -697,7 +697,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Cada opción deja dos horas dentro del horario de atención.',
+                  'Dura 1 hora; la mesa se bloquea 30 min antes.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 12),
@@ -949,7 +949,7 @@ class _ReservationScreenState extends State<ReservationScreen> {
                       ),
                       if (_selectedTime != null)
                         Text(
-                          'Duración: 2 horas',
+                          'Duración: 1 hora',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                     ],

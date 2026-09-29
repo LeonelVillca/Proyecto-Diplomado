@@ -34,50 +34,58 @@ export class ReservasService {
   ) {}
 
   async crear(dto: CrearReservaDto): Promise<Reserva> {
-    const usuario = await this.usuariosRepo.findOne({
-      where: { id: dto.idUsuario },
-    });
-    if (!usuario) throw new NotFoundException('Usuario no encontrado');
-
-    const mesa = await this.mesasRepo.findOne({
-      where: { id: dto.idMesa },
-      relations: { restaurante: true },
-    });
-    if (!mesa) throw new NotFoundException('Mesa no encontrada');
-
-    this.validarCapacidadYEstadoMesa(mesa, dto.numeroPersonas);
-
-    const duracionMinutos = dto.duracionMinutos ?? 120;
-    await this.validarHorarioRestaurante(
-      mesa.restaurante.id,
-      dto.fecha,
-      dto.hora,
-      duracionMinutos,
-    );
-    if (
-      await this.haySolapamiento(
-        dto.idMesa,
-        dto.fecha,
-        dto.hora,
-        duracionMinutos,
-      )
-    ) {
-      throw new BadRequestException(
-        'La mesa no está disponible en la fecha y hora seleccionadas',
-      );
-    }
-
-    const reserva = this.reservasRepo.create({
-      ...dto,
-      usuario,
-      mesa,
-      estado: 'pendiente',
-      duracionMinutos,
-    });
-
-    let guardada: Reserva;
+    let resultado: { guardada: Reserva; mesa: Mesa };
     try {
-      guardada = await this.reservasRepo.save(reserva);
+      resultado = await this.reservasRepo.manager.transaction(
+        async (manager) => {
+          const mesasRepo = manager.getRepository(Mesa);
+          const reservasRepo = manager.getRepository(Reserva);
+          const usuariosRepo = manager.getRepository(Usuario);
+          const mesa = await mesasRepo.findOne({
+            where: { id: dto.idMesa },
+            relations: { restaurante: true },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (!mesa) throw new NotFoundException('Mesa no encontrada');
+          this.validarCapacidadYEstadoMesa(mesa, dto.numeroPersonas);
+
+          const usuario = await usuariosRepo.findOne({
+            where: { id: dto.idUsuario },
+          });
+          if (!usuario) throw new NotFoundException('Usuario no encontrado');
+
+          const duracionMinutos = 60;
+          await this.validarHorarioRestaurante(
+            mesa.restaurante.id,
+            dto.fecha,
+            dto.hora,
+            duracionMinutos,
+          );
+          if (
+            await this.haySolapamiento(
+              dto.idMesa,
+              dto.fecha,
+              dto.hora,
+              duracionMinutos,
+              undefined,
+              reservasRepo,
+            )
+          ) {
+            throw new BadRequestException(
+              'La mesa no está disponible en la fecha y hora seleccionadas',
+            );
+          }
+
+          const reserva = reservasRepo.create({
+            ...dto,
+            usuario,
+            mesa,
+            estado: 'pendiente',
+            duracionMinutos,
+          });
+          return { guardada: await reservasRepo.save(reserva), mesa };
+        },
+      );
     } catch (error) {
       if (this.isSlotConflict(error)) {
         throw new BadRequestException(
@@ -86,6 +94,7 @@ export class ReservasService {
       }
       throw error;
     }
+    const { guardada, mesa } = resultado;
 
     // Emitir únicamente los datos necesarios para actualizar las interfaces.
     // No se expone la entidad completa (usuario, correo u otras relaciones).
@@ -159,7 +168,7 @@ export class ReservasService {
     idRestaurante: number,
     fecha: string,
     hora: string,
-    duracionMinutos = 120,
+    duracionMinutos = 60,
   ): Promise<{
     fecha: string;
     hora: string;
@@ -189,11 +198,7 @@ export class ReservasService {
       return { fecha, hora, duracionMinutos, mesas: [] };
     }
 
-    const reservas = await this.consultaSolapamientos(
-      fecha,
-      hora,
-      duracionMinutos,
-    )
+    const reservas = await this.consultaOcupacionEnInstante(fecha, hora)
       .leftJoinAndSelect('reserva.mesa', 'mesa')
       .leftJoinAndSelect('reserva.usuario', 'usuario')
       .andWhere('reserva.id_mesa IN (:...ids)', {
@@ -269,95 +274,105 @@ export class ReservasService {
   }
 
   async actualizar(id: number, dto: ActualizarReservaDto): Promise<Reserva> {
-    const reserva = await this.buscarPorId(id);
-
-    if (dto.idMesa) {
-      const mesa = await this.mesasRepo.findOne({
-        where: { id: dto.idMesa },
-        relations: { restaurante: true },
-      });
-      if (!mesa) throw new NotFoundException('Mesa no encontrada');
-      reserva.mesa = mesa;
-    }
-
-    let changed = dto.estado && dto.estado !== reserva.estado;
-    if (dto.estado) reserva.estado = dto.estado;
-
-    if (dto.fecha) reserva.fecha = dto.fecha;
-    if (dto.hora) reserva.hora = dto.hora;
-    if (dto.duracionMinutos !== undefined)
-      reserva.duracionMinutos = dto.duracionMinutos;
-    if (dto.numeroPersonas) reserva.numeroPersonas = dto.numeroPersonas;
-    if (dto.comentarios !== undefined) reserva.comentarios = dto.comentarios;
-
-    // La reserva nunca puede superar la capacidad real de la mesa, tampoco
-    // cuando un administrador cambia mesa, horario, comensales o estado.
-    if (['pendiente', 'confirmada'].includes(reserva.estado)) {
-      const cambiaMesaUHorario =
-        dto.idMesa !== undefined ||
-        dto.fecha !== undefined ||
-        dto.hora !== undefined ||
-        dto.duracionMinutos !== undefined;
-      this.validarCapacidadYEstadoMesa(
-        reserva.mesa,
-        reserva.numeroPersonas,
-        cambiaMesaUHorario,
-      );
-      await this.validarHorarioRestaurante(
-        reserva.mesa.restaurante.id,
-        reserva.fecha,
-        reserva.hora,
-        reserva.duracionMinutos,
-      );
-      if (
-        await this.haySolapamiento(
-          reserva.mesa.id,
-          reserva.fecha,
-          reserva.hora,
-          reserva.duracionMinutos,
-          reserva.id,
-        )
-      ) {
-        throw new BadRequestException(
-          'La mesa no está disponible en la fecha y hora seleccionadas',
-        );
-      }
-    }
-
+    const reservaInicial = await this.buscarPorId(id);
+    const idMesaBloqueada = dto.idMesa ?? reservaInicial.mesa.id;
     let saved: Reserva;
+    let changed = false;
     let nuevaNotificacion: Awaited<
       ReturnType<NotificacionesService['crearPorCambioDeReserva']>
     > | null = null;
     try {
-      if (
-        changed &&
-        (reserva.estado === 'confirmada' || reserva.estado === 'rechazada')
-      ) {
-        const resultado = await this.reservasRepo.manager.transaction(
-          async (manager) => {
-            const estadoActual = await manager.findOne(Reserva, {
-              where: { id },
-              lock: { mode: 'pessimistic_write' },
-            });
-            if (!estadoActual)
-              throw new NotFoundException(`Reserva #${id} no encontrada`);
-            const reservaGuardada = await manager.save(Reserva, reserva);
-            const cambioReal = estadoActual.estado !== reserva.estado;
-            const aviso = cambioReal
+      const resultado = await this.reservasRepo.manager.transaction(
+        async (manager) => {
+          const mesasRepo = manager.getRepository(Mesa);
+          const mesaBloqueada = await mesasRepo.findOne({
+            where: { id: idMesaBloqueada },
+            relations: { restaurante: true },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (!mesaBloqueada) throw new NotFoundException('Mesa no encontrada');
+
+          const reserva = await manager.findOne(Reserva, {
+            where: { id },
+            relations: {
+              usuario: true,
+              mesa: { restaurante: true },
+            },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (!reserva)
+            throw new NotFoundException(`Reserva #${id} no encontrada`);
+          if (dto.idMesa === undefined && reserva.mesa.id !== idMesaBloqueada) {
+            throw new BadRequestException(
+              'La reserva cambió de mesa. Actualiza e intenta nuevamente.',
+            );
+          }
+          const estadoAnterior = reserva.estado;
+
+          if (dto.idMesa !== undefined) reserva.mesa = mesaBloqueada;
+          if (dto.estado) reserva.estado = dto.estado;
+          if (dto.fecha) reserva.fecha = dto.fecha;
+          if (dto.hora) reserva.hora = dto.hora;
+          if (dto.duracionMinutos !== undefined && dto.duracionMinutos !== 60) {
+            throw new BadRequestException(
+              'Las reservas duran exactamente 60 minutos',
+            );
+          }
+          if (dto.duracionMinutos !== undefined)
+            reserva.duracionMinutos = dto.duracionMinutos;
+          if (dto.numeroPersonas) reserva.numeroPersonas = dto.numeroPersonas;
+          if (dto.comentarios !== undefined)
+            reserva.comentarios = dto.comentarios;
+
+          if (['pendiente', 'confirmada'].includes(reserva.estado)) {
+            const cambiaMesaUHorario =
+              dto.idMesa !== undefined ||
+              dto.fecha !== undefined ||
+              dto.hora !== undefined ||
+              dto.duracionMinutos !== undefined;
+            this.validarCapacidadYEstadoMesa(
+              reserva.mesa,
+              reserva.numeroPersonas,
+              cambiaMesaUHorario,
+            );
+            await this.validarHorarioRestaurante(
+              reserva.mesa.restaurante.id,
+              reserva.fecha,
+              reserva.hora,
+              reserva.duracionMinutos,
+            );
+            if (
+              await this.haySolapamiento(
+                reserva.mesa.id,
+                reserva.fecha,
+                reserva.hora,
+                reserva.duracionMinutos,
+                reserva.id,
+                manager.getRepository(Reserva),
+              )
+            ) {
+              throw new BadRequestException(
+                'La mesa no está disponible en la fecha y hora seleccionadas',
+              );
+            }
+          }
+
+          const reservaGuardada = await manager.save(Reserva, reserva);
+          changed = estadoAnterior !== reservaGuardada.estado;
+          const aviso =
+            changed &&
+            (reservaGuardada.estado === 'confirmada' ||
+              reservaGuardada.estado === 'rechazada')
               ? await this.notificaciones.crearPorCambioDeReserva(
                   manager,
                   reservaGuardada,
                 )
               : null;
-            return { reservaGuardada, aviso, cambioReal };
-          },
-        );
-        saved = resultado.reservaGuardada;
-        nuevaNotificacion = resultado.aviso;
-        changed = resultado.cambioReal;
-      } else {
-        saved = await this.reservasRepo.save(reserva);
-      }
+          return { reservaGuardada, aviso };
+        },
+      );
+      saved = resultado.reservaGuardada;
+      nuevaNotificacion = resultado.aviso;
     } catch (error) {
       if (this.isSlotConflict(error)) {
         throw new BadRequestException(
@@ -405,11 +420,13 @@ export class ReservasService {
     hora: string,
     duracionMinutos: number,
     excluirId?: number,
+    reservasRepo: Repository<Reserva> = this.reservasRepo,
   ): Promise<boolean> {
     const consulta = this.consultaSolapamientos(
       fecha,
       hora,
       duracionMinutos,
+      reservasRepo,
     ).andWhere('reserva.id_mesa = :idMesa', { idMesa });
     if (excluirId !== undefined) {
       consulta.andWhere('reserva.id_reserva <> :excluirId', { excluirId });
@@ -421,15 +438,42 @@ export class ReservasService {
     fecha: string,
     hora: string,
     duracionMinutos: number,
+    reservasRepo: Repository<Reserva> = this.reservasRepo,
   ): SelectQueryBuilder<Reserva> {
-    return this.reservasRepo
+    return reservasRepo
       .createQueryBuilder('reserva')
       .where("reserva.estado IN ('pendiente', 'confirmada')")
       .andWhere(
-        `reserva.fecha + reserva.hora <
+        `reserva.fecha + reserva.hora - (30 * INTERVAL '1 minute') <
          CAST(:fecha AS date) + CAST(:hora AS time) +
          (:duracionMinutos * INTERVAL '1 minute')`,
         { fecha, hora, duracionMinutos },
+      )
+      .andWhere(
+        `reserva.fecha + reserva.hora +
+         (reserva.duracion_minutos * INTERVAL '1 minute') >
+         CAST(:fecha AS date) + CAST(:hora AS time)`,
+        { fecha, hora },
+      );
+  }
+
+  /**
+   * La vista de mesas representa la ocupación en un instante concreto. Una
+   * reserva empieza a bloquear 30 minutos antes de su hora y deja de bloquear
+   * al llegar a su hora de fin (intervalo [inicio - 30 min, fin)).
+   */
+  private consultaOcupacionEnInstante(
+    fecha: string,
+    hora: string,
+    reservasRepo: Repository<Reserva> = this.reservasRepo,
+  ): SelectQueryBuilder<Reserva> {
+    return reservasRepo
+      .createQueryBuilder('reserva')
+      .where("reserva.estado IN ('pendiente', 'confirmada')")
+      .andWhere(
+        `reserva.fecha + reserva.hora - (30 * INTERVAL '1 minute') <=
+         CAST(:fecha AS date) + CAST(:hora AS time)`,
+        { fecha, hora },
       )
       .andWhere(
         `reserva.fecha + reserva.hora +

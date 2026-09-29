@@ -27,9 +27,9 @@ export class CrearReservaDto {
 
   @IsOptional()
   @IsInt()
-  @Min(15)
-  @Max(480)
-  duracionMinutos?: number = 120;
+  @Min(60)
+  @Max(60)
+  duracionMinutos?: number = 60;
 
   @IsInt()
   @Min(1)

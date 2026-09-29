@@ -29,7 +29,7 @@ export class Reserva {
   @Column({ type: 'time' })
   hora: string;
 
-  @Column({ name: 'duracion_minutos', type: 'int', default: 120 })
+  @Column({ name: 'duracion_minutos', type: 'int', default: 60 })
   duracionMinutos: number;
 
   @Column({ name: 'numero_personas', type: 'int' })
