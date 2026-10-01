@@ -333,7 +333,7 @@ class _GestionReservasScreenState extends State<GestionReservasScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Mesa ${reserva.idMesa} • $fechaFormat',
+                                        'Mesa  • $fechaFormat',
                                         style: GoogleFonts.manrope(fontWeight: FontWeight.bold, fontSize: 16, color: const Color(0xFF1E1B1A)),
                                       ),
                                       const SizedBox(height: 6),
