@@ -7,7 +7,7 @@ extension _ResumenDetalleRestaurante on _RestaurantDetailScreenState {
   ) {
     return Container(
       width: double.infinity,
-      height: _summaryHeight,
+      height: _RestaurantDetailScreenState._summaryHeight,
       decoration: const BoxDecoration(
         color: ConsumerColors.paper,
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),

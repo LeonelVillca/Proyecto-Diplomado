@@ -4,7 +4,7 @@ extension _AccionesDetalleRestaurante on _RestaurantDetailScreenState {
   void _seleccionarPestana(int index) {
     if (index == _activeTab) return;
     setState(() => _activeTab = index);
-    final tabsTop = _heroHeight + _summaryHeight - _summaryOverlap;
+    final tabsTop = _RestaurantDetailScreenState._heroHeight + _RestaurantDetailScreenState._summaryHeight - _RestaurantDetailScreenState._summaryOverlap;
     if (_scrollController.hasClients && _scrollController.offset > tabsTop) {
       _scrollController.jumpTo(tabsTop);
     }

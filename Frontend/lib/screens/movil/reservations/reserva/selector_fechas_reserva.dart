@@ -1,6 +1,6 @@
 part of '../reservation_screen.dart';
 
-extension _SelectorFechasReserva on _ReservationScreenState {
+extension _FormatoFechasReserva on _ReservationScreenState {
   String _fechaLarga(DateTime date) {
     const months = [
       'enero',

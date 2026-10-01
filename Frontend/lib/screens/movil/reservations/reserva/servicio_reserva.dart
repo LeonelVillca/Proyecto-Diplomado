@@ -83,7 +83,7 @@ extension _ServicioReserva on _ReservationScreenState {
         now: DateTime.now(),
         weekly: weekly,
         exceptions: exceptions,
-        durationMinutes: _durationMinutes,
+        durationMinutes: _ReservationScreenState._durationMinutes,
       );
       final capacities = [
         for (final table in tableData)
@@ -126,7 +126,7 @@ extension _ServicioReserva on _ReservationScreenState {
             'fecha': reservationDateKey(date),
             'hora': time,
             'numeroPersonas': guests.toString(),
-            'duracionMinutos': _durationMinutes.toString(),
+            'duracionMinutos': _ReservationScreenState._durationMinutes.toString(),
           },
         );
     final response = await http.get(
@@ -186,7 +186,7 @@ extension _ServicioReserva on _ReservationScreenState {
           'idMesa': (tables.first['idMesa'] as num).toInt(),
           'fecha': reservationDateKey(date),
           'hora': time,
-          'duracionMinutos': _durationMinutes,
+          'duracionMinutos': _ReservationScreenState._durationMinutes,
           'numeroPersonas': guests,
           if (_commentController.text.trim().isNotEmpty)
             'comentarios': _commentController.text.trim(),

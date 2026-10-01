@@ -66,7 +66,7 @@ extension _FlujoGoogle on AuthController {
       _status = AuthStatus.idle;
       notifyListeners();
       return false;
-    } catch (_) {{
+    } catch (_) {
       // Sin conexión no podemos validar; se va al login pero se conserva
       // el token para intentarlo de nuevo en el próximo arranque.
       _status = AuthStatus.idle;

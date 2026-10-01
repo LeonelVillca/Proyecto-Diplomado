@@ -20,7 +20,7 @@ extension _SelectorHorariosReserva on _ReservationScreenState {
       style: Theme.of(context).textTheme.bodySmall,
     ),
     const SizedBox(height: 12),
-    if (slots.isEmpty)
+    if (horarios.isEmpty)
       Text(
         'No hay horarios disponibles para este día.',
         style: Theme.of(context).textTheme.bodyMedium,
@@ -29,7 +29,7 @@ extension _SelectorHorariosReserva on _ReservationScreenState {
       GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: slots.length,
+        itemCount: horarios.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           mainAxisSpacing: 9,
@@ -37,7 +37,7 @@ extension _SelectorHorariosReserva on _ReservationScreenState {
           childAspectRatio: 2.3,
         ),
         itemBuilder: (context, index) {
-          final slot = slots[index];
+          final slot = horarios[index];
           final selected = _selectedTime == slot;
           final unavailable = _unavailableSlots.contains(slot);
           return Semantics(

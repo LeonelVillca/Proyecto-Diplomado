@@ -14,6 +14,7 @@ import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 
 part 'reserva/servicio_reserva.dart';
 part 'reserva/controlador_reserva.dart';
+part 'reserva/selector_fechas_reserva.dart';
 part '../../../widgets/movil/reservas/resumen_restaurante.dart';
 part '../../../widgets/movil/reservas/selector_fechas_reserva.dart';
 part '../../../widgets/movil/reservas/selector_horarios_reserva.dart';
