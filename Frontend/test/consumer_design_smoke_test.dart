@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:frontend/models/movil/restaurant.dart';
 import 'package:frontend/screens/movil/home/home_tab.dart';
-import 'package:frontend/screens/movil/reservations/reservation_sent_dialog.dart';
+import 'package:frontend/screens/movil/reservations/reservation_sent_screen.dart';
 import 'package:frontend/widgets/movil/navigation/app_bottom_nav.dart';
 
 void main() {
@@ -71,12 +71,12 @@ void main() {
         theme: ConsumerTheme.light,
         home: Scaffold(
           body: Center(
-            child: ReservationSentDialog(
+            child: ReservationSentScreen(
               restaurant: restaurant,
               date: '25 de septiembre',
               time: '19:00',
               guests: 2,
-              onClose: () => closed = true,
+              onMyReservations: () => closed = true,
             ),
           ),
         ),
@@ -89,7 +89,7 @@ void main() {
     expect(find.text('19:00'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.textContaining('pendiente de confirmación'), findsOneWidget);
-    await tester.tap(find.text('Entendido'));
+    await tester.tap(find.text('Mis reservas'));
     expect(closed, isTrue);
     expect(tester.takeException(), isNull);
   });
@@ -106,20 +106,20 @@ void main() {
         theme: ConsumerTheme.light,
         home: Scaffold(
           body: Center(
-            child: ReservationSentDialog(
+            child: ReservationSentScreen(
               restaurant: restaurant,
               date: '25 de septiembre',
               time: '19:00',
               guests: 2,
-              onClose: () => closed = true,
+              onMyReservations: () => closed = true,
             ),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Entendido'));
-    await tester.tap(find.text('Entendido'));
+    await tester.ensureVisible(find.text('Mis reservas'));
+    await tester.tap(find.text('Mis reservas'));
     expect(closed, isTrue);
     expect(tester.takeException(), isNull);
   });
@@ -136,20 +136,20 @@ void main() {
         theme: ConsumerTheme.light,
         home: Scaffold(
           body: Center(
-            child: ReservationSentDialog(
+            child: ReservationSentScreen(
               restaurant: restaurant,
               date: '25 de septiembre',
               time: '19:00',
               guests: 2,
-              onClose: () => closed = true,
+              onMyReservations: () => closed = true,
             ),
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Entendido'));
-    await tester.tap(find.text('Entendido'));
+    await tester.ensureVisible(find.text('Mis reservas'));
+    await tester.tap(find.text('Mis reservas'));
     expect(closed, isTrue);
     expect(tester.takeException(), isNull);
   });

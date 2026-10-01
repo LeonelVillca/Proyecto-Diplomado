@@ -2,6 +2,7 @@
 /node_modules
 /dist
 /coverage
+/.test-postgres/
 
 # - Variables de entorno (nunca commitear secretos)
 .env
@@ -24,3 +25,4 @@ schema_*.sql
 Thumbs.db
 .idea/
 .vscode/
+/.test-postgres-runtime/

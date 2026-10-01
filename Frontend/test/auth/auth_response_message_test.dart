@@ -28,7 +28,7 @@ void main() {
         '{"message":"Internal server error"}',
         'fallback',
       ),
-      contains('no pudo confirmar la operación'),
+      contains('no pudo confirmar el resultado'),
     );
   });
 

@@ -12,6 +12,10 @@ import 'package:frontend/services/shared/session_service.dart';
 import 'package:frontend/core/movil/api_config.dart';
 import 'package:frontend/services/movil/notifications_service.dart';
 
+part 'autenticacion/sesion_google.dart';
+part 'autenticacion/renovacion_sesion.dart';
+part 'autenticacion/cierre_sesion.dart';
+
 /// Estados posibles del flujo de inicio de sesión.
 enum AuthStatus {
   /// Sin interacción del usuario todavía.
@@ -49,14 +53,14 @@ enum AuthStatus {
 class AuthController extends ChangeNotifier with WidgetsBindingObserver {
   AuthController({
     this._firebaseAuth,
-    this.demoFallback = false,   // Desactivado: errores reales deben ser visibles
+    this.demoFallback = false, // Desactivado: errores reales deben ser visibles
     SessionService? session,
-  })  : _session = session ?? SessionService() {
-    _subscribeToAuthChanges();
+  }) : _session = session ?? SessionService() {
+    _escucharCambiosFirebase();
     WidgetsBinding.instance.addObserver(this);
     SessionHttp.tokenProvider = validToken;
     SessionHttp.onUnauthorized = invalidateToken;
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+    _temporizadorRenovacion = Timer.periodic(const Duration(minutes: 1), (_) {
       if (isAuthenticated) unawaited(validToken().catchError((_) => null));
     });
   }
@@ -65,11 +69,11 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Persistencia segura del JWT del backend.
   final SessionService _session;
-  Timer? _refreshTimer;
-  Future<String?>? _refreshInFlight;
-  StreamSubscription<User?>? _authSubscription;
-  int _sessionGeneration = 0;
-  bool _disposed = false;
+  Timer? _temporizadorRenovacion;
+  Future<String?>? _renovacionEnCurso;
+  StreamSubscription<User?>? _suscripcionCambiosAuth;
+  int _generacionSesion = 0;
+  bool _disposeRealizado = false;
 
   /// Si es `true`, los fallos de Google caen a un perfil simulado.
   final bool demoFallback;
@@ -78,7 +82,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
 
   AuthStatus _status = AuthStatus.idle;
   User? _user;
-  String? _errorMessage;
+  String? _mensajeError;
   bool _demoMode = false;
   String? _demoName;
   String? _demoEmail;
@@ -94,7 +98,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
 
   AuthStatus get status => _status;
   User? get user => _user;
-  String? get errorMessage => _errorMessage;
+  String? get errorMessage => _mensajeError;
   bool get isLoading => _status == AuthStatus.loading;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   List<String> get roles => _roles;
@@ -110,7 +114,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
   /// Token JWT emitido por el backend para la sesión activa.
   String? get token => _token;
 
-  Map<String, dynamic> _decodeJwt(String token) {
+  Map<String, dynamic> _decodificarJwt(String token) {
     try {
       final parts = token.split('.');
       if (parts.length != 3) return {};
@@ -156,9 +160,9 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  void _subscribeToAuthChanges() {
+  void _escucharCambiosFirebase() {
     try {
-      _authSubscription = _auth.authStateChanges().listen((firebaseUser) {
+      _suscripcionCambiosAuth = _auth.authStateChanges().listen((firebaseUser) {
         // Solo actualizamos el usuario de Firebase.
         // El estado `authenticated` LO DECIDE el backend (JWT válido).
         // Si marcamos authenticated aquí, la app entra sin validar el token.
@@ -171,66 +175,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Intenta restaurar una sesión previa guardada en [SessionService].
-  Future<bool> restaurarSesion() async {
-    final generation = _sessionGeneration;
-    final token = await _session.obtenerToken();
-    if (token == null || token.isEmpty) {
-      return false;
-    }
-
-    try {
-      final response = await http
-          .get(
-            Uri.parse(ApiConfig.authPerfil),
-            headers: {'Authorization': 'Bearer $token'},
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (generation != _sessionGeneration || _disposed) return false;
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes))
-            as Map<String, dynamic>;
-        
-        final jwtData = _decodeJwt(token);
-        _permisos = (jwtData['permisos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-
-        _token = token;
-        _backendNombre = (data['nombre'] as String?)?.trim();
-        _backendApellido = data['apellido'] as String?;
-        _backendEmail = data['correo'] as String?;
-        _backendId = data['id'] as int? ?? data['idUsuario'] as int? ?? data['id_usuario'] as int?;
-        _roles = (data['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-        _status = AuthStatus.authenticated;
-        notifyListeners();
-        return true;
-      }
-
-      // El JWT del backend puede haber expirado mientras el sistema suspendía
-      // la app. Firebase conserva la sesión de Google y permite reconstruir
-      // el JWT sin mostrar nuevamente el login.
-      if (response.statusCode == 401 || response.statusCode == 403) {
-        if (await _reautenticarBackendDesdeFirebase()) {
-          _status = AuthStatus.authenticated;
-          notifyListeners();
-          return true;
-        }
-      }
-
-      // No borrar credenciales por una caída temporal del servidor.
-      if (response.statusCode != 401 && response.statusCode != 403) return false;
-      await _session.eliminarToken();
-      _limpiarSesionBackend();
-      _status = AuthStatus.idle;
-      notifyListeners();
-      return false;
-    } catch (_) {
-      // Sin conexión no podemos validar; se va al login pero se conserva
-      // el token para intentarlo de nuevo en el próximo arranque.
-      _status = AuthStatus.idle;
-      notifyListeners();
-      return false;
-    }
-  }
+  Future<bool> restaurarSesion() => _restaurarSesion();
 
   /// Método especial para el flujo administrativo web (login local).
   Future<bool> restaurarSesionLocalDesdeAdmin(String newToken) async {
@@ -239,308 +184,33 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Inicia sesión con la cuenta de Google del usuario.
-  Future<bool> signInWithGoogle() async {
-    if (isLoading) return false;
-
-    _status = AuthStatus.loading;
-    _errorMessage = null;
-    notifyListeners();
-
-    try {
-      if (kIsWeb) {
-        final credential = GoogleAuthProvider();
-        final userCredential = await _auth.signInWithPopup(credential);
-        _user = userCredential.user;
-      } else {
-        await _signInWithGoogleMobile();
-      }
-      _user = _auth.currentUser;
-
-      final firebaseUser = _user;
-      if (firebaseUser == null || firebaseUser.email == null) throw StateError('Falta la identidad de Google');
-      if (firebaseUser.email != null) {
-        final registrado = await _registrarGoogleEnBackend(firebaseUser);
-        if (!registrado) {
-          await _cerrarGoogle();
-          _user = null;
-          _status = AuthStatus.error;
-          notifyListeners();
-          return false;
-        }
-      }
-
-      _status = AuthStatus.authenticated;
-      notifyListeners();
-      return true;
-    } catch (_) {
-      // Sin Google disponible o usuario canceló: caemos a la simulación.
-      if (demoFallback) {
-        enterSimulation();
-        return true;
-      }
-      _status = AuthStatus.error;
-      _errorMessage =
-          'No pudimos conectar con Google. Revisa tu conexión e inténtalo de nuevo.';
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Envía el ID Token de Firebase al backend.
-  Future<bool> _registrarGoogleEnBackend(User firebaseUser) async {
-    final generation = _sessionGeneration;
-    try {
-      final idToken = await firebaseUser.getIdToken();
-      if (idToken == null) {
-        _errorMessage =
-            'No pudimos obtener el token de tu sesión de Google. '
-            'Inténtalo de nuevo.';
-        return false;
-      }
-
-      final response = await http
-          .post(
-            Uri.parse(ApiConfig.authGoogle),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'idToken': idToken}),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (generation != _sessionGeneration || _disposed) return false;
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes))
-            as Map<String, dynamic>;
-        final usuario =
-            (data['usuario'] as Map?)?.cast<String, dynamic>() ?? {};
-        if (data['token'] is! String || (data['token'] as String).isEmpty || usuario['id'] == null) return false;
-        _token = data['token'] as String?;
-        _backendNombre = (usuario['nombre'] as String?)?.trim();
-        _backendApellido = usuario['apellido'] as String?;
-        _backendEmail = usuario['correo'] as String?;
-        _backendId = usuario['id'] as int? ?? usuario['idUsuario'] as int? ?? usuario['id_usuario'] as int?;
-        if (_token != null) {
-          final jwtData = _decodeJwt(_token!);
-          _permisos = (jwtData['permisos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-          await _session.guardarToken(_token!);
-        }
-        return true;
-      }
-
-      _errorMessage =
-          'Google aceptó la sesión, pero no pudimos guardarla. '
-          'Revisa que el backend esté corriendo e inténtalo de nuevo.';
-      return false;
-    } catch (_) {
-      _errorMessage = _errorDeConexion;
-      return false;
-    }
-  }
-
-  Future<void> _cerrarGoogle() async {
-    try {
-      if (!kIsWeb) {
-        await GoogleSignIn.instance.signOut();
-      }
-      await _auth.signOut();
-    } catch (_) {
-      // Si la sesión de Google ya no existía, se ignora.
-    }
-  }
+  Future<bool> signInWithGoogle() => _iniciarSesionConGoogle();
 
   /// Entra manualmente al modo de demostración (útil para maquetas).
-  void enterSimulation() {
-    if (!kDebugMode || !demoFallback) return;
-    _demoMode = true;
-    _demoName = 'Kevin Chapaco';
-    _demoEmail = 'demo@mesachapaca.dev';
-    _status = AuthStatus.authenticated;
-    notifyListeners();
-  }
+  void enterSimulation() => _entrarModoSimulacion();
 
-  /// Mensaje descriptivo cuando el backend no responde.
-  String get _errorDeConexion =>
-      'No pudimos conectar con el servidor de Mesa Chapaca '
-      '(${ApiConfig.baseUrl}). Verifica que el backend esté corriendo y que '
-      'este sea el acceso correcto desde tu dispositivo.';
+  Future<String?> validToken() => _obtenerTokenValido();
 
-  Future<void> _signInWithGoogleMobile() async {
-    final GoogleSignInAccount? account = await GoogleSignIn.instance.authenticate();
-    if (account == null) {
-      throw Exception('Cancelado por el usuario.');
-    }
-    final GoogleSignInAuthentication authTokens = await account.authentication;
-    final idToken = authTokens.idToken;
-    if (idToken == null) {
-      throw Exception('No se pudo obtener el ID token de Google.');
-    }
-    final credential = GoogleAuthProvider.credential(idToken: idToken);
-    await _auth.signInWithCredential(credential);
-  }
+  Future<void> invalidateToken(String rejected) => _invalidarToken(rejected);
 
-  void _limpiarSesionBackend() {
-    _token = null;
-    _backendNombre = null;
-    _backendApellido = null;
-    _backendEmail = null;
-    _backendId = null;
-    _roles = [];
-    _permisos = [];
-  }
-
-  Future<String?> validToken() async {
-    if (_token == null || _disposed) return null;
-    final exp = _decodeJwt(_token!)['exp'];
-    if (exp is! num || exp * 1000 <= DateTime.now().millisecondsSinceEpoch) {
-      if (await _reautenticarBackendDesdeFirebase()) return _token;
-      await invalidateToken(_token!);
-      return null;
-    }
-    if (exp * 1000 - DateTime.now().millisecondsSinceEpoch > 5 * 60 * 1000) return _token;
-    final pending = _refreshInFlight;
-    if (pending != null) return pending;
-    final future = _renewToken();
-    _refreshInFlight = future;
-    try { return await future; } finally { if (identical(_refreshInFlight, future)) _refreshInFlight = null; }
-  }
-
-  Future<String?> _renewToken() async {
-    final previous = _token;
-    final generation = _sessionGeneration;
-    final response = await http.post(Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/renovar'),
-      headers: {'Authorization': 'Bearer $previous'}).timeout(const Duration(seconds: 10));
-    if (_disposed || generation != _sessionGeneration || previous != _token) return null;
-    if (response.statusCode == 401 || response.statusCode == 403) {
-      if (await _reautenticarBackendDesdeFirebase()) return _token;
-      await invalidateToken(previous!);
-      return null;
-    }
-    if (response.statusCode != 200) throw StateError('No se pudo renovar la sesión');
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final renewed = data['token'];
-    if (renewed is! String || renewed.isEmpty) throw StateError('Respuesta de sesión inválida');
-    await _session.guardarToken(renewed);
-    if (_disposed || generation != _sessionGeneration) { await _session.eliminarToken(); return null; }
-    _token = renewed;
-    _permisos = (_decodeJwt(renewed)['permisos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-    notifyListeners();
-    return renewed;
-  }
-
-  /// Recupera la sesión del backend usando la sesión persistente de Firebase.
-  /// Esto evita enviar al usuario al login cuando el móvil suspendió la app y
-  /// el JWT propio ya expiró.
-  Future<bool> _reautenticarBackendDesdeFirebase() async {
-    final generation = _sessionGeneration;
-    final firebaseUser = _auth.currentUser;
-    if (firebaseUser == null || _disposed) return false;
-
-    try {
-      final idToken = await firebaseUser.getIdToken(true);
-      if (idToken == null || idToken.isEmpty) return false;
-
-      final response = await http
-          .post(
-            Uri.parse(ApiConfig.authGoogle),
-            headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'idToken': idToken}),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (_disposed || generation != _sessionGeneration) return false;
-      if (response.statusCode != 200 && response.statusCode != 201) return false;
-
-      final data = jsonDecode(utf8.decode(response.bodyBytes))
-          as Map<String, dynamic>;
-      final usuario =
-          (data['usuario'] as Map?)?.cast<String, dynamic>() ?? {};
-      final renewed = data['token'];
-      if (renewed is! String || renewed.isEmpty || usuario['id'] == null) {
-        return false;
-      }
-
-      _token = renewed;
-      _backendNombre = (usuario['nombre'] as String?)?.trim();
-      _backendApellido = usuario['apellido'] as String?;
-      _backendEmail = usuario['correo'] as String?;
-      _backendId = usuario['id'] as int? ??
-          usuario['idUsuario'] as int? ??
-          usuario['id_usuario'] as int?;
-      final jwtData = _decodeJwt(renewed);
-      _permisos = (jwtData['permisos'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [];
-      await _session.guardarToken(renewed);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> invalidateToken(String rejected) async {
-    if (rejected != _token) return;
-    _sessionGeneration++;
-    _limpiarSesionBackend();
-    _status = AuthStatus.idle;
-    await NotificationsService.stop();
-    await _session.eliminarToken();
-    if (!_disposed) notifyListeners();
-  }
-
+  /// Cierra la sesión (real o simulada) y vuelve al inicio.
+  Future<void> signOut() => _cerrarSesion();
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && isAuthenticated) unawaited(validToken().catchError((_) => null));
+    if (state == AppLifecycleState.resumed && isAuthenticated)
+      unawaited(validToken().catchError((_) => null));
   }
 
   @override
   void dispose() {
-    _disposed = true;
-    _sessionGeneration++;
-    _refreshTimer?.cancel();
-    _authSubscription?.cancel();
+    _disposeRealizado = true;
+    _generacionSesion++;
+    _temporizadorRenovacion?.cancel();
+    _suscripcionCambiosAuth?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     SessionHttp.tokenProvider = null;
     SessionHttp.onUnauthorized = null;
     super.dispose();
-  }
-
-  /// Cierra la sesión (real o simulada) y vuelve al inicio.
-  Future<void> signOut() async {
-    final previous = _token;
-    _errorMessage = null;
-    _sessionGeneration++;
-    await NotificationsService.stop(previousToken: previous);
-    if (previous != null) {
-      try {
-        final response = await http.post(Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/cerrar-sesiones'),
-          headers: {'Authorization': 'Bearer $previous'}).timeout(const Duration(seconds: 10));
-        if (response.statusCode != 200) throw StateError('No se pudieron cerrar las sesiones remotas');
-      } catch (_) {
-        // El cierre local continúa aunque falle el cierre remoto; no mostramos
-        // este fallo después de volver a Login.
-      }
-    }
-    try {
-      if (!_demoMode && !kIsWeb) {
-        // En google_sign_in ^7.0.0, disconnect() revoca la cuenta a nivel OS.
-        // Se llama ANTES de signOut() para evitar excepciones por no tener sesión activa.
-        await GoogleSignIn.instance.disconnect();
-        await GoogleSignIn.instance.signOut();
-      }
-    } catch (_) {
-      // Si no había sesión de Google, ignoramos el error.
-    }
-    if (!_demoMode) {
-      await _cerrarGoogle();
-    }
-    await _session.eliminarToken();
-    _user = null;
-    _demoMode = false;
-    _demoName = null;
-    _demoEmail = null;
-    _limpiarSesionBackend();
-    _status = AuthStatus.idle;
-    notifyListeners();
   }
 }
 

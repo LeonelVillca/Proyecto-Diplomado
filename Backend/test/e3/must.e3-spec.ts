@@ -1,0 +1,327 @@
+import { readFileSync } from 'fs';
+import { join, resolve } from 'path';
+import { INestApplication, UnauthorizedException, ValidationPipe } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { DataSource } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
+import request from 'supertest';
+import { AppModule } from '../../src/app.module';
+import { FirebaseAdminService } from '../../src/modules/auth/firebase-admin.service';
+import { Usuario } from '../../src/modules/usuarios/usuario.entity';
+import { CuentaAuth } from '../../src/modules/cuentas-auth/cuenta-auth.entity';
+import { Rol } from '../../src/modules/rol/rol.entity';
+import { UsuarioRol } from '../../src/modules/usuario-rol/usuario-rol.entity';
+import { UsuarioRestaurante } from '../../src/modules/usuario-restaurante/usuario-restaurante.entity';
+import { Restaurante } from '../../src/modules/restaurante/restaurante.entity';
+import { Ubicacion } from '../../src/modules/ubicacion/ubicacion.entity';
+import { HorarioAtencion } from '../../src/modules/horario-atencion/horario-atencion.entity';
+import { Mesa } from '../../src/modules/mesa/mesa.entity';
+import { Menu } from '../../src/modules/menu/menu.entity';
+import { Plato } from '../../src/modules/plato/plato.entity';
+import { Reserva } from '../../src/modules/reservas/reserva.entity';
+import { OauthCuenta } from '../../src/modules/oauth-cuenta/oauth-cuenta.entity';
+
+// Evita que Jest cargue la dependencia ESM de Firebase Admin. Solo se sustituye
+// la verificación externa; controlador, AuthService y PostgreSQL son reales.
+jest.mock('firebase-admin/auth', () => ({ getAuth: jest.fn() }));
+
+const googleIdentity = {
+  uid: 'google-e3-test', correo: 'cliente.e3@example.test',
+  emailVerificado: true, nombre: 'Cliente E3', foto: null,
+};
+const firebase = {
+  verificarIdToken: jest.fn(async (idToken: string) => {
+    if (idToken !== 'firebase-validado-en-suite-e3') {
+      throw new UnauthorizedException('Token de Google inválido o expirado');
+    }
+    return googleIdentity;
+  }),
+};
+const adminPassword = 'E3-Contrasena-2026';
+
+function futureDate(days: number): string {
+  return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+describe('E3: requisitos Must por API + PostgreSQL aislado', () => {
+  let app: INestApplication;
+  let schema: DataSource;
+  let db: DataSource;
+  let fixture: {
+    cliente: Usuario; admin: Usuario; otroAdmin: Usuario;
+    restaurante: Restaurante; otroRestaurante: Restaurante;
+    mesa: Mesa; menu: Menu; plato: Plato; reserva: Reserva;
+    fechaReserva: string; fechaNueva: string;
+  };
+
+  async function clearData() {
+    const rows: Array<{ tablename: string }> = await schema.query(
+      "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
+    );
+    if (rows.length) {
+      const tables = rows.map(({ tablename }) => `"${tablename.replace(/"/g, '""')}"`).join(', ');
+      await schema.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);
+    }
+  }
+
+  beforeAll(async () => {
+    if (process.env.E3_INTEGRATION_TEST !== '1' ||
+        process.env.DB_HOST !== '127.0.0.1' ||
+        process.env.DB_PORT !== '55433' ||
+        process.env.DB_NAME !== 'mesa_chapaca_e3_test') {
+      throw new Error('La suite E3 solo puede usar la base local aislada mesa_chapaca_e3_test.');
+    }
+    schema = new DataSource({
+      type: 'postgres', host: '127.0.0.1', port: 55433,
+      username: 'mesa_test', password: process.env.DB_PASSWORD,
+      database: 'mesa_chapaca_e3_test', ssl: false,
+      entities: [join(__dirname, '../../src/**/*.entity.ts').replace(/\\/g, '/')],
+      synchronize: false,
+    });
+    await schema.initialize();
+    const identity = await schema.query('SELECT current_database() AS name');
+    if (identity[0]?.name !== 'mesa_chapaca_e3_test') {
+      throw new Error('La conexión no corresponde a la base E3 aislada.');
+    }
+    const dataDirectory = await schema.query('SHOW data_directory');
+    const actualDirectory = resolve(dataDirectory[0].data_directory).replace(/\\/g, '/').toLowerCase();
+    const expectedDirectory = resolve(__dirname, '../../.test-postgres-runtime').replace(/\\/g, '/').toLowerCase();
+    if (actualDirectory !== expectedDirectory) {
+      throw new Error('La instancia PostgreSQL no corresponde al clúster local exclusivo de E3.');
+    }
+    // Las migraciones del repositorio son incrementales y no crean el esquema
+    // inicial. TypeORM lo genera solo en esta base exclusiva y luego se aplican
+    // las reglas SQL que usa el flujo de reservas.
+    await schema.synchronize(true);
+    await schema.query('CREATE EXTENSION IF NOT EXISTS btree_gist');
+    await schema.query(readFileSync(join(__dirname, '../../migrations/20260929-reserva-horario.sql'), 'utf8'));
+    await schema.query(readFileSync(join(__dirname, '../../migrations/20261001-mesa-bloqueos-horarios.sql'), 'utf8'));
+    await schema.query(`CREATE TABLE auditoria_evento (
+      id_evento bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+      id_usuario integer REFERENCES usuarios(id_usuario) ON DELETE SET NULL,
+      accion varchar(10) NOT NULL, ruta varchar(255) NOT NULL,
+      id_recurso varchar(100), resultado varchar(20) NOT NULL,
+      codigo_estado integer NOT NULL, fecha timestamptz NOT NULL DEFAULT now()
+    )`);
+
+    const module = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(FirebaseAdminService).useValue(firebase)
+      .compile();
+    app = module.createNestApplication();
+    app.setGlobalPrefix('api/v1');
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    await app.init();
+    db = app.get(DataSource);
+  });
+
+  beforeEach(async () => {
+    await clearData();
+    firebase.verificarIdToken.mockClear();
+    const users = schema.getRepository(Usuario);
+    const accounts = schema.getRepository(CuentaAuth);
+    const roles = schema.getRepository(Rol);
+    const adminRole = await roles.save(roles.create({ nombre: 'admin_restaurante' }));
+    const cliente = await users.save(users.create({ nombre: 'Cliente', apellido: 'E3', correo: googleIdentity.correo, estado: 'activo' }));
+    const admin = await users.save(users.create({ nombre: 'Administrador', apellido: 'E3', correo: 'admin.e3@example.test', estado: 'activo' }));
+    const otroAdmin = await users.save(users.create({ nombre: 'Segundo', apellido: 'E3', correo: 'otro-admin.e3@example.test', estado: 'activo' }));
+    const hash = await bcrypt.hash(adminPassword, 10);
+    await accounts.save(accounts.create({ usuario: admin, passwordHash: hash, estado: true }));
+    await accounts.save(accounts.create({ usuario: otroAdmin, passwordHash: hash, estado: true }));
+    const userRoles = schema.getRepository(UsuarioRol);
+    await userRoles.save(userRoles.create({ idUsuario: admin.id, idRol: adminRole.id }));
+    await userRoles.save(userRoles.create({ idUsuario: otroAdmin.id, idRol: adminRole.id }));
+
+    const restaurants = schema.getRepository(Restaurante);
+    const common = {
+      tipoComida: 'Típica', descripcion: 'Restaurante de prueba E3',
+      telefono: '70000000', fotoPortada: 'https://example.test/portada.webp',
+      logo: 'https://example.test/logo.webp', estado: true,
+      zonaHoraria: 'America/La_Paz',
+    };
+    const restaurante = await restaurants.save(restaurants.create({ ...common, nombre: 'Mesa E3', correo: 'restaurante.e3@example.test' }));
+    const otroRestaurante = await restaurants.save(restaurants.create({ ...common, nombre: 'Mesa Ajena E3', correo: 'otro-restaurante.e3@example.test' }));
+    const owners = schema.getRepository(UsuarioRestaurante);
+    await owners.save(owners.create({ idUsuario: admin.id, idRestaurante: restaurante.id, rol: 'propietario', activo: true }));
+    await owners.save(owners.create({ idUsuario: otroAdmin.id, idRestaurante: otroRestaurante.id, rol: 'propietario', activo: true }));
+    const locations = schema.getRepository(Ubicacion);
+    for (const rest of [restaurante, otroRestaurante]) {
+      await locations.save(locations.create({ restaurante: rest, direccion: 'Calle de prueba E3', latitud: -21.53, longitud: -64.73 }));
+    }
+    const hours = schema.getRepository(HorarioAtencion);
+    for (const rest of [restaurante, otroRestaurante]) {
+      for (let diaSemana = 0; diaSemana < 7; diaSemana++) {
+        await hours.save(hours.create({ restaurante: rest, diaSemana, horaInicio: '12:00', horaFin: '23:00' }));
+      }
+    }
+    const tables = schema.getRepository(Mesa);
+    const mesa = await tables.save(tables.create({ restaurante, numeroMesa: 'A1', capacidad: 4, estado: 'libre' }));
+    await tables.save(tables.create({ restaurante: otroRestaurante, numeroMesa: 'B1', capacidad: 4, estado: 'libre' }));
+    const menus = schema.getRepository(Menu);
+    const menu = await menus.save(menus.create({ restaurante, nombre: 'Menú E3', disponibilidad: true }));
+    const dishes = schema.getRepository(Plato);
+    const plato = await dishes.save(dishes.create({ menu, nombre: 'Plato E3', precio: 25, disponible: true }));
+    const fechaReserva = futureDate(14);
+    const fechaNueva = futureDate(15);
+    const reservations = schema.getRepository(Reserva);
+    const reserva = await reservations.save(reservations.create({
+      usuario: cliente, mesa, fecha: fechaReserva, hora: '18:00',
+      duracionMinutos: 60, numeroPersonas: 2, estado: 'pendiente',
+    }));
+    fixture = { cliente, admin, otroAdmin, restaurante, otroRestaurante, mesa, menu, plato, reserva, fechaReserva, fechaNueva };
+  });
+
+  afterAll(async () => {
+    if (app) await app.close();
+    if (schema?.isInitialized) {
+      await clearData();
+      await schema.destroy();
+    }
+  });
+
+  async function googleToken() {
+    const response = await request(app.getHttpServer()).post('/api/v1/auth/google')
+      .send({ idToken: 'firebase-validado-en-suite-e3' }).expect(201);
+    expect(response.body.token).toEqual(expect.any(String));
+    return response.body.token as string;
+  }
+
+  async function adminToken(email: string) {
+    const response = await request(app.getHttpServer()).post('/api/v1/auth/login')
+      .send({ correo: email, password: adminPassword }).expect(200);
+    expect(response.body.token).toEqual(expect.any(String));
+    return response.body.token as string;
+  }
+
+  describe('RF-01 Google', () => {
+    it('persiste identidad verificada externamente y emite JWT propio', async () => {
+      const token = await googleToken();
+      const account = await db.getRepository(CuentaAuth).findOne({ where: { usuario: { id: fixture.cliente.id } } });
+      const oauth = await db.getRepository(OauthCuenta).findOne({ where: { usuario: { id: fixture.cliente.id } } });
+      expect(account).toBeTruthy();
+      expect(oauth).toMatchObject({ proveedor: 'google', proveedorId: googleIdentity.uid });
+      await request(app.getHttpServer()).get('/api/v1/auth/perfil')
+        .set('Authorization', `Bearer ${token}`).expect(200);
+      expect(firebase.verificarIdToken).toHaveBeenCalledWith('firebase-validado-en-suite-e3');
+    });
+    it('rechaza idToken inválido sin crear cuenta OAuth', async () => {
+      await request(app.getHttpServer()).post('/api/v1/auth/google')
+        .send({ idToken: 'invalido' }).expect(401);
+      expect(await db.getRepository(OauthCuenta).count()).toBe(0);
+      expect(await db.getRepository(CuentaAuth).count({ where: { usuario: { id: fixture.cliente.id } } })).toBe(0);
+    });
+  });
+
+  describe('RF-02 restaurantes', () => {
+    it('devuelve el restaurante publicado guardado en PostgreSQL', async () => {
+      const token = await googleToken();
+      const response = await request(app.getHttpServer()).get('/api/v1/restaurante')
+        .set('Authorization', `Bearer ${token}`).expect(200);
+      expect(response.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: fixture.restaurante.id, nombre: 'Mesa E3' })]));
+    });
+    it('responde 404 por restaurante inexistente', async () => {
+      const token = await googleToken();
+      await request(app.getHttpServer()).get('/api/v1/restaurante/99999999')
+        .set('Authorization', `Bearer ${token}`).expect(404);
+    });
+  });
+
+  describe('RF-04 menús y platos', () => {
+    it('consulta menú y plato persistidos', async () => {
+      const token = await googleToken();
+      const menus = await request(app.getHttpServer())
+        .get(`/api/v1/menu/restaurante/${fixture.restaurante.id}`)
+        .set('Authorization', `Bearer ${token}`).expect(200);
+      expect(menus.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: fixture.menu.id })]));
+      const platos = await request(app.getHttpServer()).get(`/api/v1/plato/menu/${fixture.menu.id}`)
+        .set('Authorization', `Bearer ${token}`).expect(200);
+      expect(platos.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: fixture.plato.id, nombre: 'Plato E3' })]));
+    });
+    it('responde 404 por menú inexistente', async () => {
+      const token = await googleToken();
+      await request(app.getHttpServer()).get('/api/v1/menu/99999999')
+        .set('Authorization', `Bearer ${token}`).expect(404);
+    });
+  });
+
+  describe('RF-05 reserva', () => {
+    const body = () => ({ idUsuario: fixture.cliente.id, idMesa: fixture.mesa.id,
+      fecha: fixture.fechaNueva, hora: '18:00', numeroPersonas: 2 });
+    it('crea una reserva pendiente en la mesa y fecha elegidas', async () => {
+      const token = await googleToken();
+      const response = await request(app.getHttpServer()).post('/api/v1/reservas')
+        .set('Authorization', `Bearer ${token}`).send(body()).expect(201);
+      const saved = await db.getRepository(Reserva).findOne({
+        where: { id: response.body.id }, relations: { mesa: { restaurante: true }, usuario: true },
+      });
+      expect(saved).toMatchObject({ fecha: fixture.fechaNueva, estado: 'pendiente', numeroPersonas: 2,
+        mesa: { id: fixture.mesa.id, restaurante: { id: fixture.restaurante.id } },
+        usuario: { id: fixture.cliente.id } });
+      expect(saved?.hora.startsWith('18:00')).toBe(true);
+    });
+    it('rechaza segunda reserva solapada sin persistirla', async () => {
+      const token = await googleToken();
+      await request(app.getHttpServer()).post('/api/v1/reservas')
+        .set('Authorization', `Bearer ${token}`).send(body()).expect(201);
+      const before = await db.getRepository(Reserva).count();
+      await request(app.getHttpServer()).post('/api/v1/reservas')
+        .set('Authorization', `Bearer ${token}`).send(body()).expect(400);
+      expect(await db.getRepository(Reserva).count()).toBe(before);
+    });
+  });
+
+  describe('RF-07 administrador', () => {
+    it('inicia sesión con bcrypt real y devuelve JWT utilizable', async () => {
+      const token = await adminToken(fixture.admin.correo);
+      await request(app.getHttpServer()).get(`/api/v1/restaurante/mis-restaurantes`)
+        .set('Authorization', `Bearer ${token}`).expect(200);
+      const stored = await db.getRepository(CuentaAuth).findOne({ where: { usuario: { id: fixture.admin.id } } });
+      expect(await bcrypt.compare(adminPassword, stored!.passwordHash!)).toBe(true);
+    });
+    it('rechaza contraseña incorrecta con 401 y sin JWT', async () => {
+      const response = await request(app.getHttpServer()).post('/api/v1/auth/login')
+        .send({ correo: fixture.admin.correo, password: 'Incorrecta-2026' }).expect(401);
+      expect(response.body.token).toBeUndefined();
+    });
+  });
+
+  describe('RF-10 gestión de menús y platos', () => {
+    const body = () => ({ idRestaurante: fixture.restaurante.id, nombre: 'Menú creado E3',
+      tipo: 'almuerzo', platos: [{ nombre: 'Plato creado E3', precio: 30 }] });
+    it('el propietario crea menú con plato y ambos quedan persistidos', async () => {
+      const token = await adminToken(fixture.admin.correo);
+      const response = await request(app.getHttpServer()).post('/api/v1/menu')
+        .set('Authorization', `Bearer ${token}`).send(body()).expect(201);
+      const saved = await db.getRepository(Menu).findOne({ where: { id: response.body.id },
+        relations: { restaurante: true, platos: true } });
+      expect(saved).toMatchObject({ nombre: 'Menú creado E3', restaurante: { id: fixture.restaurante.id } });
+      expect(saved?.platos).toEqual(expect.arrayContaining([expect.objectContaining({ nombre: 'Plato creado E3', precio: 30 })]));
+    });
+    it('otro administrador recibe 403 y no crea el menú', async () => {
+      const token = await adminToken(fixture.otroAdmin.correo);
+      const before = await db.getRepository(Menu).count();
+      await request(app.getHttpServer()).post('/api/v1/menu')
+        .set('Authorization', `Bearer ${token}`).send(body()).expect(403);
+      expect(await db.getRepository(Menu).count()).toBe(before);
+    });
+  });
+
+  describe('RF-12 gestión de reservas', () => {
+    it('el propietario consulta y confirma una reserva persistida', async () => {
+      const token = await adminToken(fixture.admin.correo);
+      const list = await request(app.getHttpServer())
+        .get(`/api/v1/reservas/restaurante/${fixture.restaurante.id}`)
+        .set('Authorization', `Bearer ${token}`).expect(200);
+      expect(list.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: fixture.reserva.id })]));
+      await request(app.getHttpServer()).patch(`/api/v1/reservas/${fixture.reserva.id}`)
+        .set('Authorization', `Bearer ${token}`).send({ estado: 'confirmada' }).expect(200);
+      expect((await db.getRepository(Reserva).findOneByOrFail({ id: fixture.reserva.id })).estado).toBe('confirmada');
+    });
+    it('otro administrador recibe 403 y deja la reserva pendiente', async () => {
+      const token = await adminToken(fixture.otroAdmin.correo);
+      await request(app.getHttpServer()).patch(`/api/v1/reservas/${fixture.reserva.id}`)
+        .set('Authorization', `Bearer ${token}`).send({ estado: 'confirmada' }).expect(403);
+      expect((await db.getRepository(Reserva).findOneByOrFail({ id: fixture.reserva.id })).estado).toBe('pendiente');
+    });
+  });
+});
+

@@ -42,6 +42,8 @@ import { NotificacionesModule } from './modules/notificaciones/notificaciones.mo
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // La suite E3 aporta solo variables de prueba; nunca debe leer .env.
+      ignoreEnvFile: process.env.E3_INTEGRATION_TEST === '1',
       validate: validateSecurityEnvironment,
       load: [databaseConfig],
     }),
