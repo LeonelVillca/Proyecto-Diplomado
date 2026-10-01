@@ -123,6 +123,7 @@ Backend, desde `Backend/`:
 ```bash
 npm test
 npm run test:e2e
+npm run test:e3
 ```
 
 Frontend, desde `Frontend/`:
@@ -162,3 +163,53 @@ El APK de lanzamiento se genera en `Frontend/build/app/outputs/flutter-apk/app-r
 ## 10. Licencia
 
 Uso académico. Todos los derechos reservados por el autor, salvo las dependencias de terceros y sus respectivas licencias.
+
+## 11. Verificación técnica y evidencias E3
+
+Ruta de salud: [GET /api/v1/salud](https://mesachapaca-api.onrender.com/api/v1/salud).
+Ejecuta `SELECT 1` mediante el DataSource existente. Devuelve HTTP 200 con
+`{"estado":"ok","baseDatos":"conectada"}` si PostgreSQL responde y HTTP 503 con
+`{"estado":"error","baseDatos":"no disponible"}` si la consulta falla. Es pública.
+Su disponibilidad en producción debe verificarse después de desplegar.
+
+Desde `Backend`, `npm run test:e3` utiliza PostgreSQL 16 local, puerto 55433 y
+la base exclusiva `mesa_chapaca_e3_test`; no carga `.env` ni utiliza producción.
+Si corresponde, define `E3_PG_BIN` con la carpeta de ejecutables PostgreSQL.
+Consulta [el alcance de las pruebas E3](Backend/test/e3/README.md).
+
+Para generar los reportes de una nueva ejecución:
+
+```powershell
+cd Backend
+npm run build
+npm run test:e3 -- --json --outputFile=.test-postgres-runtime/e3-results.json
+node scripts/export-e3-report.cjs
+```
+
+Evidencias sin logs, tokens ni credenciales, preparadas para versionarse:
+
+- [Resumen E3](Backend/reports/e3-summary.json).
+- [Suite original de 14 pruebas](Backend/reports/e3-must-summary.json).
+- [Validación 400](Backend/reports/validacion-400-summary.json).
+- [Menor privilegio y 403](Backend/reports/menor-privilegio-summary.json).
+- [Salud con PostgreSQL real](Backend/reports/salud-summary.json).
+- [Resumen RNF-01 existente](Backend/rnf01-summary.json).
+
+La suite completa actual contiene 19 pruebas. La suite original sustituye la
+verificación externa de Firebase; las pruebas de validación y menor privilegio
+no usan mocks. Menor privilegio verifica los servicios compartidos de creación,
+pero no ejecuta Google externo. Estos resultados corresponden al entorno local.
+
+Caso 403: `GET /api/v1/usuarios` con un JWT válido de `admin_restaurante`.
+La ruta exige `admin_sistema` mediante `RolesGuard` y responde HTTP 403.
+Un cliente autenticado sin roles también recibe 403.
+
+Las cuentas de los tests son temporales y no constituyen credenciales de entrega.
+Antes de entregar, verifica por separado una cuenta cliente ficticia y una de
+administrador de restaurante, sus accesos y su vínculo de restaurante. Entrega
+sus credenciales por canal privado, con contraseñas de al menos 10 caracteres.
+El archivo local de credenciales históricas no demuestra que sigan funcionando.
+
+El script de rendimiento requiere `TOKEN` suministrado al proceso; no incorpora
+un token predeterminado. No publiques tokens ni ejecutes carga contra producción
+sin autorización.

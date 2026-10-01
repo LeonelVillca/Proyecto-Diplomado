@@ -3,6 +3,17 @@
 -- Si el correo ya existe, el bloque se detiene sin modificar esa cuenta.
 BEGIN;
 
+-- El hash se aporta solo para esta sesión mediante set_config parametrizado.
+-- Ver Backend/docs/secrets-remediation.md. No almacenar el hash en este archivo.
+DO $validar_hash$
+BEGIN
+  IF COALESCE(current_setting('mesa_chapaca.initial_password_hash', true), '')
+     !~ '^\$2[aby]\$(1[0-9]|2[0-9]|3[01])\$[./A-Za-z0-9]{53}$' THEN
+    RAISE EXCEPTION 'Falta un hash bcrypt válido para la cuenta inicial; no se creó ninguna cuenta';
+  END IF;
+END
+$validar_hash$;
+
 INSERT INTO public.rol (nombre, descripcion)
 VALUES ('admin_restaurante', 'Administración de restaurante')
 ON CONFLICT (nombre) DO NOTHING;
@@ -55,7 +66,7 @@ BEGIN
   INSERT INTO public.cuentas_auth
     (id_usuario, password_hash, intentos_fallidos, estado, session_version)
   VALUES
-    (v_usuario_id, '$2b$12$5ax.Vxy35JxyuLnx2jTPcukGXgk1nUWddE4Gyo3ZCJ55LtkFQElo2', 0, TRUE, 0);
+    (v_usuario_id, current_setting('mesa_chapaca.initial_password_hash'), 0, TRUE, 0);
 
   SELECT id_rol INTO v_rol_id
     FROM public.rol

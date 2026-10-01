@@ -1,0 +1,15 @@
+{
+  "ejecutadoDesde": "2026-10-01T19:28:51.316Z",
+  "entorno": "PostgreSQL local exclusivo E3",
+  "archivoPrueba": "Backend/test/e3/salud.e3-spec.ts",
+  "alcance": "SELECT 1 con PostgreSQL real local; caso exitoso.",
+  "total": 1,
+  "aprobadas": 1,
+  "fallidas": 0,
+  "pruebas": [
+    {
+      "escenario": "Salud con PostgreSQL real (E3) responde 200 sin JWT al ejecutar SELECT 1 en PostgreSQL real",
+      "estado": "passed"
+    }
+  ]
+}

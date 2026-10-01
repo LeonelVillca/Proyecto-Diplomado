@@ -1,0 +1,67 @@
+{
+  "ejecutadoDesde": "2026-10-01T19:28:51.316Z",
+  "entorno": "PostgreSQL local exclusivo E3",
+  "archivoPrueba": "Backend/test/e3/must.e3-spec.ts",
+  "alcance": "API y PostgreSQL reales; verificación externa de Firebase sustituida.",
+  "total": 14,
+  "aprobadas": 14,
+  "fallidas": 0,
+  "pruebas": [
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-01 Google persiste identidad verificada externamente y emite JWT propio",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-01 Google rechaza idToken inválido sin crear cuenta OAuth",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-02 restaurantes devuelve el restaurante publicado guardado en PostgreSQL",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-02 restaurantes responde 404 por restaurante inexistente",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-04 menús y platos consulta menú y plato persistidos",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-04 menús y platos responde 404 por menú inexistente",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-05 reserva crea una reserva pendiente en la mesa y fecha elegidas",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-05 reserva rechaza segunda reserva solapada sin persistirla",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-07 administrador inicia sesión con bcrypt real y devuelve JWT utilizable",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-07 administrador rechaza contraseña incorrecta con 401 y sin JWT",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-10 gestión de menús y platos el propietario crea menú con plato y ambos quedan persistidos",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-10 gestión de menús y platos otro administrador recibe 403 y no crea el menú",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-12 gestión de reservas el propietario consulta y confirma una reserva persistida",
+      "estado": "passed"
+    },
+    {
+      "escenario": "E3: requisitos Must por API + PostgreSQL aislado RF-12 gestión de reservas otro administrador recibe 403 y deja la reserva pendiente",
+      "estado": "passed"
+    }
+  ]
+}

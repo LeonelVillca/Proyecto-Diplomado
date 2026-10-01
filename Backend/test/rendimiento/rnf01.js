@@ -7,7 +7,8 @@ const BASE_URL =
 const RESTAURANTE_ID = __ENV.RESTAURANTE_ID || '24';
 const FECHA = __ENV.FECHA || '2026-10-03';
 const HORA = __ENV.HORA || '14:00';
-const TOKEN = __ENV.TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjI5LCJjb3JyZW8iOiJhbGluYS52YWxjYXphci42MzgyN0BnbWFpbC5jb20iLCJwZXJtaXNvcyI6WyJtZW51X2Rhc2hib2FyZCIsIm1lbnVfcmVzZW5hcyIsIm1lbnVfc29wb3J0ZSIsIm1lbnVfcGVyZmlsX3Jlc3RhdXJhbnRlIiwibWVudV9tZXNhcyIsIm1lbnVfbWVudXMiLCJtZW51X3Jlc2VydmFzIl0sInN2IjowLCJzZXNzaW9uU3RhcnRlZEF0IjoxNzkwODc0OTc5LCJpYXQiOjE3OTA4NzQ5NzksImV4cCI6MTc5MDg3ODU3OSwiYXVkIjoibWVzYS1jaGFwYWNhLWFwcCIsImlzcyI6Im1lc2EtY2hhcGFjYSJ9.LDmN1Ib2s3VNNo2lNnLHFqJJrBZZkCVGkqPudOHd-vY';
+const TOKEN = __ENV.TOKEN;
+if (!TOKEN) throw new Error('Define TOKEN con una sesión de prueba válida.');
 
 export const options = {
     vus: 1,

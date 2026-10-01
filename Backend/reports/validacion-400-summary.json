@@ -1,0 +1,15 @@
+{
+  "ejecutadoDesde": "2026-10-01T19:28:51.316Z",
+  "entorno": "PostgreSQL local exclusivo E3",
+  "archivoPrueba": "Backend/test/e3/reserva-validacion.e3-spec.ts",
+  "alcance": "API y PostgreSQL reales sin mocks; 400 y ninguna reserva persistida.",
+  "total": 1,
+  "aprobadas": 1,
+  "fallidas": 0,
+  "pruebas": [
+    {
+      "escenario": "Validación inválida de reserva con API y PostgreSQL reales numeroPersonas=0 devuelve 400 y no persiste una reserva (sin mocks)",
+      "estado": "passed"
+    }
+  ]
+}

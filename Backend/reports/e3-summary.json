@@ -1,0 +1,34 @@
+{
+  "ejecutadoDesde": "2026-10-01T19:28:51.316Z",
+  "exito": true,
+  "total": 19,
+  "aprobadas": 19,
+  "fallidas": 0,
+  "produccionVerificada": false,
+  "suites": [
+    {
+      "reporte": "Backend/reports/e3-must-summary.json",
+      "total": 14,
+      "aprobadas": 14,
+      "fallidas": 0
+    },
+    {
+      "reporte": "Backend/reports/validacion-400-summary.json",
+      "total": 1,
+      "aprobadas": 1,
+      "fallidas": 0
+    },
+    {
+      "reporte": "Backend/reports/menor-privilegio-summary.json",
+      "total": 3,
+      "aprobadas": 3,
+      "fallidas": 0
+    },
+    {
+      "reporte": "Backend/reports/salud-summary.json",
+      "total": 1,
+      "aprobadas": 1,
+      "fallidas": 0
+    }
+  ]
+}

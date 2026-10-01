@@ -18,3 +18,6 @@ credenciales_prueba.txt
 fix_quotes.js
 temp_old_login*.dart
 !Backend/docs/security-hardening.md
+
+# Documentos privados: conservar localmente, excluir del repositorio
+/Backend/storage/privado/
