@@ -55,7 +55,9 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
     this._firebaseAuth,
     this.demoFallback = false, // Desactivado: errores reales deben ser visibles
     SessionService? session,
-  }) : _session = session ?? SessionService() {
+    http.Client? httpClient,
+  }) : _session = session ?? SessionService(),
+       _httpClient = httpClient ?? http.Client() {
     _escucharCambiosFirebase();
     WidgetsBinding.instance.addObserver(this);
     SessionHttp.tokenProvider = validToken;
@@ -69,6 +71,11 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Persistencia segura del JWT del backend.
   final SessionService _session;
+  final http.Client _httpClient;
+  int _sessionInvalidationVersion = 0;
+
+  /// Cambia únicamente cuando se descarta definitivamente una sesión inválida.
+  int get sessionInvalidationVersion => _sessionInvalidationVersion;
   Timer? _temporizadorRenovacion;
   Future<String?>? _renovacionEnCurso;
   StreamSubscription<User?>? _suscripcionCambiosAuth;
@@ -197,8 +204,9 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> signOut() => _cerrarSesion();
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && isAuthenticated)
+    if (state == AppLifecycleState.resumed && isAuthenticated) {
       unawaited(validToken().catchError((_) => null));
+    }
   }
 
   @override
@@ -207,6 +215,7 @@ class AuthController extends ChangeNotifier with WidgetsBindingObserver {
     _generacionSesion++;
     _temporizadorRenovacion?.cancel();
     _suscripcionCambiosAuth?.cancel();
+    _httpClient.close();
     WidgetsBinding.instance.removeObserver(this);
     SessionHttp.tokenProvider = null;
     SessionHttp.onUnauthorized = null;

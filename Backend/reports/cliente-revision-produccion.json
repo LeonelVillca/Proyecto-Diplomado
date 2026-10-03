@@ -1,0 +1,85 @@
+{
+  "verificadoUTC": "2026-10-02T00:02:03.400Z",
+  "entorno": "produccion",
+  "api": "https://mesachapaca-api.onrender.com/api/v1",
+  "correo": "villcaortegamarianelasoledad@gmail.com",
+  "idUsuario": 30,
+  "perfilStatus": 200,
+  "roles": [],
+  "rolesAdministrativos": [],
+  "autenticacion": {
+    "metodoReportado": "Google/Firebase desde la app",
+    "jwtPropioAceptado": true,
+    "proveedorSegunCodigo": "google",
+    "evidenciaCodigo": "Backend/src/modules/auth/auth.service.ts: loginGoogle verifica Firebase y vincula OAuth antes de emitir JWT",
+    "vinculoOAuthConsultadoEnProduccion": false,
+    "limitacion": "perfil no expone proveedor y oauth-cuentas exige admin_sistema"
+  },
+  "operaciones": [
+    {
+      "nombre": "Consultar restaurantes",
+      "metodo": "GET",
+      "ruta": "/api/v1/restaurante",
+      "status": 200,
+      "cantidad": 6
+    },
+    {
+      "nombre": "Consultar menús",
+      "metodo": "GET",
+      "ruta": "/api/v1/menu/restaurante/23",
+      "status": 200,
+      "idRestaurante": 23,
+      "cantidad": 1
+    },
+    {
+      "nombre": "Consultar platos",
+      "metodo": "GET",
+      "ruta": "/api/v1/plato/menu/26",
+      "status": 200,
+      "cantidad": 2
+    },
+    {
+      "nombre": "Consultar disponibilidad",
+      "metodo": "GET",
+      "ruta": "/api/v1/reservas/disponibilidad?idRestaurante=23&fecha=2026-10-05&hora=16%3A00&numeroPersonas=1&duracionMinutos=60",
+      "status": 200,
+      "cantidadMesas": 10
+    },
+    {
+      "nombre": "Consultar reservas propias",
+      "metodo": "GET",
+      "ruta": "/api/v1/reservas/usuario/30",
+      "status": 200,
+      "cantidad": 0
+    }
+  ],
+  "asignacionAutomatica": {
+    "loginGoogleAsignaRolesSegunCodigo": false,
+    "rolesObservadosEnPerfil": []
+  },
+  "creacionReserva": {
+    "ejecutada": false,
+    "motivo": "No se creó una reserva real para evitar ocupar mesas o emitir eventos en restaurantes de producción."
+  },
+  "listaParaEntregarComoCliente": true,
+  "caso403": {
+    "metodo": "GET",
+    "ruta": "/api/v1/usuarios",
+    "rolRequerido": "admin_sistema",
+    "rolesUsuario": [],
+    "status": 403,
+    "verificado": true,
+    "respuesta": {
+      "statusCode": 403,
+      "error": "Forbidden",
+      "message": "Forbidden resource"
+    }
+  },
+  "restriccionAdminRestaurante": {
+    "metodo": "GET",
+    "ruta": "/api/v1/restaurante/mis-restaurantes",
+    "status": 403,
+    "verificado": true
+  },
+  "alcance": "Verificación de perfil, consultas y restricciones de acceso. No acredita creación de reservas, consulta directa de OAuth ni carácter ficticio/exclusivo de la cuenta Google."
+}

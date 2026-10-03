@@ -7,6 +7,8 @@ import 'package:frontend/screens/admin/auth/crear_contrasena_screen.dart';
 import 'package:frontend/screens/admin/dashboard/admin_sistema_dashboard.dart';
 import 'package:frontend/screens/admin/dashboard/admin_restaurante_dashboard.dart';
 import 'package:frontend/app.dart'; // Para reutilizar AppScopeManager
+import 'package:frontend/screens/admin/auth/admin_login_screen.dart';
+import 'package:frontend/widgets/shared/session_navigation.dart';
 
 class ResponsiveEntryPointWeb extends StatelessWidget {
   const ResponsiveEntryPointWeb({super.key});
@@ -39,7 +41,10 @@ class AppWeb extends StatelessWidget {
     return AuthScope(
       authController: authController ?? AuthController(),
       child: AppScopeManager(
-        child: MaterialApp(
+        child: SessionNavigation(
+          loginBuilder: (_) => const AdminLoginScreen(),
+          builder: (context, navigatorKey) => MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'Mesa Chapaca | Reservas para restaurantes de Tarija',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
@@ -55,6 +60,7 @@ class AppWeb extends StatelessWidget {
               }
               return null;
             },
+          ),
         ),
       ),
     );

@@ -1,0 +1,28 @@
+{
+  "verificadoUTC": "2026-10-01T19:55:54.948Z",
+  "entorno": "produccion",
+  "correo": "alina.valcazar.63827@gmail.com",
+  "contraseñaMinimo10": true,
+  "loginStatus": 200,
+  "perfilStatus": 200,
+  "roles": [
+    "admin_restaurante"
+  ],
+  "rutaPermitida": "/api/v1/restaurante/mis-restaurantes",
+  "rutaPermitidaStatus": 200,
+  "restaurantes": [
+    {
+      "id": 26,
+      "nombre": "Casa Valcázar",
+      "activo": true
+    }
+  ],
+  "rutaRestringida": "/api/v1/usuarios",
+  "rutaRestringidaStatus": 403,
+  "respuesta403": {
+    "statusCode": 403,
+    "error": "Forbidden",
+    "message": "Forbidden resource"
+  },
+  "listaParaEntregar": true
+}

@@ -10,7 +10,7 @@ extension _FlujoGoogle on AuthController {
     }
 
     try {
-      final response = await http
+      final response = await _httpClient
           .get(
             Uri.parse(ApiConfig.authPerfil),
             headers: {'Authorization': 'Bearer $token'},
@@ -47,24 +47,18 @@ extension _FlujoGoogle on AuthController {
         return true;
       }
 
-      // El JWT del backend puede haber expirado mientras el sistema suspendía
-      // la app. Firebase conserva la sesión de Google y permite reconstruir
-      // el JWT sin mostrar nuevamente el login.
-      if (response.statusCode == 401 || response.statusCode == 403) {
-        if (await _reautenticarBackendDesdeFirebase()) {
-          _status = AuthStatus.authenticated;
-          notifyListeners();
-          return true;
-        }
+      if (response.statusCode == 403 &&
+          await _reautenticarBackendDesdeFirebase()) {
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
       }
 
       // No borrar credenciales por una caída temporal del servidor.
       if (response.statusCode != 401 && response.statusCode != 403)
         return false;
-      await _session.eliminarToken();
-      _limpiarSesionBackend();
-      _status = AuthStatus.idle;
-      notifyListeners();
+      _token = token;
+      await _invalidarToken(token);
       return false;
     } catch (_) {
       // Sin conexión no podemos validar; se va al login pero se conserva
@@ -129,12 +123,15 @@ extension _FlujoGoogle on AuthController {
           'No pudimos conectar con Google. Revisa tu conexión e inténtalo de nuevo.';
       if (error is GoogleSignInException &&
           (error.code == GoogleSignInExceptionCode.clientConfigurationError ||
-              error.code == GoogleSignInExceptionCode.providerConfigurationError)) {
-        _mensajeError = 'El inicio de sesión con Google no está configurado correctamente. '
+              error.code ==
+                  GoogleSignInExceptionCode.providerConfigurationError)) {
+        _mensajeError =
+            'El inicio de sesión con Google no está configurado correctamente. '
             'Revisa la configuración de Google y Firebase de la app.';
       } else if (error is FirebaseAuthException &&
           error.code == 'operation-not-allowed') {
-        _mensajeError = 'El inicio de sesión con Google no está habilitado en Firebase.';
+        _mensajeError =
+            'El inicio de sesión con Google no está habilitado en Firebase.';
       }
       notifyListeners();
       return false;
@@ -144,6 +141,7 @@ extension _FlujoGoogle on AuthController {
   /// Envía el ID Token de Firebase al backend.
   Future<bool> _registrarGoogleEnBackend(User firebaseUser) async {
     final generation = _generacionSesion;
+    var etapa = 'token_firebase';
     try {
       final idToken = await firebaseUser.getIdToken();
       if (idToken == null) {
@@ -153,14 +151,17 @@ extension _FlujoGoogle on AuthController {
         return false;
       }
 
-      final response = await http
+      etapa = 'peticion_backend';
+      final response = await _httpClient
           .post(
             Uri.parse(ApiConfig.authGoogle),
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode({'idToken': idToken}),
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 60));
 
+      debugPrint('[AuthGoogle] Backend HTTP: ${response.statusCode}');
+      etapa = 'respuesta_backend';
       if (generation != _generacionSesion || _disposeRealizado) return false;
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data =
@@ -169,8 +170,11 @@ extension _FlujoGoogle on AuthController {
             (data['usuario'] as Map?)?.cast<String, dynamic>() ?? {};
         if (data['token'] is! String ||
             (data['token'] as String).isEmpty ||
-            usuario['id'] == null)
+            usuario['id'] == null) {
+          _mensajeError =
+              'El servidor devolvió una sesión incompleta. Inténtalo de nuevo.';
           return false;
+        }
         _token = data['token'] as String?;
         _backendNombre = (usuario['nombre'] as String?)?.trim();
         _backendApellido = usuario['apellido'] as String?;
@@ -186,6 +190,7 @@ extension _FlujoGoogle on AuthController {
                   ?.map((e) => e.toString())
                   .toList() ??
               [];
+          etapa = 'guardar_sesion';
           await _session.guardarToken(_token!);
         }
         return true;
@@ -195,8 +200,31 @@ extension _FlujoGoogle on AuthController {
           'Google aceptó la sesión, pero no pudimos guardarla. '
           'Revisa que el backend esté corriendo e inténtalo de nuevo.';
       return false;
-    } catch (_) {
-      _mensajeError = _errorDeConexion;
+    } catch (error) {
+      // Solo etapa y tipo; nunca imprimir tokens, cuerpo ni datos de cuenta.
+      debugPrint('[AuthGoogle] etapa=$etapa tipo=${error.runtimeType}');
+      if (error is FirebaseAuthException) {
+        debugPrint('[AuthGoogle] Firebase código: ${error.code}');
+      }
+      if (error is TimeoutException) {
+        _mensajeError =
+            'El servidor tardó demasiado en responder. '
+            'Espera un momento y vuelve a intentarlo.';
+      } else if (etapa == 'token_firebase') {
+        _mensajeError =
+            'No pudimos obtener tu sesión de Firebase. '
+            'Revisa tu conexión e inicia sesión nuevamente.';
+      } else if (etapa == 'guardar_sesion') {
+        _mensajeError =
+            'La sesión fue aceptada, pero no pudimos guardarla '
+            'en este dispositivo. Inténtalo nuevamente.';
+      } else if (etapa == 'respuesta_backend') {
+        _mensajeError =
+            'No pudimos procesar la respuesta del servidor. '
+            'Inténtalo nuevamente.';
+      } else {
+        _mensajeError = _errorDeConexion;
+      }
       return false;
     }
   }

@@ -1,0 +1,50 @@
+{
+  "verificadoUTC": "2026-10-02T00:52:18.273Z",
+  "requisito": "Una sesión autenticada rechazada con HTTP 401 termina en login y no permite volver a pantallas protegidas",
+  "entorno": "pruebas locales; sin despliegue",
+  "pruebas": {
+    "comando": "flutter test --no-pub",
+    "total": 27,
+    "aprobadas": 27,
+    "fallidas": 0,
+    "especificas": {
+      "comando": "flutter test --no-pub test/security/session_navigation_test.dart test/security/secure_http_test.dart",
+      "total": 12,
+      "aprobadas": 12
+    },
+    "archivoNuevo": "Frontend/test/security/session_navigation_test.dart",
+    "cantidadNuevas": 7,
+    "archivoConservado": "Frontend/test/security/secure_http_test.dart",
+    "cantidadExistentes": 5,
+    "casosNuevos": [
+      "Móvil: pérdida de sesión, limpieza de pila, LoginScreen, Atrás bloqueado y reingreso",
+      "Administrador: dashboard reemplazado por AdminLoginScreen y Atrás bloqueado",
+      "Renovación 401 elimina JWT y termina en login",
+      "Renovación 200 conserva sesión y guarda JWT nuevo",
+      "401 de un token anterior no invalida la sesión renovada",
+      "Restauración 401 termina en login al montar la aplicación",
+      "500 conserva la sesión y la pantalla protegida"
+    ],
+    "alcance": "AuthController, SessionHttp, SessionService y Navigator reales. Respuestas de autenticación, canal de almacenamiento nativo y fuentes sustituidos en tests. No es una prueba de red contra producción."
+  },
+  "analisis": {
+    "resultado": "Sin incidencias en los archivos analizados",
+    "comando": "dart analyze lib/app.dart lib/app_web.dart lib/controllers/movil/auth_controller.dart lib/screens/movil/shell/root_screen.dart lib/widgets/shared/session_navigation.dart test/security/session_navigation_test.dart"
+  },
+  "builds": {
+    "web": {
+      "resultado": "exitoso",
+      "comando": "flutter build web --no-pub -t lib/main_web.dart --dart-define=API_BASE_URL=https://mesachapaca-api.onrender.com",
+      "salida": "Frontend/build/web",
+      "observacion": "Build web normal exitoso; dry-run avisa incompatibilidades de dependencias con Wasm."
+    },
+    "androidDebug": {
+      "resultado": "exitoso",
+      "comando": "flutter build apk --debug --no-pub -t lib/main.dart --dart-define=API_BASE_URL=https://mesachapaca-api.onrender.com",
+      "salida": "Frontend/build/app/outputs/flutter-apk/app-debug.apk",
+      "observacion": "APK de depuración compilado localmente; no instalado ni publicado. Advertencias de futuras versiones mínimas de Gradle/AGP y APIs deprecated.",
+      "verificadoUTC": "2026-10-02T00:55:39.648Z"
+    }
+  },
+  "produccionModificada": false
+}

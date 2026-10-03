@@ -21,3 +21,13 @@ temp_old_login*.dart
 
 # Documentos privados: conservar localmente, excluir del repositorio
 /Backend/storage/privado/
+
+# Credenciales permanentes de revisión: solo uso local
+/Backend/credenciales_revision.local.json
+
+/Frontend/lib/main_revision_local.dart
+
+/Backend/cliente_revision.local.json
+
+/Backend/scripts/proxy_revision.local.cjs
+/Frontend/android/.kotlin/

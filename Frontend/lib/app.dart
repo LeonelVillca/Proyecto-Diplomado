@@ -5,6 +5,7 @@ import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/screens/movil/shell/root_screen.dart';
+import 'package:frontend/widgets/shared/session_navigation.dart';
 // Descomentar para modo mixto/web
 // import 'package:frontend/screens/admin/public/landing_screen.dart';
 // import 'package:frontend/screens/admin/auth/crear_contrasena_screen.dart';
@@ -69,8 +70,10 @@ class App extends StatelessWidget {
     return AuthScope(
       authController: authController ?? AuthController(),
       child: AppScopeManager(
-        child: Builder(
-          builder: (context) => MaterialApp(
+        child: SessionNavigation(
+          loginBuilder: (_) => const RootScreen(showOnboarding: false),
+          builder: (context, navigatorKey) => MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'Mesa Chapaca',
             debugShowCheckedModeBanner: false,
             theme: AuthScope.of(context).isAuthenticated

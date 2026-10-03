@@ -35,7 +35,7 @@ extension _RenovacionSesion on AuthController {
   Future<String?> _renovarToken() async {
     final previous = _token;
     final generation = _generacionSesion;
-    final response = await http
+    final response = await _httpClient
         .post(
           Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/renovar'),
           headers: {'Authorization': 'Bearer $previous'},
@@ -46,7 +46,10 @@ extension _RenovacionSesion on AuthController {
         previous != _token)
       return null;
     if (response.statusCode == 401 || response.statusCode == 403) {
-      if (await _reautenticarBackendDesdeFirebase()) return _token;
+      if (response.statusCode == 403 &&
+          await _reautenticarBackendDesdeFirebase()) {
+        return _token;
+      }
       await _invalidarToken(previous!);
       return null;
     }
@@ -83,7 +86,7 @@ extension _RenovacionSesion on AuthController {
       final idToken = await firebaseUser.getIdToken(true);
       if (idToken == null || idToken.isEmpty) return false;
 
-      final response = await http
+      final response = await _httpClient
           .post(
             Uri.parse(ApiConfig.authGoogle),
             headers: const {'Content-Type': 'application/json'},
@@ -129,8 +132,9 @@ extension _RenovacionSesion on AuthController {
     _generacionSesion++;
     _limpiarSesionBackend();
     _status = AuthStatus.idle;
-    await NotificationsService.stop();
+    _sessionInvalidationVersion++;
     await _session.eliminarToken();
     if (!_disposeRealizado) notifyListeners();
+    await NotificationsService.stop();
   }
 }

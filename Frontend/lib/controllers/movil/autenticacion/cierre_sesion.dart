@@ -9,7 +9,7 @@ extension _CierreSesion on AuthController {
     await NotificationsService.stop(previousToken: previous);
     if (previous != null) {
       try {
-        final response = await http
+        final response = await _httpClient
             .post(
               Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/cerrar-sesiones'),
               headers: {'Authorization': 'Bearer $previous'},

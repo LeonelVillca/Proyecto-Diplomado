@@ -1,124 +1,241 @@
 # Mesa Chapaca
 
 > Trabajo Final · Diplomado en Desarrollo Web y Aplicaciones Móviles · UAJMS 2026  
-> Autor: Leonel Fernando Villca Ortega · Tutor: 
+> Autor: Leonel Fernando Villca Ortega
 
 ## 1. Descripción
 
-Mesa Chapaca es un sistema web y móvil para descubrir y administrar restaurantes en Tarija. Permite consultar menús, horarios y ubicaciones, gestionar reservas y reseñas, y ofrece herramientas de administración para restaurantes y para la plataforma.
+Mesa Chapaca es un sistema web y móvil orientado a la consulta de restaurantes y la gestión de reservas en Tarija.
 
-**Sistema desplegado:** [mesachapaca.netlify.app](https://mesachapaca.netlify.app/) · **API:** [mesachapaca-api.onrender.com](https://mesachapaca-api.onrender.com/) · **APK:** pendiente de generar y publicar
+La aplicación móvil permite al cliente autenticarse mediante Google, consultar restaurantes, revisar menús y platos, realizar reservas, consultar sus reservas y cancelar aquellas que correspondan.
+
+La aplicación web está orientada al administrador de restaurante y permite gestionar la información del establecimiento, horarios, imágenes, menús, platos, mesas y reservas.
+
+**Sistema desplegado:** https://mesachapaca.netlify.app/  
+**API:** https://mesachapaca-api.onrender.com/  
+**Ruta de salud:** https://mesachapaca-api.onrender.com/api/v1/salud  
+**APK:** https://github.com/LeonelVillca/Proyecto-Diplomado/releases/tag/v1.0.0
+
+---
 
 ## 2. Stack tecnológico
 
 | Componente | Versión o requisito | Función |
 |---|---|---|
-| Flutter | Dart SDK `^3.12.2` (definido en `Frontend/pubspec.yaml`) | Aplicación móvil y web |
+| Flutter | Dart SDK `^3.12.2` definido en `Frontend/pubspec.yaml` | Aplicación móvil y web |
 | Dart | `^3.12.2` | Lenguaje del frontend |
 | NestJS | `^11.0.1` | API y lógica de negocio |
 | Node.js y npm | Versiones compatibles con NestJS 11; dependencias fijadas en `Backend/package-lock.json` | Ejecución y gestión del backend |
 | TypeScript | `^5.7.3` | Lenguaje del backend |
-| PostgreSQL | Versión compatible con las extensiones `btree_gist` y `pgcrypto` usadas por las migraciones | Base de datos |
-| Firebase Authentication | Según las dependencias de Flutter y el SDK de Firebase Admin | Inicio de sesión con Google |
-| Cloudinary y Cloudflare R2 | Servicios externos configurables | Imágenes y documentos |
-| Brevo | API de correo transaccional | Verificación y notificaciones por correo |
+| PostgreSQL | Versión compatible con las extensiones `btree_gist` y `pgcrypto` utilizadas por las migraciones | Base de datos |
+| Firebase Authentication | Según las dependencias de Flutter y Firebase | Inicio de sesión del cliente mediante Google |
+| Firebase Admin SDK | Según las dependencias del backend | Validación de identidad de Firebase en el servidor |
+| JWT | Configuración del backend | Gestión de sesiones y acceso a rutas protegidas |
+| Cloudinary y Cloudflare R2 | Servicios externos configurables | Almacenamiento de recursos |
+| Brevo | API de correo transaccional | Envío de correos desde el backend |
+| Socket.IO | Dependencias del backend | Comunicación en tiempo real relacionada con reservas |
+
+---
 
 ## 3. Requisitos previos
 
 - Git.
 - Node.js y npm compatibles con NestJS 11.
-- Flutter SDK con Dart `^3.12.2` y las herramientas de la plataforma que se vaya a ejecutar (Android, Chrome u otra).
+- Flutter SDK con Dart `^3.12.2`.
+- Herramientas correspondientes a la plataforma utilizada: Android SDK, Chrome u otra.
 - PostgreSQL con una base de datos preparada para el esquema del proyecto.
-- Credenciales locales para la base de datos y un secreto JWT aleatorio.
-- Firebase, Brevo y almacenamiento externo solo si se probarán esos servicios.
+- Credenciales locales para la base de datos.
+- Un secreto JWT aleatorio.
+- Firebase, Brevo y servicios de almacenamiento externo cuando se requiera probar dichas integraciones.
+
+---
 
 ## 4. Instalación local
 
-Clona el repositorio y configura el backend:
+Clonar el repositorio:
 
 ```powershell
 git clone https://github.com/LeonelVillca/Proyecto-Diplomado.git
-cd Proyecto-Diplomado/Backend
+cd Proyecto-Diplomado
+```
+
+### Backend
+
+Ingresar al backend:
+
+```powershell
+cd Backend
 npm ci
 Copy-Item .env.example .env
 ```
 
-Edita `Backend/.env` con los datos de tu PostgreSQL. Configura como mínimo `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `NODE_ENV=development`, `JWT_SECRET` y `CORS_ORIGINS`. Genera `JWT_SECRET` con un valor aleatorio de al menos 32 caracteres; en producción usa al menos 64. No compartas ni subas el archivo `.env`.
+Editar `Backend/.env` con los valores correspondientes al entorno local.
 
-El backend tiene `synchronize` desactivado y las migraciones versionadas son incrementales: no crean por sí solas el esquema inicial de una base vacía. Antes de arrancar por primera vez, prepara la base con el esquema inicial del proyecto. Para una base que ya tiene ese esquema, revisa primero los archivos de `Backend/migrations/` y el estado de la base; las migraciones locales se aplican explícitamente con `node scripts/apply-security-migration.cjs --local-only` desde `Backend`.
+Como mínimo se deben configurar:
 
-Inicia el backend:
+```text
+DB_HOST
+DB_PORT
+DB_USER
+DB_PASSWORD
+DB_NAME
+NODE_ENV
+JWT_SECRET
+CORS_ORIGINS
+```
+
+Para desarrollo:
+
+```text
+NODE_ENV=development
+```
+
+`JWT_SECRET` debe utilizar un valor aleatorio de al menos 32 caracteres. En producción se recomienda utilizar al menos 64 caracteres.
+
+El archivo `.env` contiene información sensible y no debe publicarse ni versionarse.
+
+El backend tiene `synchronize` desactivado y utiliza migraciones versionadas de forma incremental.
+
+Las migraciones locales correspondientes pueden aplicarse desde `Backend/` mediante:
+
+```powershell
+node scripts/apply-security-migration.cjs --local-only
+```
+
+Iniciar el backend:
 
 ```powershell
 npm run start:dev
 ```
 
-La API queda en `http://localhost:3000/api/v1` y la documentación Swagger en `http://localhost:3000/docs`.
+La API queda disponible en:
 
-En otra terminal, instala e inicia Flutter desde la raíz del proyecto:
+```text
+http://localhost:3000/api/v1
+```
+
+La documentación Swagger/OpenAPI se encuentra en:
+
+```text
+http://localhost:3000/docs
+```
+
+### Frontend
+
+En otra terminal:
 
 ```powershell
 cd Frontend
 flutter pub get
+```
+
+Para ejecutar Flutter Web:
+
+```powershell
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000
 ```
 
-Para Android Emulator usa `--dart-define=API_BASE_URL=http://10.0.2.2:3000`. En un teléfono físico, usa una dirección IP de la computadora que sea accesible desde el teléfono. Las compilaciones de producción requieren pasar una URL HTTPS mediante `--dart-define=API_BASE_URL=...`.
+Para Android Emulator:
+
+```text
+--dart-define=API_BASE_URL=http://10.0.2.2:3000
+```
+
+En un dispositivo físico se debe utilizar una dirección IP de la computadora que pueda ser accedida desde el teléfono.
+
+Las compilaciones de producción utilizan la URL HTTPS del backend mediante:
+
+```text
+--dart-define=API_BASE_URL=...
+```
+
+---
 
 ## 5. Variables de entorno
 
-La plantilla completa está en [`Backend/.env.example`](Backend/.env.example). El archivo real `Backend/.env` es local y no debe versionarse.
+La plantilla de variables se encuentra en:
+
+```text
+Backend/.env.example
+```
+
+El archivo real `Backend/.env` es local y no debe versionarse.
 
 | Variable | Obligatoria | Descripción |
 |---|---|---|
-| `NODE_ENV`, `PORT` | Sí | Entorno (`development`, `test` o `production`) y puerto del backend. |
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Sí | Conexión a PostgreSQL. |
-| `DB_SSL` | En producción | Activa TLS para PostgreSQL; debe ser `true` en producción. |
-| `DB_MIGRATION_USER`, `DB_MIGRATION_PASSWORD` | Para migrar, si son distintos a `DB_USER` y `DB_PASSWORD` | Usuario con permisos DDL para las migraciones. |
-| `JWT_SECRET` | Sí | Clave aleatoria para firmar tokens; mínimo 32 caracteres. |
-| `PIN_HMAC_SECRET` | En producción | Clave aleatoria e independiente para proteger los PIN. En desarrollo puede derivarse del secreto JWT. |
-| `JWT_EXPIRES_IN` | No | Debe ser `1h` si se define. |
-| `CORS_ORIGINS` | En producción | Orígenes permitidos, separados por comas. En desarrollo también se permiten orígenes locales. |
-| `FRONTEND_URL`, `API_PUBLIC_URL` | En producción | URLs HTTPS del frontend y del backend. `API_PUBLIC_URL` se usa en enlaces de verificación. |
-| `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Para autenticación con Google y el preflight de producción | Credenciales de Firebase Admin. Mantén la clave privada fuera del repositorio. |
-| `BREVO_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME` | Para correo transaccional y el preflight de producción | API key y remitente usados por Brevo. |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Según el flujo de almacenamiento de imágenes | Credenciales de Cloudinary. |
-| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT` | Según el flujo de documentos privados | Configuración de Cloudflare R2. |
-| `ALLOW_DESTRUCTIVE_SEED`, `SEED_ADMIN_PASSWORD` | Solo para seed local explícito | Controla la carga destructiva de datos de prueba y su contraseña de administrador. No ejecutes el seed contra datos reales. |
+| `NODE_ENV`, `PORT` | Sí | Entorno y puerto del backend |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Sí | Conexión a PostgreSQL |
+| `DB_SSL` | En producción | Activa TLS para PostgreSQL |
+| `DB_MIGRATION_USER`, `DB_MIGRATION_PASSWORD` | Cuando corresponda | Usuario utilizado para migraciones |
+| `JWT_SECRET` | Sí | Clave utilizada para firmar tokens |
+| `PIN_HMAC_SECRET` | En producción | Secreto independiente utilizado por los mecanismos correspondientes |
+| `JWT_EXPIRES_IN` | No | Debe ser `1h` si se define |
+| `CORS_ORIGINS` | En producción | Orígenes autorizados para consumir la API |
+| `FRONTEND_URL`, `API_PUBLIC_URL` | En producción | URLs públicas del frontend y backend |
+| `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | Para Firebase | Credenciales de Firebase Admin |
+| `BREVO_API_KEY`, `MAIL_FROM`, `MAIL_FROM_NAME` | Para correo | Configuración de Brevo |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Según almacenamiento | Configuración de Cloudinary |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT` | Según almacenamiento | Configuración de Cloudflare R2 |
+| `ALLOW_DESTRUCTIVE_SEED`, `SEED_ADMIN_PASSWORD` | Solo desarrollo local | Control de datos de prueba |
+
+No deben publicarse:
+
+- archivos `.env`;
+- credenciales de base de datos;
+- claves privadas;
+- API keys;
+- tokens JWT;
+- secretos utilizados en producción.
+
+---
 
 ## 6. Estructura del repositorio
 
 ```text
 .
-├── Backend/                 API NestJS, migraciones y archivos públicos
-│   ├── migrations/          Migraciones SQL incrementales
-│   ├── scripts/             Herramientas de migración y verificación
-│   ├── src/                 Módulos y lógica del backend
-│   └── storage/             Archivos públicos y documentos almacenados
-├── Frontend/                Aplicación Flutter
-│   ├── android/             Proyecto Android
-│   ├── ios/                 Proyecto iOS
-│   ├── lib/                  Código Dart de la aplicación
-│   ├── test/                 Pruebas Flutter
-│   ├── web/                  Aplicación web
-│   └── windows/              Proyecto Windows
-├── Temporal/                Archivos temporales de trabajo
+├── Backend/
+│   ├── migrations/
+│   ├── reports/
+│   ├── scripts/
+│   ├── src/
+│   ├── test/
+│   ├── docs/
+│   └── .env.example
+│
+├── Frontend/
+│   ├── android/
+│   ├── ios/
+│   ├── lib/
+│   ├── test/
+│   ├── web/
+│   └── windows/
+│
+├── Temporal/
 └── README.md
 ```
 
+---
+
 ## 7. Roles y credenciales de prueba
+
+Para la revisión académica se utilizan cuentas ficticias.
 
 | Rol | Usuario | Contraseña |
 |---|---|---|
-| Administrador | Se entrega por canal privado | Se entrega por canal privado |
-| Administrador de restaurante | Se entrega por canal privado | Se entrega por canal privado |
 | Cliente | Se entrega por canal privado | Se entrega por canal privado |
+| Administrador de restaurante | Se entrega por canal privado | Se entrega por canal privado |
 
-Las credenciales de prueba se comunican a la coordinación por un canal privado. No se publican en este repositorio.
+Las credenciales de prueba se entregan únicamente mediante el mecanismo privado definido para la revisión.
+
+No se publican contraseñas, tokens, credenciales de base de datos, claves de servicio ni contenido del archivo `.env` en este repositorio.
+
+---
 
 ## 8. Pruebas
 
-Backend, desde `Backend/`:
+### Backend
+
+Desde `Backend/`:
 
 ```bash
 npm test
@@ -126,23 +243,141 @@ npm run test:e2e
 npm run test:e3
 ```
 
-Frontend, desde `Frontend/`:
+### Frontend
+
+Desde `Frontend/`:
 
 ```bash
 flutter test
 ```
 
-Las pruebas cubren componentes y flujos del backend y de Flutter. El alcance y los casos definitivos deben coincidir con la tabla de pruebas de la monografía.
+Las pruebas utilizadas para la evidencia E3 poseen reportes versionados dentro de:
+
+```text
+Backend/reports/
+```
+
+Entre los reportes disponibles se encuentran:
+
+```text
+Backend/reports/e3-summary.json
+Backend/reports/e3-must-summary.json
+Backend/reports/validacion-400-summary.json
+Backend/reports/menor-privilegio-summary.json
+Backend/reports/salud-summary.json
+Backend/rnf01-summary.json
+```
+
+La suite E3 contempla pruebas relacionadas con:
+
+- requisitos funcionales priorizados como Must;
+- validación de datos;
+- autenticación;
+- autorización;
+- respuestas HTTP 400;
+- respuestas HTTP 401;
+- respuestas HTTP 403;
+- menor privilegio;
+- comprobación de la ruta de salud.
+
+La suite completa actual contiene 19 pruebas.
+
+La suite original de requisitos Must contiene 14 pruebas y se conserva como evidencia independiente.
+
+---
 
 ## 9. Despliegue
 
-El frontend está publicado en [https://mesachapaca.netlify.app/](https://mesachapaca.netlify.app/) y el backend en [https://mesachapaca-api.onrender.com/](https://mesachapaca-api.onrender.com/). En Render, configura `FRONTEND_URL=https://mesachapaca.netlify.app`, `API_PUBLIC_URL=https://mesachapaca-api.onrender.com` y agrega `https://mesachapaca.netlify.app` a `CORS_ORIGINS`.
+### Frontend web
 
-El backend requiere PostgreSQL, variables de producción, conexión HTTPS y almacenamiento persistente para `Backend/storage` o la configuración del almacenamiento externo. Configura `NODE_ENV=production`, `DB_SSL=true`, secretos independientes y las credenciales de Firebase y Brevo requeridas por el preflight.
+La aplicación web se encuentra publicada en:
 
-Antes de publicar, realiza una copia de seguridad de la base, revisa y aplica las migraciones pendientes, y sigue la guía de [Backend/docs/security-hardening.md](Backend/docs/security-hardening.md). Desde `Backend/`, los comandos previstos son:
+```text
+https://mesachapaca.netlify.app/
+```
 
-Para los bloqueos manuales por fecha y hora, ejecuta `npm run migrate:mesa-bloqueos -- --apply` antes de desplegar el backend. Si `DB_USER` es distinto del usuario de migración, ejecuta después `npm run db:configure-runtime-role -- --apply` para conceder acceso a la tabla nueva. Publica también el frontend actualizado.
+### Backend
+
+La API REST se encuentra publicada en:
+
+```text
+https://mesachapaca-api.onrender.com/
+```
+
+La ruta pública de salud es:
+
+```text
+https://mesachapaca-api.onrender.com/api/v1/salud
+```
+
+Cuando el backend y PostgreSQL se encuentran disponibles, la ruta responde HTTP 200 con:
+
+```json
+{
+  "estado": "ok",
+  "baseDatos": "conectada"
+}
+```
+
+Si la conexión con PostgreSQL no se encuentra disponible, la ruta puede responder HTTP 503 con:
+
+```json
+{
+  "estado": "error",
+  "baseDatos": "no disponible"
+}
+```
+
+### Aplicación Android
+
+La versión instalable de Mesa Chapaca se encuentra publicada mediante GitHub Releases.
+
+**Versión:**
+
+```text
+Mesa Chapaca v1.0.0
+```
+
+**Release:**
+
+```text
+https://github.com/LeonelVillca/Proyecto-Diplomado/releases/tag/v1.0.0
+```
+
+Para generar nuevamente el APK de producción:
+
+```bash
+cd Frontend
+flutter build apk --release --dart-define=API_BASE_URL=https://mesachapaca-api.onrender.com
+```
+
+El archivo generado se encuentra en:
+
+```text
+Frontend/build/app/outputs/flutter-apk/app-release.apk
+```
+
+### Configuración del entorno de producción
+
+En Render se deben configurar las variables correspondientes al entorno publicado, incluyendo:
+
+```text
+NODE_ENV=production
+DB_SSL=true
+FRONTEND_URL=https://mesachapaca.netlify.app
+API_PUBLIC_URL=https://mesachapaca-api.onrender.com
+```
+
+También deben configurarse los orígenes CORS, la conexión con PostgreSQL y los secretos necesarios para los servicios externos.
+
+Antes de realizar un despliegue se recomienda:
+
+- comprobar el estado de las migraciones;
+- realizar una copia de seguridad de PostgreSQL;
+- revisar las variables de producción;
+- ejecutar las comprobaciones de producción.
+
+Desde `Backend/`:
 
 ```bash
 npm ci
@@ -151,33 +386,79 @@ npm run preflight:prod
 npm run start:prod
 ```
 
-Compila Flutter con la URL del backend de Render. Esta URL se incluye en la aplicación y es la que usará la APK para comunicarse con la API:
+Para los bloqueos manuales por fecha y hora:
 
 ```bash
-cd Frontend
-flutter build apk --release --dart-define=API_BASE_URL=https://mesachapaca-api.onrender.com
+npm run migrate:mesa-bloqueos -- --apply
 ```
 
-El APK de lanzamiento se genera en `Frontend/build/app/outputs/flutter-apk/app-release.apk`. Publica ese archivo en el canal de entrega acordado y agrega aquí el enlace de descarga cuando esté disponible. El manual de instalación y despliegue de la monografía debe documentar los valores y pasos concretos del entorno publicado.
+Si `DB_USER` es distinto del usuario utilizado para las migraciones:
+
+```bash
+npm run db:configure-runtime-role -- --apply
+```
+
+---
 
 ## 10. Licencia
 
-Uso académico. Todos los derechos reservados por el autor, salvo las dependencias de terceros y sus respectivas licencias.
+Uso académico.
+
+Todos los derechos reservados por el autor, salvo las dependencias y recursos de terceros, que mantienen sus respectivas licencias.
+
+---
 
 ## 11. Verificación técnica y evidencias E3
 
-Ruta de salud: [GET /api/v1/salud](https://mesachapaca-api.onrender.com/api/v1/salud).
-Ejecuta `SELECT 1` mediante el DataSource existente. Devuelve HTTP 200 con
-`{"estado":"ok","baseDatos":"conectada"}` si PostgreSQL responde y HTTP 503 con
-`{"estado":"error","baseDatos":"no disponible"}` si la consulta falla. Es pública.
-Su disponibilidad en producción debe verificarse después de desplegar.
+### Ruta de salud
 
-Desde `Backend`, `npm run test:e3` utiliza PostgreSQL 16 local, puerto 55433 y
-la base exclusiva `mesa_chapaca_e3_test`; no carga `.env` ni utiliza producción.
-Si corresponde, define `E3_PG_BIN` con la carpeta de ejecutables PostgreSQL.
-Consulta [el alcance de las pruebas E3](Backend/test/e3/README.md).
+La ruta pública utilizada para comprobar el estado del backend es:
 
-Para generar los reportes de una nueva ejecución:
+```text
+GET https://mesachapaca-api.onrender.com/api/v1/salud
+```
+
+Esta ruta ejecuta una comprobación de PostgreSQL mediante el `DataSource` utilizado por la aplicación.
+
+Cuando PostgreSQL responde correctamente:
+
+```text
+HTTP 200
+```
+
+```json
+{
+  "estado": "ok",
+  "baseDatos": "conectada"
+}
+```
+
+Cuando PostgreSQL no se encuentra disponible:
+
+```text
+HTTP 503
+```
+
+```json
+{
+  "estado": "error",
+  "baseDatos": "no disponible"
+}
+```
+
+La ruta es pública y permite verificar el estado del servicio desplegado.
+
+### Suite automatizada E3
+
+Desde `Backend/`:
+
+```bash
+npm run test:e3
+```
+
+La suite utiliza un entorno de pruebas separado de producción.
+
+Para generar nuevamente los reportes:
 
 ```powershell
 cd Backend
@@ -186,30 +467,66 @@ npm run test:e3 -- --json --outputFile=.test-postgres-runtime/e3-results.json
 node scripts/export-e3-report.cjs
 ```
 
-Evidencias sin logs, tokens ni credenciales, preparadas para versionarse:
+### Reportes versionados
 
-- [Resumen E3](Backend/reports/e3-summary.json).
-- [Suite original de 14 pruebas](Backend/reports/e3-must-summary.json).
-- [Validación 400](Backend/reports/validacion-400-summary.json).
-- [Menor privilegio y 403](Backend/reports/menor-privilegio-summary.json).
-- [Salud con PostgreSQL real](Backend/reports/salud-summary.json).
-- [Resumen RNF-01 existente](Backend/rnf01-summary.json).
+Las evidencias generadas se encuentran en:
 
-La suite completa actual contiene 19 pruebas. La suite original sustituye la
-verificación externa de Firebase; las pruebas de validación y menor privilegio
-no usan mocks. Menor privilegio verifica los servicios compartidos de creación,
-pero no ejecuta Google externo. Estos resultados corresponden al entorno local.
+```text
+Backend/reports/e3-summary.json
+Backend/reports/e3-must-summary.json
+Backend/reports/validacion-400-summary.json
+Backend/reports/menor-privilegio-summary.json
+Backend/reports/salud-summary.json
+Backend/rnf01-summary.json
+```
 
-Caso 403: `GET /api/v1/usuarios` con un JWT válido de `admin_restaurante`.
-La ruta exige `admin_sistema` mediante `RolesGuard` y responde HTTP 403.
-Un cliente autenticado sin roles también recibe 403.
+La suite completa actual contiene 19 pruebas.
 
-Las cuentas de los tests son temporales y no constituyen credenciales de entrega.
-Antes de entregar, verifica por separado una cuenta cliente ficticia y una de
-administrador de restaurante, sus accesos y su vínculo de restaurante. Entrega
-sus credenciales por canal privado, con contraseñas de al menos 10 caracteres.
-El archivo local de credenciales históricas no demuestra que sigan funcionando.
+La suite original correspondiente a los requisitos Must contiene 14 pruebas.
 
-El script de rendimiento requiere `TOKEN` suministrado al proceso; no incorpora
-un token predeterminado. No publiques tokens ni ejecutes carga contra producción
-sin autorización.
+Las pruebas adicionales verifican validación de datos, menor privilegio y estado de salud utilizando el entorno de prueba correspondiente.
+
+### Verificación HTTP 403
+
+Uno de los casos utilizados para verificar autorización corresponde a:
+
+```text
+GET /api/v1/usuarios
+```
+
+La solicitud utiliza un JWT válido perteneciente a un usuario con rol `admin_restaurante`.
+
+La ruta requiere permisos correspondientes a `admin_sistema`, por lo que el backend responde:
+
+```text
+HTTP 403
+```
+
+Esta comprobación permite demostrar que la autorización se realiza en el servidor y no únicamente ocultando funcionalidades en el frontend.
+
+Un cliente autenticado sin los permisos requeridos también debe recibir HTTP 403 al intentar acceder a una ruta no autorizada.
+
+### Credenciales utilizadas para la revisión
+
+Las cuentas creadas automáticamente durante las pruebas son temporales y no constituyen las credenciales entregadas al docente.
+
+Para la revisión del sistema desplegado se deben verificar por separado:
+
+- una cuenta ficticia de Cliente;
+- una cuenta ficticia de Administrador de restaurante.
+
+Las credenciales correspondientes se proporcionan únicamente por el canal privado definido para la entrega académica.
+
+### Seguridad de las evidencias
+
+Los reportes versionados no deben contener:
+
+- contraseñas;
+- tokens JWT;
+- claves privadas;
+- credenciales de PostgreSQL;
+- secretos de Firebase;
+- API keys;
+- contenido del archivo `.env`.
+
+El script de rendimiento requiere un `TOKEN` proporcionado durante la ejecución y no almacena un token real de forma predeterminada.
