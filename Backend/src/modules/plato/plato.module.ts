@@ -4,12 +4,12 @@ import { PlatoService } from './plato.service';
 import { PlatoController } from './plato.controller';
 import { Plato } from './plato.entity';
 import { Menu } from '../menu/menu.entity';
-import { CloudinaryService } from '../../core/storage/cloudinary.service';
+import { StorageModule } from '../../core/storage/storage.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Plato, Menu])],
+  imports: [StorageModule, TypeOrmModule.forFeature([Plato, Menu])],
   controllers: [PlatoController],
-  providers: [PlatoService, CloudinaryService],
+  providers: [PlatoService],
   exports: [PlatoService],
 })
 export class PlatoModule {}

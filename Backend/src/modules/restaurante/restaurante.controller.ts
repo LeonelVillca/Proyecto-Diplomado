@@ -15,7 +15,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/security/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import {
   OwnershipGuard,

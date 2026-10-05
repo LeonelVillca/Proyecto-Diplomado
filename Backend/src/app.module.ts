@@ -37,6 +37,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { InvitacionTokenModule } from './modules/invitacion-token/invitacion-token.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
+import { UsuarioRestauranteModule } from './modules/usuario-restaurante/usuario-restaurante.module';
+import { StorageModule } from './core/storage/storage.module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { NotificacionesModule } from './modules/notificaciones/notificaciones.mo
     }),
     // VUL-019: Rate limiting global — 100 peticiones por minuto por IP
     ThrottlerModule.forRoot(AUTH_RATE_LIMITS),
+    UsuarioRestauranteModule,
+    StorageModule,
     UsuariosModule,
     RolesModule,
     PermisosModule,

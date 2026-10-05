@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { DatosHorarioAtencionDto } from '../../horario-atencion/dto/datos-horario-atencion.dto';
 import {
   IsBoolean,
   IsInt,
@@ -7,28 +8,13 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  Max,
-  Matches,
   Min,
   ValidateNested,
   IsArray,
   ArrayUnique,
 } from 'class-validator';
 
-export class HorarioAtencionDto {
-  @IsInt()
-  @Min(0)
-  @Max(6)
-  diaSemana: number;
-
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
-  horaInicio: string;
-
-  @IsString()
-  @Matches(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/)
-  horaFin: string;
-}
+export class HorarioAtencionDto extends DatosHorarioAtencionDto {}
 
 export class CrearRestauranteDto {
   @IsOptional()

@@ -6,11 +6,15 @@ import { PassportModule } from '@nestjs/passport';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { CuentasAuthModule } from '../cuentas-auth/cuentas-auth.module';
 import { OauthCuentasModule } from '../oauth-cuenta/oauth-cuentas.module';
-import { AuthService } from './auth.service';
+import { AccesoService } from './services/acceso.service';
+import { SesionesService } from './services/sesiones.service';
+import { ContrasenasService } from './services/contrasenas.service';
+import { RecuperacionService } from './services/recuperacion.service';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './jwt.strategy';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { FirebaseAdminService } from './firebase-admin.service';
+import { JwtStrategy } from './security/jwt.strategy';
+import { JwtAuthGuard } from './security/jwt-auth.guard';
+import { FirebaseAdminService } from './firebase/firebase-admin.service';
+import { FirebaseAppService } from './firebase/firebase-app.service';
 
 @Module({
   imports: [
@@ -21,8 +25,17 @@ import { FirebaseAdminService } from './firebase-admin.service';
       useFactory: (configService: ConfigService) => {
         return {
           secret: jwtSecret(configService),
-          signOptions: { expiresIn: '1h', algorithm: 'HS256', issuer: 'mesa-chapaca', audience: 'mesa-chapaca-app' },
-          verifyOptions: { algorithms: ['HS256'], issuer: 'mesa-chapaca', audience: 'mesa-chapaca-app' },
+          signOptions: {
+            expiresIn: '1h',
+            algorithm: 'HS256',
+            issuer: 'mesa-chapaca',
+            audience: 'mesa-chapaca-app',
+          },
+          verifyOptions: {
+            algorithms: ['HS256'],
+            issuer: 'mesa-chapaca',
+            audience: 'mesa-chapaca-app',
+          },
         };
       },
     }),
@@ -31,7 +44,16 @@ import { FirebaseAdminService } from './firebase-admin.service';
     OauthCuentasModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard, FirebaseAdminService],
-  exports: [JwtAuthGuard, JwtStrategy],
+  providers: [
+    AccesoService,
+    SesionesService,
+    ContrasenasService,
+    RecuperacionService,
+    JwtStrategy,
+    JwtAuthGuard,
+    FirebaseAppService,
+    FirebaseAdminService,
+  ],
+  exports: [JwtAuthGuard, JwtStrategy, FirebaseAppService],
 })
 export class AuthModule {}

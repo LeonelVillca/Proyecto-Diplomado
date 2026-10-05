@@ -4,15 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  In,
-  IsNull,
-  LessThanOrEqual,
-  MoreThanOrEqual,
-  Or,
-  Repository,
-  SelectQueryBuilder,
-} from 'typeorm';
+import { In, MoreThanOrEqual, Repository, SelectQueryBuilder } from 'typeorm';
 import { Reserva } from './reserva.entity';
 import { CrearReservaDto } from './dto/crear-reserva.dto';
 import { ActualizarReservaDto } from './dto/actualizar-reserva.dto';
@@ -23,6 +15,14 @@ import { ReservasGateway } from './reservas.gateway';
 import { HorarioAtencion } from '../horario-atencion/horario-atencion.entity';
 import { ExcepcionHorario } from '../horario-atencion/excepcion-horario.entity';
 import { NotificacionesService } from '../notificaciones/notificaciones.service';
+import {
+  bloqueosManualesEnHorario,
+  DURACION_ESTADO_MESA_MINUTOS,
+  estadoMesaEnHorario,
+  instanteEnZonaHoraria,
+  liberarEstadosMesaVencidos,
+  MARGEN_PREVIO_RESERVA_MINUTOS,
+} from '../mesa/mesa-estado';
 
 @Injectable()
 export class ReservasService {
@@ -55,7 +55,7 @@ export class ReservasService {
             'SELECT id_mesa FROM mesa WHERE id_mesa = $1 FOR UPDATE',
             [dto.idMesa],
           );
-          await this.liberarEstadosManualesVencidos(dto.idMesa, mesasRepo);
+          await liberarEstadosMesaVencidos(mesasRepo, dto.idMesa);
           const mesa = await mesasRepo.findOne({
             where: { id: dto.idMesa },
             relations: { restaurante: true },
@@ -64,14 +64,22 @@ export class ReservasService {
           this.validarCapacidadYEstadoMesa(
             {
               ...mesa,
-              estado: this.estadoMesaEnHorario(mesa, dto.fecha, dto.hora, 60),
+              estado: estadoMesaEnHorario(
+                mesa,
+                dto.fecha,
+                dto.hora,
+                DURACION_ESTADO_MESA_MINUTOS,
+              ),
             },
             dto.numeroPersonas,
           );
           if (
             (
-              await this.bloqueosManualesEnHorario(
-                [dto.idMesa], dto.fecha, dto.hora, 60,
+              await bloqueosManualesEnHorario(
+                [dto.idMesa],
+                dto.fecha,
+                dto.hora,
+                DURACION_ESTADO_MESA_MINUTOS,
                 (sql, params) => manager.query(sql, params),
               )
             ).length
@@ -86,7 +94,7 @@ export class ReservasService {
           });
           if (!usuario) throw new NotFoundException('Usuario no encontrado');
 
-          const duracionMinutos = 60;
+          const duracionMinutos = DURACION_ESTADO_MESA_MINUTOS;
           await this.validarHorarioRestaurante(
             mesa.restaurante.id,
             dto.fecha,
@@ -151,7 +159,7 @@ export class ReservasService {
   async consultarDisponibilidad(dto: ConsultarDisponibilidadDto): Promise<{
     mesas: Array<{ idMesa: number; numeroMesa: string; capacidad: number }>;
   }> {
-    await this.liberarEstadosManualesVencidos();
+    await liberarEstadosMesaVencidos(this.mesasRepo);
     await this.validarHorarioRestaurante(
       dto.idRestaurante,
       dto.fecha,
@@ -170,18 +178,17 @@ export class ReservasService {
     });
     const mesasDisponiblesPorEstado = mesas.filter(
       (mesa) =>
-        this.estadoMesaEnHorario(
-          mesa,
-          dto.fecha,
-          dto.hora,
-          dto.duracionMinutos,
-        ) === 'libre',
+        estadoMesaEnHorario(mesa, dto.fecha, dto.hora, dto.duracionMinutos) ===
+        'libre',
     );
     if (mesasDisponiblesPorEstado.length === 0) return { mesas: [] };
 
-    const bloqueos = await this.bloqueosManualesEnHorario(
+    const bloqueos = await bloqueosManualesEnHorario(
       mesasDisponiblesPorEstado.map((mesa) => mesa.id),
-      dto.fecha, dto.hora, dto.duracionMinutos,
+      dto.fecha,
+      dto.hora,
+      dto.duracionMinutos,
+      (sql, params) => this.mesasRepo.query(sql, params),
     );
     const idsBloqueadas = new Set(bloqueos.map((bloqueo) => bloqueo.id_mesa));
 
@@ -201,7 +208,9 @@ export class ReservasService {
 
     return {
       mesas: mesasDisponiblesPorEstado
-        .filter((mesa) => !idsOcupadas.has(mesa.id) && !idsBloqueadas.has(mesa.id))
+        .filter(
+          (mesa) => !idsOcupadas.has(mesa.id) && !idsBloqueadas.has(mesa.id),
+        )
         .map((mesa) => ({
           idMesa: mesa.id,
           numeroMesa: mesa.numeroMesa,
@@ -214,7 +223,7 @@ export class ReservasService {
     idRestaurante: number,
     fecha: string,
     hora: string,
-    duracionMinutos = 60,
+    duracionMinutos = DURACION_ESTADO_MESA_MINUTOS,
   ): Promise<{
     fecha: string;
     hora: string;
@@ -237,7 +246,7 @@ export class ReservasService {
       };
     }>;
   }> {
-    await this.liberarEstadosManualesVencidos();
+    await liberarEstadosMesaVencidos(this.mesasRepo);
     const mesas = await this.mesasRepo.find({
       where: { restaurante: { id: idRestaurante } },
       relations: { restaurante: true },
@@ -263,10 +272,16 @@ export class ReservasService {
       }
     }
 
-    const bloqueos = await this.bloqueosManualesEnHorario(
-      mesas.map((mesa) => mesa.id), fecha, hora, 0,
+    const bloqueos = await bloqueosManualesEnHorario(
+      mesas.map((mesa) => mesa.id),
+      fecha,
+      hora,
+      0,
+      (sql, params) => this.mesasRepo.query(sql, params),
     );
-    const bloqueoPorMesa = new Map(bloqueos.map((bloqueo) => [bloqueo.id_mesa, bloqueo]));
+    const bloqueoPorMesa = new Map(
+      bloqueos.map((bloqueo) => [bloqueo.id_mesa, bloqueo]),
+    );
 
     return {
       fecha,
@@ -275,9 +290,11 @@ export class ReservasService {
       mesas: mesas.map((mesa) => {
         const reserva = reservaPorMesa.get(mesa.id);
         const bloqueo = bloqueoPorMesa.get(mesa.id);
-        const estadoBase = this.estadoMesaEnHorario(mesa, fecha, hora, 0);
-        const estado = estadoBase === 'inactiva'
-          ? 'inactiva' : bloqueo?.estado ?? estadoBase;
+        const estadoBase = estadoMesaEnHorario(mesa, fecha, hora, 0);
+        const estado =
+          estadoBase === 'inactiva'
+            ? 'inactiva'
+            : (bloqueo?.estado ?? estadoBase);
         const disponible = estado === 'libre' && !reserva;
         return {
           idMesa: mesa.id,
@@ -285,7 +302,8 @@ export class ReservasService {
           capacidad: mesa.capacidad ?? 0,
           estado,
           disponible,
-          bloqueoHora: estadoBase === 'inactiva' ? null : bloqueo?.hora ?? null,
+          bloqueoHora:
+            estadoBase === 'inactiva' ? null : (bloqueo?.hora ?? null),
           reserva: reserva
             ? {
                 id: reserva.id,
@@ -384,7 +402,10 @@ export class ReservasService {
           if (dto.estado) reserva.estado = dto.estado;
           if (dto.fecha) reserva.fecha = dto.fecha;
           if (dto.hora) reserva.hora = dto.hora;
-          if (dto.duracionMinutos !== undefined && dto.duracionMinutos !== 60) {
+          if (
+            dto.duracionMinutos !== undefined &&
+            dto.duracionMinutos !== DURACION_ESTADO_MESA_MINUTOS
+          ) {
             throw new BadRequestException(
               'Las reservas duran exactamente 60 minutos',
             );
@@ -404,7 +425,7 @@ export class ReservasService {
             this.validarCapacidadYEstadoMesa(
               {
                 ...reserva.mesa,
-                estado: this.estadoMesaEnHorario(
+                estado: estadoMesaEnHorario(
                   reserva.mesa,
                   reserva.fecha,
                   reserva.hora,
@@ -417,8 +438,10 @@ export class ReservasService {
             if (
               cambiaMesaUHorario &&
               (
-                await this.bloqueosManualesEnHorario(
-                  [reserva.mesa.id], reserva.fecha, reserva.hora,
+                await bloqueosManualesEnHorario(
+                  [reserva.mesa.id],
+                  reserva.fecha,
+                  reserva.hora,
                   reserva.duracionMinutos,
                   (sql, params) => manager.query(sql, params),
                 )
@@ -496,34 +519,36 @@ export class ReservasService {
     id: number,
     idUsuario: number,
   ): Promise<{ id: number; estado: string }> {
-    const cancelada = await this.reservasRepo.manager.transaction(async (manager) => {
-      await manager.query(
-        'SELECT id_reserva FROM reservas WHERE id_reserva = $1 FOR UPDATE',
-        [id],
-      );
-      const actual = await manager.findOne(Reserva, {
-        where: { id },
-        relations: { usuario: true, mesa: { restaurante: true } },
-      });
-      if (!actual || actual.usuario.id !== idUsuario) {
-        throw new NotFoundException('Reserva no encontrada');
-      }
-      if (!['pendiente', 'confirmada'].includes(actual.estado)) {
-        throw new BadRequestException('Esta reserva ya no se puede cancelar');
-      }
-      if (Date.now() >= this.limiteCancelacion(actual)) {
-        throw new BadRequestException(
-          'Solo puedes cancelar hasta 15 minutos antes de la reserva',
+    const cancelada = await this.reservasRepo.manager.transaction(
+      async (manager) => {
+        await manager.query(
+          'SELECT id_reserva FROM reservas WHERE id_reserva = $1 FOR UPDATE',
+          [id],
         );
-      }
-      actual.estado = 'cancelada';
-      await manager.save(Reserva, actual);
-      return {
-        id: actual.id,
-        estado: actual.estado,
-        idRestaurante: actual.mesa.restaurante.id,
-      };
-    });
+        const actual = await manager.findOne(Reserva, {
+          where: { id },
+          relations: { usuario: true, mesa: { restaurante: true } },
+        });
+        if (!actual || actual.usuario.id !== idUsuario) {
+          throw new NotFoundException('Reserva no encontrada');
+        }
+        if (!['pendiente', 'confirmada'].includes(actual.estado)) {
+          throw new BadRequestException('Esta reserva ya no se puede cancelar');
+        }
+        if (Date.now() >= this.limiteCancelacion(actual)) {
+          throw new BadRequestException(
+            'Solo puedes cancelar hasta 15 minutos antes de la reserva',
+          );
+        }
+        actual.estado = 'cancelada';
+        await manager.save(Reserva, actual);
+        return {
+          id: actual.id,
+          estado: actual.estado,
+          idRestaurante: actual.mesa.restaurante.id,
+        };
+      },
+    );
 
     await this.reservasGateway.emitActualizacionReserva(
       cancelada.id,
@@ -535,9 +560,14 @@ export class ReservasService {
   }
 
   private limiteCancelacion(reserva: Reserva): number {
-    const zonaHoraria = reserva.mesa.restaurante.zonaHoraria || 'America/La_Paz';
+    const zonaHoraria =
+      reserva.mesa.restaurante.zonaHoraria || 'America/La_Paz';
     return (
-      this.instanteEnZonaHoraria(reserva.fecha, reserva.hora, zonaHoraria).getTime() -
+      instanteEnZonaHoraria(
+        reserva.fecha,
+        reserva.hora,
+        zonaHoraria,
+      ).getTime() -
       15 * 60 * 1000
     );
   }
@@ -577,30 +607,6 @@ export class ReservasService {
     return (await consulta.getCount()) > 0;
   }
 
-  private async bloqueosManualesEnHorario(
-    idsMesa: number[],
-    fecha: string,
-    hora: string,
-    duracionMinutos: number,
-    query: (sql: string, parameters: unknown[]) => Promise<Array<{
-      id_mesa: number;
-      estado: 'ocupada' | 'reservada';
-      hora: string;
-    }>> = (sql, parameters) => this.mesasRepo.query(sql, parameters),
-  ) {
-    if (!idsMesa.length) return [];
-    const inicio = 'CAST($2 AS date) + CAST($3 AS time)';
-    return query(
-      `SELECT id_mesa, estado, to_char(hora, 'HH24:MI') AS hora
-       FROM mesa_bloqueo_horario
-       WHERE id_mesa = ANY($1::int[])
-         AND fecha + hora ${duracionMinutos === 0 ? '<=' : '<'}
-           ${inicio} + ($4 * INTERVAL '1 minute')
-         AND fecha + hora + INTERVAL '60 minutes' > ${inicio}`,
-      [idsMesa, fecha, hora, duracionMinutos],
-    );
-  }
-
   private consultaSolapamientos(
     fecha: string,
     hora: string,
@@ -611,10 +617,15 @@ export class ReservasService {
       .createQueryBuilder('reserva')
       .where("reserva.estado IN ('pendiente', 'confirmada')")
       .andWhere(
-        `reserva.fecha + reserva.hora - (30 * INTERVAL '1 minute') <
+        `reserva.fecha + reserva.hora - (:margenPrevioReserva * INTERVAL '1 minute') <
          CAST(:fecha AS date) + CAST(:hora AS time) +
          (:duracionMinutos * INTERVAL '1 minute')`,
-        { fecha, hora, duracionMinutos },
+        {
+          fecha,
+          hora,
+          duracionMinutos,
+          margenPrevioReserva: MARGEN_PREVIO_RESERVA_MINUTOS,
+        },
       )
       .andWhere(
         `reserva.fecha + reserva.hora +
@@ -638,9 +649,9 @@ export class ReservasService {
       .createQueryBuilder('reserva')
       .where("reserva.estado IN ('pendiente', 'confirmada')")
       .andWhere(
-        `reserva.fecha + reserva.hora - (30 * INTERVAL '1 minute') <=
+        `reserva.fecha + reserva.hora - (:margenPrevioReserva * INTERVAL '1 minute') <=
          CAST(:fecha AS date) + CAST(:hora AS time)`,
-        { fecha, hora },
+        { fecha, hora, margenPrevioReserva: MARGEN_PREVIO_RESERVA_MINUTOS },
       )
       .andWhere(
         `reserva.fecha + reserva.hora +
@@ -671,93 +682,6 @@ export class ReservasService {
   private minutos(hora: string): number {
     const [horas, minutos] = hora.split(':').map(Number);
     return horas * 60 + minutos;
-  }
-
-  private async liberarEstadosManualesVencidos(
-    idMesa?: number,
-    mesasRepo: Repository<Mesa> = this.mesasRepo,
-  ): Promise<void> {
-    await mesasRepo.update(
-      {
-        ...(idMesa === undefined ? {} : { id: idMesa }),
-        estado: In(['ocupada', 'reservada']),
-        estadoHasta: Or(IsNull(), LessThanOrEqual(new Date())),
-      },
-      { estado: 'libre', estadoHasta: null },
-    );
-  }
-
-  private estadoMesaEnHorario(
-    mesa: Mesa,
-    fecha: string,
-    hora: string,
-    duracionMinutos: number,
-  ): Mesa['estado'] {
-    if (mesa.estado === 'inactiva' || mesa.estado === 'libre') {
-      return mesa.estado;
-    }
-    if (!mesa.estadoHasta) return 'libre';
-
-    const zonaHoraria = mesa.restaurante?.zonaHoraria || 'America/La_Paz';
-    const inicioHorario = this.instanteEnZonaHoraria(fecha, hora, zonaHoraria);
-    const finHorario = new Date(
-      inicioHorario.getTime() + duracionMinutos * 60000,
-    );
-    const finEstado = new Date(mesa.estadoHasta).getTime();
-    const inicioEstado = finEstado - 60 * 60000;
-    const seCruzan =
-      duracionMinutos === 0
-        ? inicioHorario.getTime() >= inicioEstado &&
-          inicioHorario.getTime() < finEstado
-        : inicioHorario.getTime() < finEstado &&
-          finHorario.getTime() > inicioEstado;
-    return seCruzan ? mesa.estado : 'libre';
-  }
-
-  private instanteEnZonaHoraria(
-    fecha: string,
-    hora: string,
-    zonaHoraria: string,
-  ): Date {
-    const [year, month, day] = fecha.split('-').map(Number);
-    const [hours, minutes, seconds = 0] = hora.split(':').map(Number);
-    const wallClockAsUtc = Date.UTC(
-      year,
-      month - 1,
-      day,
-      hours,
-      minutes,
-      seconds,
-    );
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: zonaHoraria,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23',
-    });
-    let instant = wallClockAsUtc;
-    for (let iteration = 0; iteration < 3; iteration += 1) {
-      const parts = Object.fromEntries(
-        formatter
-          .formatToParts(new Date(instant))
-          .filter((part) => part.type !== 'literal')
-          .map((part) => [part.type, Number(part.value)]),
-      ) as Record<string, number>;
-      const renderedAsUtc = Date.UTC(
-        parts.year,
-        parts.month - 1,
-        parts.day,
-        parts.hour,
-        parts.minute,
-        parts.second,
-      );
-      instant += wallClockAsUtc - renderedAsUtc;
-    }
-    return new Date(instant);
   }
 
   private async validarHorarioRestaurante(

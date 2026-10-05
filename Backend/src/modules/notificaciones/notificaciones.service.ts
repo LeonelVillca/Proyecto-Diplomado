@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { App, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import { App } from 'firebase-admin/app';
+import { FirebaseAppService } from '../auth/firebase/firebase-app.service';
 import { getMessaging } from 'firebase-admin/messaging';
 import { EntityManager, IsNull, Repository } from 'typeorm';
 import { Reserva } from '../reservas/reserva.entity';
@@ -18,28 +18,12 @@ export class NotificacionesService {
     private readonly notificacionesRepo: Repository<Notificacion>,
     @InjectRepository(DispositivoPush)
     private readonly dispositivosRepo: Repository<DispositivoPush>,
-    configService: ConfigService,
+    firebase: FirebaseAppService,
   ) {
-    if (getApps().length > 0) {
-      this.firebaseApp = getApp();
-      return;
-    }
-    const projectId = configService.get<string>('FIREBASE_PROJECT_ID');
-    const clientEmail = configService.get<string>('FIREBASE_CLIENT_EMAIL');
-    const privateKey = configService.get<string>('FIREBASE_PRIVATE_KEY');
-    this.firebaseApp =
-      projectId && clientEmail && privateKey
-        ? initializeApp({
-            credential: cert({
-              projectId,
-              clientEmail,
-              privateKey: privateKey.replace(/\\n/g, '\n'),
-            }),
-          })
-        : null;
+    this.firebaseApp = firebase.app;
     if (!this.firebaseApp) {
       this.logger.warn(
-        'Push no configurado; los avisos seguirán disponibles en la app.',
+        'Push no configurado; los avisos seguiran disponibles en la app.',
       );
     }
   }

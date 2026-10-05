@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { SolicitudController } from './solicitud.controller';
 import { SolicitudService } from './solicitud.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/security/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 
 describe('Confirmación HTTP de solicitudes', () => {

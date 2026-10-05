@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { DatosPlatoDto } from '../../plato/dto/datos-plato.dto';
 import {
   IsBoolean,
   IsInt,
@@ -11,28 +12,7 @@ import {
   IsArray,
 } from 'class-validator';
 
-export class PlatoDetalleDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(150)
-  nombre: string;
-
-  @Type(() => Number)
-  @Min(0)
-  precio: number;
-
-  @IsOptional()
-  @IsString()
-  descripcion?: string;
-
-  @IsOptional()
-  @IsString()
-  fotoUrl?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  disponible?: boolean;
-}
+export class PlatoDetalleDto extends DatosPlatoDto {}
 
 export class CrearMenuDto {
   @Type(() => Number)

@@ -13,7 +13,7 @@ import {
 import { ResenasService } from './resenas.service';
 import { CrearResenaDto } from './dto/crear-resena.dto';
 import { ActualizarResenaDto } from './dto/actualizar-resena.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/security/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { ClientOwnershipGuard, CheckClientOwnership } from '../../core/guards/client-ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';

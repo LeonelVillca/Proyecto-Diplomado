@@ -11,7 +11,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/security/jwt-auth.guard';
 import {
   DesregistrarDispositivoDto,
   RegistrarDispositivoDto,

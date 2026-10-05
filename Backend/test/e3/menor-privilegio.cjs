@@ -28,7 +28,7 @@ async function main() {
     UsuarioRol,
   } = require('../../dist/src/modules/usuario-rol/usuario-rol.entity');
   const { Rol } = require('../../dist/src/modules/rol/rol.entity');
-  const { AuthService } = require('../../dist/src/modules/auth/auth.service');
+  const { SesionesService } = require('../../dist/src/modules/auth/services/sesiones.service');
   const app = await NestFactory.create(AppModule, { logger: false });
   let db;
   let user;
@@ -73,13 +73,13 @@ async function main() {
         correo: `privilegios-${randomUUID()}@example.test`,
       });
     const cuenta = await app.get(CuentasAuthService).asegurarCuenta(user.id);
-    const auth = app.get(AuthService);
+    const sesiones = app.get(SesionesService);
     const session = {
       ...user,
       sessionStartedAt: Math.floor(Date.now() / 1000),
       sessionVersion: cuenta.sessionVersion,
     };
-    const cliente = await auth.renovarSesion(session);
+    const cliente = await sesiones.renovarSesion(session);
     const decoded = app.get(JwtService).verify(cliente.token);
     assert.deepEqual(decoded.permisos, []);
     assert.equal(
@@ -112,7 +112,7 @@ async function main() {
     await app
       .get(UsuarioRolService)
       .asignarRol({ idUsuario: user.id, idRol: restaurantRole.id });
-    const admin = await auth.renovarSesion(session);
+    const admin = await sesiones.renovarSesion(session);
     const adminPerfil = await request(app.getHttpServer())
       .get('/api/v1/auth/perfil')
       .set('Authorization', `Bearer ${admin.token}`)

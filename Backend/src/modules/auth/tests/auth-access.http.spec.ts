@@ -4,13 +4,13 @@ import { Test } from '@nestjs/testing';
 import { PassportModule } from '@nestjs/passport';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
-import { UsuariosController } from '../usuarios/usuarios.controller';
-import { UsuariosService } from '../usuarios/usuarios.service';
-import { CuentasAuthService } from '../cuentas-auth/cuentas-auth.service';
-import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
-import { JwtStrategy } from './jwt.strategy';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from '../../core/guards/roles.guard';
+import { UsuariosController } from '../../usuarios/usuarios.controller';
+import { UsuariosService } from '../../usuarios/usuarios.service';
+import { CuentasAuthService } from '../../cuentas-auth/cuentas-auth.service';
+import { UsuarioRol } from '../../usuario-rol/usuario-rol.entity';
+import { JwtStrategy } from '../security/jwt.strategy';
+import { JwtAuthGuard } from '../security/jwt-auth.guard';
+import { RolesGuard } from '../../../core/guards/roles.guard';
 import { ConfigService } from '@nestjs/config';
 
 describe('Acceso HTTP a GET /api/v1/usuarios', () => {
@@ -29,7 +29,12 @@ describe('Acceso HTTP a GET /api/v1/usuarios', () => {
         PassportModule,
         JwtModule.register({
           secret,
-          signOptions: { expiresIn: '1h', algorithm: 'HS256', issuer: 'mesa-chapaca', audience: 'mesa-chapaca-app' },
+          signOptions: {
+            expiresIn: '1h',
+            algorithm: 'HS256',
+            issuer: 'mesa-chapaca',
+            audience: 'mesa-chapaca-app',
+          },
         }),
       ],
       controllers: [UsuariosController],
@@ -37,15 +42,21 @@ describe('Acceso HTTP a GET /api/v1/usuarios', () => {
         JwtStrategy,
         JwtAuthGuard,
         RolesGuard,
-        { provide: ConfigService, useValue: new ConfigService({ JWT_SECRET: secret }) },
+        {
+          provide: ConfigService,
+          useValue: new ConfigService({ JWT_SECRET: secret }),
+        },
         { provide: UsuariosService, useValue: { listarTodos } },
         { provide: CuentasAuthService, useValue: { buscarPorUsuario } },
         {
           provide: DataSource,
           useValue: {
             getRepository: (entity: unknown) => {
-              if (entity !== UsuarioRol) throw new Error('Repositorio inesperado');
-              return { find: async () => roles.map((nombre) => ({ rol: { nombre } })) };
+              if (entity !== UsuarioRol)
+                throw new Error('Repositorio inesperado');
+              return {
+                find: async () => roles.map((nombre) => ({ rol: { nombre } })),
+              };
             },
           },
         },
@@ -63,11 +74,18 @@ describe('Acceso HTTP a GET /api/v1/usuarios', () => {
     buscarPorUsuario.mockClear();
   });
 
-  afterAll(async () => { await app?.close(); });
+  afterAll(async () => {
+    await app?.close();
+  });
 
   function token(options: { expiresIn?: number; secret?: string } = {}) {
     return jwt.sign(
-      { sub: usuario.id, correo: usuario.correo, sv: 0, sessionStartedAt: Math.floor(Date.now() / 1000) - 30 },
+      {
+        sub: usuario.id,
+        correo: usuario.correo,
+        sv: 0,
+        sessionStartedAt: Math.floor(Date.now() / 1000) - 30,
+      },
       options,
     );
   }
@@ -78,28 +96,36 @@ describe('Acceso HTTP a GET /api/v1/usuarios', () => {
   });
 
   it('responde 401 con firma inválida', async () => {
-    await request(app.getHttpServer()).get('/api/v1/usuarios')
-      .set('Authorization', `Bearer ${token({ secret: 'b'.repeat(64) })}`).expect(401);
+    await request(app.getHttpServer())
+      .get('/api/v1/usuarios')
+      .set('Authorization', `Bearer ${token({ secret: 'b'.repeat(64) })}`)
+      .expect(401);
     expect(listarTodos).not.toHaveBeenCalled();
   });
 
   it('responde 401 con JWT vencido', async () => {
-    await request(app.getHttpServer()).get('/api/v1/usuarios')
-      .set('Authorization', `Bearer ${token({ expiresIn: -1 })}`).expect(401);
+    await request(app.getHttpServer())
+      .get('/api/v1/usuarios')
+      .set('Authorization', `Bearer ${token({ expiresIn: -1 })}`)
+      .expect(401);
     expect(listarTodos).not.toHaveBeenCalled();
   });
 
   it('responde 403 al admin_restaurante autenticado', async () => {
-    await request(app.getHttpServer()).get('/api/v1/usuarios')
-      .set('Authorization', `Bearer ${token()}`).expect(403);
+    await request(app.getHttpServer())
+      .get('/api/v1/usuarios')
+      .set('Authorization', `Bearer ${token()}`)
+      .expect(403);
     expect(buscarPorUsuario).toHaveBeenCalledWith(usuario.id);
     expect(listarTodos).not.toHaveBeenCalled();
   });
 
   it('permite al admin_sistema autenticado', async () => {
     roles = ['admin_sistema'];
-    await request(app.getHttpServer()).get('/api/v1/usuarios')
-      .set('Authorization', `Bearer ${token()}`).expect(200);
+    await request(app.getHttpServer())
+      .get('/api/v1/usuarios')
+      .set('Authorization', `Bearer ${token()}`)
+      .expect(200);
     expect(listarTodos).toHaveBeenCalledTimes(1);
   });
 });

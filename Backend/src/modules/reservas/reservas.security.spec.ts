@@ -6,6 +6,7 @@ import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 import { Mesa } from '../mesa/mesa.entity';
 import { Reserva } from './reserva.entity';
 import { Usuario } from '../usuarios/usuario.entity';
+import { UsuarioRestauranteAccesoService } from '../usuario-restaurante/usuario-restaurante-acceso.service';
 
 describe('Reservas: concurrencia y acceso', () => {
   it('convierte el conflicto del índice único en respuesta controlada y no emite eventos', async () => {
@@ -71,12 +72,12 @@ describe('Reservas: concurrencia y acceso', () => {
         entity === UsuarioRol
           ? { find: async () => [{ rol: { nombre: 'admin_restaurante' } }] }
           : entity === UsuarioRestaurante
-            ? { findOne: async () => ({ idRestaurante: 8 }) }
+            ? { find: async () => [{ idRestaurante: 8, activo: true }] }
             : null,
     };
     const controller = new ReservasController(
       { buscarPorId: async () => reserva } as any,
-      source as any,
+      new UsuarioRestauranteAccesoService(source as any),
     );
     await expect(controller.buscarPorId(5, { user: { id: 2 } })).resolves.toBe(
       reserva,
@@ -90,12 +91,12 @@ describe('Reservas: concurrencia y acceso', () => {
         entity === UsuarioRol
           ? { find: async () => [{ rol: { nombre: 'admin_restaurante' } }] }
           : entity === UsuarioRestaurante
-            ? { findOne: async () => null }
+            ? { find: async () => [] }
             : null,
     };
     const controller = new ReservasController(
       { buscarPorId: async () => reserva } as any,
-      source as any,
+      new UsuarioRestauranteAccesoService(source as any),
     );
     await expect(
       controller.buscarPorId(5, { user: { id: 3 } }),

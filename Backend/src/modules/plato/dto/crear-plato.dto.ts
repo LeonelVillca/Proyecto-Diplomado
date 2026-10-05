@@ -1,40 +1,10 @@
 import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsInt, Min } from 'class-validator';
+import { DatosPlatoDto } from './datos-plato.dto';
 
-export class CrearPlatoDto {
+export class CrearPlatoDto extends DatosPlatoDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
   idMenu: number;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(150)
-  nombre: string;
-
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  precio: number;
-
-  @IsOptional()
-  @IsString()
-  descripcion?: string;
-
-  @IsOptional()
-  @IsString()
-  fotoUrl?: string | null;
-
-  @IsOptional()
-  @IsBoolean()
-  disponible?: boolean;
 }

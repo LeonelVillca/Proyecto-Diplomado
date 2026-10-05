@@ -9,85 +9,104 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { AuthService, UsuarioPublico } from './auth.service';
+import { Usuario } from '../usuarios/usuario.entity';
+import { AccesoService } from './services/acceso.service';
+import { SesionesService } from './services/sesiones.service';
+import { ContrasenasService } from './services/contrasenas.service';
+import { RecuperacionService } from './services/recuperacion.service';
 import { GoogleLoginDto } from './dto/google-login.dto';
 import { LoginDto } from './dto/login.dto';
 import { CrearContrasenaDto } from './dto/crear-contrasena.dto';
-import { SolicitarRecuperacionDto, RestablecerPasswordDto, VerificarPinDto } from './dto/recuperar-password.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import {
+  SolicitarRecuperacionDto,
+  RestablecerPasswordDto,
+  VerificarPinDto,
+} from './dto/recuperar-password.dto';
+import { JwtAuthGuard } from './security/jwt-auth.guard';
 
 interface RequestConUsuario {
-  user: UsuarioPublico;
+  user: Usuario & { sessionStartedAt: number; sessionVersion: number };
 }
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  // Recibe los servicios de cada flujo de autenticacion.
+  constructor(
+    private readonly acceso: AccesoService,
+    private readonly sesiones: SesionesService,
+    private readonly contrasenas: ContrasenasService,
+    private readonly recuperacion: RecuperacionService,
+  ) {}
 
   @Post('google')
   @Throttle({ default: { ttl: 60000, limit: 10 } })
+  // Inicia sesion con Google.
   @HttpCode(HttpStatus.CREATED)
   loginGoogle(@Body() dto: GoogleLoginDto) {
-    return this.authService.loginGoogle(dto);
+    return this.acceso.loginGoogle(dto);
   }
 
-  // VUL-003 / BB-02: Rate limiting estricto en login — 10 intentos por minuto
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('login')
+  // Inicia sesion con correo y contrasena.
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+    return this.acceso.login(dto);
   }
 
   @Post('crear-contrasena')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
+  // Crea una contrasena desde una invitacion.
   @HttpCode(HttpStatus.OK)
   crearContrasena(@Body() dto: CrearContrasenaDto) {
-    return this.authService.crearContrasena(dto);
+    return this.contrasenas.crearContrasena(dto);
   }
 
-  // BB-01 / BB-02: Rate limiting en recuperación — 5 solicitudes por minuto
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('solicitar-recuperacion')
+  // Solicita un PIN de recuperacion.
   @HttpCode(HttpStatus.OK)
   solicitarRecuperacion(@Body() dto: SolicitarRecuperacionDto) {
-    return this.authService.solicitarRecuperacion(dto);
+    return this.recuperacion.solicitarRecuperacion(dto);
   }
 
-  // BB-02: Rate limiting estricto en verificación de PIN — 10 intentos por minuto
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('verificar-pin-recuperacion')
+  // Verifica un PIN de recuperacion.
   @HttpCode(HttpStatus.OK)
   verificarPinRecuperacion(@Body() dto: VerificarPinDto) {
-    return this.authService.verificarPinRecuperacion(dto);
+    return this.recuperacion.verificarPinRecuperacion(dto);
   }
 
-  // BB-02: Rate limiting estricto en restablecimiento — 5 por minuto
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('restablecer-password')
+  // Restablece la contrasena.
   @HttpCode(HttpStatus.OK)
   restablecerPassword(@Body() dto: RestablecerPasswordDto) {
-    return this.authService.restablecerPassword(dto);
+    return this.recuperacion.restablecerPassword(dto);
   }
 
   @UseGuards(JwtAuthGuard)
+  // Devuelve el perfil del usuario autenticado.
   @Get('perfil')
   perfil(@Req() request: RequestConUsuario) {
-    return this.authService.perfil((request.user as any).id);
+    return this.sesiones.perfil(request.user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @Post('renovar')
+  // Renueva la sesion actual.
   @HttpCode(HttpStatus.OK)
-  renovar(@Req() req: any) {
-    return this.authService.renovarSesion(req.user);
+  renovar(@Req() req: RequestConUsuario) {
+    return this.sesiones.renovarSesion(req.user);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('cerrar-sesiones')
+  // Cierra las sesiones del usuario.
   @HttpCode(HttpStatus.OK)
-  cerrarSesiones(@Req() req: any) {
-    return this.authService.cerrarSesiones(req.user.id);
+  cerrarSesiones(@Req() req: RequestConUsuario) {
+    return this.sesiones.cerrarSesiones(req.user.id);
   }
 }

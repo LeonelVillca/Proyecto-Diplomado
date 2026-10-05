@@ -1,4 +1,10 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  Matches,
+} from 'class-validator';
 
 export class SolicitarRecuperacionDto {
   @IsEmail({}, { message: 'El correo debe ser un email válido' })
@@ -30,8 +36,9 @@ export class RestablecerPasswordDto {
   @IsString()
   @IsNotEmpty({ message: 'La nueva contraseña es obligatoria' })
   @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
-  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, { 
-    message: 'La contraseña debe contener al menos una letra mayúscula, una letra minúscula, y un número o símbolo' 
+  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
+    message:
+      'La contraseña debe contener al menos una letra mayúscula, una letra minúscula, y un número o símbolo',
   })
   nuevaContrasena: string;
 }

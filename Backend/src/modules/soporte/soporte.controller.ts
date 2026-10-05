@@ -9,7 +9,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/security/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { ClientOwnershipGuard, CheckClientOwnership } from '../../core/guards/client-ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';

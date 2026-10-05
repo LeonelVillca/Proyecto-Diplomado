@@ -26,14 +26,21 @@ type Bloqueo = {
 
 function crearServicio(idsOcupadas: number[], bloqueos: Bloqueo[] = []) {
   const bloqueosEnHorario = (parameters: unknown[]) => {
-    const [ids, fecha, hora, duracion] = parameters as [number[], string, string, number];
+    const [ids, fecha, hora, duracion] = parameters as [
+      number[],
+      string,
+      string,
+      number,
+    ];
     const inicio = Date.parse(`${fecha}T${hora}:00Z`);
     const fin = inicio + duracion * 60000;
     return bloqueos.filter((bloqueo) => {
       const desde = Date.parse(`${bloqueo.fecha}T${bloqueo.hora}:00Z`);
-      return ids.includes(bloqueo.id_mesa) &&
+      return (
+        ids.includes(bloqueo.id_mesa) &&
         (duracion === 0 ? desde <= inicio : desde < fin) &&
-        desde + 3600000 > inicio;
+        desde + 3600000 > inicio
+      );
     });
   };
   const queryBuilder = {
@@ -60,15 +67,19 @@ function crearServicio(idsOcupadas: number[], bloqueos: Bloqueo[] = []) {
     find: jest.fn().mockResolvedValue(mesas),
     findOne: jest.fn(),
     update: jest.fn().mockResolvedValue({ affected: 0 }),
-    query: jest.fn((sql, parameters) => Promise.resolve(bloqueosEnHorario(parameters))),
+    query: jest.fn((sql, parameters) =>
+      Promise.resolve(bloqueosEnHorario(parameters)),
+    ),
   };
   const usuariosRepo = { findOne: jest.fn() };
   const manager = {
-    query: jest.fn((sql, parameters) => Promise.resolve(
-      sql.includes('mesa_bloqueo_horario')
-        ? bloqueosEnHorario(parameters)
-        : [{ id_mesa: 1 }],
-    )),
+    query: jest.fn((sql, parameters) =>
+      Promise.resolve(
+        sql.includes('mesa_bloqueo_horario')
+          ? bloqueosEnHorario(parameters)
+          : [{ id_mesa: 1 }],
+      ),
+    ),
     getRepository: jest.fn((entity) => {
       if (entity === Mesa) return mesasRepo;
       if (entity === Reserva) return reservasRepo;
@@ -86,6 +97,7 @@ function crearServicio(idsOcupadas: number[], bloqueos: Bloqueo[] = []) {
     { find: jest.fn().mockResolvedValue([horario]) } as any,
     { findOne: jest.fn().mockResolvedValue(null) } as any,
     { emitNuevaReserva: jest.fn() } as any,
+    {} as any,
   );
   return {
     service,
@@ -120,12 +132,13 @@ describe('Disponibilidad de reservas', () => {
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       expect.stringContaining(
-        "reserva.fecha + reserva.hora - (30 * INTERVAL '1 minute') <",
+        "reserva.fecha + reserva.hora - (:margenPrevioReserva * INTERVAL '1 minute') <",
       ),
       expect.objectContaining({
         fecha: consulta.fecha,
         hora: consulta.hora,
         duracionMinutos: 60,
+        margenPrevioReserva: 30,
       }),
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
@@ -189,53 +202,104 @@ describe('Disponibilidad de reservas', () => {
   });
 
   it('un bloqueo del horario elegido deja libre la misma mesa a otra hora y al día siguiente', async () => {
-    const { service } = crearServicio([], [{
-      id_mesa: 1, fecha: consulta.fecha, hora: '13:00', estado: 'reservada',
-    }]);
+    const { service } = crearServicio(
+      [],
+      [
+        {
+          id_mesa: 1,
+          fecha: consulta.fecha,
+          hora: '13:00',
+          estado: 'reservada',
+        },
+      ],
+    );
 
     await expect(service.consultarDisponibilidad(consulta)).resolves.toEqual({
       mesas: [{ idMesa: 2, numeroMesa: 'B', capacidad: 4 }],
     });
-    await expect(service.consultarDisponibilidad({ ...consulta, hora: '14:00' }))
-      .resolves.toEqual({ mesas: [
+    await expect(
+      service.consultarDisponibilidad({ ...consulta, hora: '14:00' }),
+    ).resolves.toEqual({
+      mesas: [
         { idMesa: 1, numeroMesa: 'A', capacidad: 2 },
         { idMesa: 2, numeroMesa: 'B', capacidad: 4 },
-      ] });
-    await expect(service.consultarDisponibilidad({ ...consulta, fecha: '2026-09-26' }))
-      .resolves.toEqual({ mesas: [
+      ],
+    });
+    await expect(
+      service.consultarDisponibilidad({ ...consulta, fecha: '2026-09-26' }),
+    ).resolves.toEqual({
+      mesas: [
         { idMesa: 1, numeroMesa: 'A', capacidad: 2 },
         { idMesa: 2, numeroMesa: 'B', capacidad: 4 },
-      ] });
+      ],
+    });
   });
 
   it('muestra el bloqueo manual únicamente en la consulta de ese horario', async () => {
-    const { service } = crearServicio([], [{
-      id_mesa: 1, fecha: consulta.fecha, hora: '13:00', estado: 'ocupada',
-    }]);
+    const { service } = crearServicio(
+      [],
+      [
+        {
+          id_mesa: 1,
+          fecha: consulta.fecha,
+          hora: '13:00',
+          estado: 'ocupada',
+        },
+      ],
+    );
 
-    const aLasTrece = await service.consultarOcupacionRestaurante(7, consulta.fecha, '13:00');
+    const aLasTrece = await service.consultarOcupacionRestaurante(
+      7,
+      consulta.fecha,
+      '13:00',
+    );
     expect(aLasTrece.mesas[0]).toMatchObject({
-      idMesa: 1, estado: 'ocupada', disponible: false, bloqueoHora: '13:00',
+      idMesa: 1,
+      estado: 'ocupada',
+      disponible: false,
+      bloqueoHora: '13:00',
     });
-    const aLasCatorce = await service.consultarOcupacionRestaurante(7, consulta.fecha, '14:00');
+    const aLasCatorce = await service.consultarOcupacionRestaurante(
+      7,
+      consulta.fecha,
+      '14:00',
+    );
     expect(aLasCatorce.mesas[0]).toMatchObject({
-      idMesa: 1, estado: 'libre', disponible: true, bloqueoHora: null,
+      idMesa: 1,
+      estado: 'libre',
+      disponible: true,
+      bloqueoHora: null,
     });
   });
 
   it('rechaza el POST directo que coincide con un bloqueo manual', async () => {
-    const { service, usuariosRepo, mesasRepo, reservasRepo } = crearServicio([], [{
-      id_mesa: 1, fecha: consulta.fecha, hora: '13:00', estado: 'ocupada',
-    }]);
+    const { service, usuariosRepo, mesasRepo, reservasRepo } = crearServicio(
+      [],
+      [
+        {
+          id_mesa: 1,
+          fecha: consulta.fecha,
+          hora: '13:00',
+          estado: 'ocupada',
+        },
+      ],
+    );
     usuariosRepo.findOne.mockResolvedValue({ id: 3 } as any);
     mesasRepo.findOne.mockResolvedValue({
-      id: 1, capacidad: 2, estado: 'libre',
+      id: 1,
+      capacidad: 2,
+      estado: 'libre',
       restaurante: { id: 7, zonaHoraria: 'America/La_Paz' },
     } as any);
-    await expect(service.crear({
-      idUsuario: 3, idMesa: 1, fecha: consulta.fecha,
-      hora: consulta.hora, numeroPersonas: 2,
-    })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.crear({
+        idUsuario: 3,
+        idMesa: 1,
+        fecha: consulta.fecha,
+        hora: consulta.hora,
+        numeroPersonas: 2,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(reservasRepo.save).not.toHaveBeenCalled();
   });
 

@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Plato } from './plato.entity';
 import { CrearPlatoDto } from './dto/crear-plato.dto';
+import { DatosPlatoDto } from './dto/datos-plato.dto';
 import { ActualizarPlatoDto } from './dto/actualizar-plato.dto';
 import { Menu } from '../menu/menu.entity';
 
@@ -20,16 +21,41 @@ export class PlatoService {
     if (!menu) {
       throw new NotFoundException(`Menú con id ${dto.idMenu} no encontrado`);
     }
+    const [plato] = await this.crearEnMenu(this.platoRepository.manager, menu, [
+      dto,
+    ]);
+    return plato;
+  }
 
-    const plato = this.platoRepository.create({
-      nombre: dto.nombre,
-      precio: dto.precio,
-      descripcion: dto.descripcion,
-      fotoUrl: dto.fotoUrl,
-      disponible: dto.disponible,
-      menu,
-    });
-    return this.platoRepository.save(plato);
+  // El menú llama estas operaciones con su EntityManager transaccional.
+  crearEnMenu(
+    manager: EntityManager,
+    menu: Menu,
+    datos: DatosPlatoDto[],
+  ): Promise<Plato[]> {
+    if (!datos.length) return Promise.resolve([]);
+    const repository = manager.getRepository(Plato);
+    return repository.save(
+      datos.map((plato) =>
+        repository.create({
+          nombre: plato.nombre,
+          precio: plato.precio,
+          descripcion: plato.descripcion,
+          fotoUrl: plato.fotoUrl,
+          disponible: plato.disponible,
+          menu,
+        }),
+      ),
+    );
+  }
+
+  async reemplazarEnMenu(
+    manager: EntityManager,
+    menu: Menu,
+    datos: DatosPlatoDto[],
+  ): Promise<void> {
+    await manager.getRepository(Plato).delete({ menu: { id: menu.id } });
+    await this.crearEnMenu(manager, menu, datos);
   }
 
   listarTodos(): Promise<Plato[]> {

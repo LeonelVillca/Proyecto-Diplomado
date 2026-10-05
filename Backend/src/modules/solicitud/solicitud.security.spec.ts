@@ -91,7 +91,7 @@ describe('Aprobación de solicitudes', () => {
     const repo = { findOne: jest.fn(async () => solicitud) };
     const manager = {
       query: jest.fn(async () => [{ id_solicitud: 5 }]),
-      findOne: jest.fn(async (entity: unknown) =>
+      findOne: jest.fn(async (entity: unknown, _options: unknown) =>
         entity === Solicitud
           ? solicitud
           : entity === Rol
@@ -135,7 +135,7 @@ describe('Aprobación de solicitudes', () => {
   it('consume el enlace de verificación una sola vez dentro de una transacción', async () => {
     const manager = {
       query: jest
-        .fn()
+        .fn<Promise<Array<{ id_solicitud: number }>>, [sql: string, parameters?: unknown[]]>()
         .mockResolvedValueOnce([{ id_solicitud: 5 }])
         .mockResolvedValueOnce([{ id_solicitud: 5 }])
         .mockResolvedValueOnce([]),
@@ -230,7 +230,7 @@ describe('Aprobación de solicitudes', () => {
     };
     const manager = {
       query: jest.fn(async () => [{ id_solicitud: 5 }]),
-      findOne: jest.fn(async (entity: unknown) =>
+      findOne: jest.fn(async (entity: unknown, _options: unknown) =>
         entity === Solicitud
           ? { ...solicitud }
           : entity === Rol

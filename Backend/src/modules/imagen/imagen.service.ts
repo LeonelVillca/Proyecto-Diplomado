@@ -7,6 +7,7 @@ import { Imagen } from './imagen.entity';
 import { CrearImagenDto } from './dto/crear-imagen.dto';
 import { ActualizarImagenDto } from './dto/actualizar-imagen.dto';
 import { Restaurante } from '../restaurante/restaurante.entity';
+import { PublicImageStorageService } from '../../core/storage/public-image-storage.service';
 
 @Injectable()
 export class ImagenService {
@@ -16,6 +17,7 @@ export class ImagenService {
     private readonly imagenRepository: Repository<Imagen>,
     @InjectRepository(Restaurante)
     private readonly restauranteRepository: Repository<Restaurante>,
+    private readonly images: PublicImageStorageService,
   ) {}
 
   async crear(dto: CrearImagenDto): Promise<Imagen> {
@@ -81,6 +83,14 @@ export class ImagenService {
   async eliminar(id: number): Promise<void> {
     const imagen = await this.buscarPorId(id);
     await this.imagenRepository.delete(imagen.id);
+    try {
+      await this.images.removeGalleryUrl(imagen.url);
+    } catch (error) {
+      this.logger.error(
+        'No se pudo borrar la imagen del almacenamiento.',
+        (error as Error).message,
+      );
+    }
     // Solo archivos locales con el formato que genera el servidor.
     const match =
       /^\/publico\/restaurantes\/(\d+)\/galeria\/([0-9a-f-]{36}\.webp)$/i.exec(

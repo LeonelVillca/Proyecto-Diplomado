@@ -2,10 +2,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Usuario } from '../usuarios/usuario.entity';
-import { UsuariosService } from '../usuarios/usuarios.service';
-import { CuentasAuthService } from '../cuentas-auth/cuentas-auth.service';
-import { jwtSecret } from '../../core/config/security.config';
+import { Usuario } from '../../usuarios/usuario.entity';
+import { CuentasAuthService } from '../../cuentas-auth/cuentas-auth.service';
+import { jwtSecret } from '../../../core/config/security.config';
 
 export interface JwtPayload {
   sub: number;
@@ -17,9 +16,9 @@ export interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  // Configura la validacion de los tokens JWT.
   constructor(
     configService: ConfigService,
-    private readonly usuariosService: UsuariosService,
     private readonly cuentasAuthService: CuentasAuthService,
   ) {
     super({
@@ -32,17 +31,35 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<Usuario & { sessionStartedAt: number; sessionVersion: number }> {
+  // Rechaza tokens vencidos o sesiones revocadas.
+  async validate(
+    payload: JwtPayload,
+  ): Promise<Usuario & { sessionStartedAt: number; sessionVersion: number }> {
     const now = Math.floor(Date.now() / 1000);
-    if (!Number.isSafeInteger(payload.sub) || payload.sub <= 0 || !Number.isInteger(payload.sv)
-      || !Number.isInteger(payload.sessionStartedAt) || payload.sessionStartedAt > now
-      || now - payload.sessionStartedAt >= 7 * 24 * 3600 || !payload.exp || payload.exp <= now) {
+    if (
+      !Number.isSafeInteger(payload.sub) ||
+      payload.sub <= 0 ||
+      !Number.isInteger(payload.sv) ||
+      !Number.isInteger(payload.sessionStartedAt) ||
+      payload.sessionStartedAt > now ||
+      now - payload.sessionStartedAt >= 7 * 24 * 3600 ||
+      !payload.exp ||
+      payload.exp <= now
+    ) {
       throw new UnauthorizedException();
     }
     const cuenta = await this.cuentasAuthService.buscarPorUsuario(payload.sub);
-    if (!cuenta || !cuenta.estado || cuenta.usuario.estado !== 'activo' || cuenta.sessionVersion !== payload.sv) {
+    if (
+      !cuenta ||
+      !cuenta.estado ||
+      cuenta.usuario.estado !== 'activo' ||
+      cuenta.sessionVersion !== payload.sv
+    ) {
       throw new UnauthorizedException('La sesión ha expirado o fue revocada');
     }
-    return Object.assign(cuenta.usuario, { sessionStartedAt: payload.sessionStartedAt, sessionVersion: payload.sv });
+    return Object.assign(cuenta.usuario, {
+      sessionStartedAt: payload.sessionStartedAt,
+      sessionVersion: payload.sv,
+    });
   }
 }

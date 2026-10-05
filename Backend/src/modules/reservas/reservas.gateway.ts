@@ -2,11 +2,9 @@ import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, 
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
-import { DataSource } from 'typeorm';
-import { JwtStrategy, JwtPayload } from '../auth/jwt.strategy';
+import { JwtStrategy, JwtPayload } from '../auth/security/jwt.strategy';
 import { originAllowed } from '../../core/config/security.config';
-import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
-import { Restaurante } from '../restaurante/restaurante.entity';
+import { UsuarioRestauranteAccesoService } from '../usuario-restaurante/usuario-restaurante-acceso.service';
 
 type ReservationEvent = { id: number; idUsuario: number; idRestaurante: number; estado: string; [key: string]: unknown };
 
@@ -17,7 +15,7 @@ type ReservationEvent = { id: number; idUsuario: number; idRestaurante: number; 
 })
 export class ReservasGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ReservasGateway.name);
-  constructor(private readonly jwtService: JwtService, private readonly strategy: JwtStrategy, private readonly dataSource: DataSource) {}
+  constructor(private readonly jwtService: JwtService, private readonly strategy: JwtStrategy, private readonly accesoRestaurante: UsuarioRestauranteAccesoService) {}
 
   @WebSocketServer() server: Server;
 
@@ -53,18 +51,17 @@ export class ReservasGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   private async emitToAuthorized(name: string, event: ReservationEvent) {
     try {
-      const restaurant = await this.dataSource.getRepository(Restaurante).findOne({
-        where: { id: event.idRestaurante }, relations: { solicitud: { usuario: true } },
-      });
       for (const socket of this.server.sockets.sockets.values()) {
         try {
           // Revalidar cuenta, revocación y propiedad incluso en conexiones ya abiertas.
           const user = await this.strategy.validate(socket.data.auth);
-          const roles = await this.dataSource.getRepository(UsuarioRol).find({ where: { idUsuario: user.id }, relations: { rol: true } });
-          const systemAdmin = roles.some((r) => r.rol.nombre === 'admin_sistema');
-          const owner = restaurant?.solicitud?.estado === 'aprobada' && restaurant.solicitud.usuario.id === user.id
-            && roles.some((r) => r.rol.nombre === 'admin_restaurante');
-          if (user.id === event.idUsuario || systemAdmin || owner) socket.emit(name, event);
+          if (user.id === event.idUsuario) {
+            socket.emit(name, event);
+            continue;
+          }
+          const acceso = await this.accesoRestaurante.obtenerAcceso(user.id);
+          if (this.accesoRestaurante.puedeAdministrar(acceso, event.idRestaurante))
+            socket.emit(name, event);
         } catch { socket.disconnect(true); }
       }
     } catch { this.logger.error('No se pudo entregar el evento de reserva'); }

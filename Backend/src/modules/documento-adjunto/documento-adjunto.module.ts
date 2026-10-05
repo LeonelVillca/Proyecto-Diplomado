@@ -4,12 +4,15 @@ import { DocumentoAdjunto } from './documento-adjunto.entity';
 import { DocumentoAdjuntoService } from './documento-adjunto.service';
 import { DocumentoAdjuntoController } from './documento-adjunto.controller';
 import { Solicitud } from '../solicitud/solicitud.entity';
-import { R2StorageService } from '../../core/storage/r2-storage.service';
+import { StorageModule } from '../../core/storage/storage.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DocumentoAdjunto, Solicitud])],
+  imports: [
+    StorageModule,
+    TypeOrmModule.forFeature([DocumentoAdjunto, Solicitud]),
+  ],
   controllers: [DocumentoAdjuntoController],
-  providers: [DocumentoAdjuntoService, R2StorageService],
+  providers: [DocumentoAdjuntoService],
   exports: [DocumentoAdjuntoService],
 })
 export class DocumentoAdjuntoModule {}

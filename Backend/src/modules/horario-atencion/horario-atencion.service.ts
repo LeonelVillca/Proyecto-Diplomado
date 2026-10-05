@@ -4,9 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { HorarioAtencion } from './horario-atencion.entity';
 import { CrearHorarioAtencionDto } from './dto/crear-horario-atencion.dto';
+import { DatosHorarioAtencionDto } from './dto/datos-horario-atencion.dto';
 import { ActualizarHorarioAtencionDto } from './dto/actualizar-horario-atencion.dto';
 import { Restaurante } from '../restaurante/restaurante.entity';
 import { ExcepcionHorario } from './excepcion-horario.entity';
@@ -33,14 +34,46 @@ export class HorarioAtencionService {
         `Restaurante con id ${dto.idRestaurante} no encontrado`,
       );
     }
-
-    const horario = this.horarioRepository.create({
-      diaSemana: dto.diaSemana,
-      horaInicio: dto.horaInicio,
-      horaFin: dto.horaFin,
+    const [horario] = await this.crearEnRestaurante(
+      this.horarioRepository.manager,
       restaurante,
+      [dto],
+    );
+    return horario;
+  }
+
+  crearEnRestaurante(
+    manager: EntityManager,
+    restaurante: Restaurante,
+    datos: DatosHorarioAtencionDto[],
+  ): Promise<HorarioAtencion[]> {
+    if (!datos.length) return Promise.resolve([]);
+    const repository = manager.getRepository(HorarioAtencion);
+    return repository.save(
+      datos.map((horario) =>
+        repository.create({
+          restaurante,
+          diaSemana: horario.diaSemana,
+          horaInicio: horario.horaInicio,
+          horaFin: horario.horaFin,
+        }),
+      ),
+    );
+  }
+
+  async reemplazarSemanales(
+    manager: EntityManager,
+    idRestaurante: number,
+    datos: DatosHorarioAtencionDto[],
+  ): Promise<void> {
+    await manager.getRepository(HorarioAtencion).delete({
+      restaurante: { id: idRestaurante },
     });
-    return this.horarioRepository.save(horario);
+    await this.crearEnRestaurante(
+      manager,
+      { id: idRestaurante } as Restaurante,
+      datos,
+    );
   }
 
   listarTodos(): Promise<HorarioAtencion[]> {

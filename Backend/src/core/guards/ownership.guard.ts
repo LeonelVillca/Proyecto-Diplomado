@@ -7,8 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DataSource } from 'typeorm';
-import { UsuarioRol } from '../../modules/usuario-rol/usuario-rol.entity';
-import { UsuarioRestaurante } from '../../modules/usuario-restaurante/usuario-restaurante.entity';
+import { UsuarioRestauranteAccesoService } from '../../modules/usuario-restaurante/usuario-restaurante-acceso.service';
 
 export const RESOURCE_TYPE_KEY = 'resource_type';
 export type OwnedResource =
@@ -31,6 +30,7 @@ export class OwnershipGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private dataSource: DataSource,
+    private readonly accesoRestaurante: UsuarioRestauranteAccesoService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -45,14 +45,8 @@ export class OwnershipGuard implements CanActivate {
       body = {},
     } = context.switchToHttp().getRequest();
     if (!user) return false;
-    const roles = await this.dataSource
-      .getRepository(UsuarioRol)
-      .find({ where: { idUsuario: user.id }, relations: { rol: true } });
-    if (roles.some((r) => r.rol.nombre === 'admin_sistema')) return true;
-    const own = await this.dataSource.getRepository(UsuarioRestaurante).find({
-      where: { idUsuario: user.id, activo: true },
-    });
-    const ownedIds = new Set(own.map((r) => r.idRestaurante));
+    const acceso = await this.accesoRestaurante.obtenerAcceso(user.id);
+    if (acceso.adminSistema) return true;
     const targets: number[] = [];
     // Primero se comprueba el recurso EXISTENTE. El body nunca reemplaza esta comprobación.
     if (params.id !== undefined)
@@ -75,7 +69,10 @@ export class OwnershipGuard implements CanActivate {
           ...(await this.restaurantIds(kind as OwnedResource, body[field])),
         );
     }
-    if (!targets.length || targets.some((id) => !ownedIds.has(id))) {
+    if (
+      !targets.length ||
+      targets.some((id) => !this.accesoRestaurante.puedeAdministrar(acceso, id))
+    ) {
       throw new ForbiddenException(
         'No tienes permisos sobre este recurso o su restaurante de destino',
       );

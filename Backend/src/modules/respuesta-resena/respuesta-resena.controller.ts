@@ -14,7 +14,7 @@ import {
 import { RespuestaResenaService } from './respuesta-resena.service';
 import { CrearRespuestaResenaDto } from './dto/crear-respuesta-resena.dto';
 import { ActualizarRespuestaResenaDto } from './dto/actualizar-respuesta-resena.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/security/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { OwnershipGuard, CheckOwnership } from '../../core/guards/ownership.guard';
 import { Roles } from '../../core/decorators/roles.decorator';

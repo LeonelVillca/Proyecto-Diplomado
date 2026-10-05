@@ -4,12 +4,12 @@ import { Solicitud } from './solicitud.entity';
 import { SolicitudService } from './solicitud.service';
 import { SolicitudController } from './solicitud.controller';
 import { Usuario } from '../usuarios/usuario.entity';
-import { R2StorageService } from '../../core/storage/r2-storage.service';
+import { StorageModule } from '../../core/storage/storage.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Solicitud, Usuario])],
+  imports: [StorageModule, TypeOrmModule.forFeature([Solicitud, Usuario])],
   controllers: [SolicitudController],
-  providers: [SolicitudService, R2StorageService],
+  providers: [SolicitudService],
   exports: [SolicitudService],
 })
 export class SolicitudModule {}

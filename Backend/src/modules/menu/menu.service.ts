@@ -5,13 +5,14 @@ import { Menu } from './menu.entity';
 import { CrearMenuDto } from './dto/crear-menu.dto';
 import { ActualizarMenuDto } from './dto/actualizar-menu.dto';
 import { Restaurante } from '../restaurante/restaurante.entity';
-import { Plato } from '../plato/plato.entity';
+import { PlatoService } from '../plato/plato.service';
 
 @Injectable()
 export class MenuService {
   constructor(
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
+    private readonly platoService: PlatoService,
   ) {}
 
   async crear(dto: CrearMenuDto): Promise<Menu> {
@@ -37,12 +38,7 @@ export class MenuService {
           manager.create(Menu, { ...datos, restaurante }),
         );
         if (platos?.length) {
-          await manager.save(
-            Plato,
-            platos.map((plato) =>
-              manager.create(Plato, { ...plato, menu: savedMenu }),
-            ),
-          );
+          await this.platoService.crearEnMenu(manager, savedMenu, platos);
         }
         return savedMenu.id;
       },
@@ -84,13 +80,8 @@ export class MenuService {
       await manager.save(menu);
 
       if (platos !== undefined) {
-        await manager.delete(Plato, { menu: { id } });
-        if (platos.length) {
-          await manager.save(
-            Plato,
-            platos.map((plato) => manager.create(Plato, { ...plato, menu })),
-          );
-        }
+        // El contrato del formulario reemplaza el conjunto completo de platos.
+        await this.platoService.reemplazarEnMenu(manager, menu, platos);
       }
     });
     return this.buscarPorId(id);

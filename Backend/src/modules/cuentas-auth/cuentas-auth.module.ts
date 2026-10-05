@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CuentaAuth } from './cuenta-auth.entity';
 import { CuentasAuthService } from './cuentas-auth.service';
 import { CuentasAuthController } from './cuentas-auth.controller';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/security/jwt-auth.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([CuentaAuth])],

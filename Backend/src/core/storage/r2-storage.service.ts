@@ -1,7 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'node:stream';
 
 @Injectable()
@@ -50,16 +49,6 @@ export class R2StorageService {
   async remove(key: string): Promise<void> {
     const { client, bucket } = this.requireStorage();
     await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
-  }
-
-  async signedDownloadUrl(key: string): Promise<string> {
-    const { client, bucket } = this.requireStorage();
-    return getSignedUrl(client, new GetObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      ResponseContentDisposition: 'attachment',
-      ResponseCacheControl: 'private, no-store',
-    }), { expiresIn: 300 });
   }
 
   async download(key: string): Promise<{ body: Readable; contentType?: string; contentLength?: number }> {

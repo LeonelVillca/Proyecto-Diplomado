@@ -1,6 +1,7 @@
 import { OwnershipGuard } from './ownership.guard';
 import { UsuarioRol } from '../../modules/usuario-rol/usuario-rol.entity';
 import { UsuarioRestaurante } from '../../modules/usuario-restaurante/usuario-restaurante.entity';
+import { UsuarioRestauranteAccesoService } from '../../modules/usuario-restaurante/usuario-restaurante-acceso.service';
 
 describe('Aislamiento de restaurantes', () => {
   function setup(
@@ -16,7 +17,7 @@ describe('Aislamiento de restaurantes', () => {
             find: async () => [{ rol: { nombre: 'admin_restaurante' } }],
           };
         if (entity === UsuarioRestaurante)
-          return { find: async () => [{ idRestaurante: 10 }] };
+          return { find: async () => [{ idRestaurante: 10, activo: true }] };
         return {
           findOne: async ({ where }: any) => records[entity + ':' + where.id],
         };
@@ -25,6 +26,7 @@ describe('Aislamiento de restaurantes', () => {
     const guard = new OwnershipGuard(
       { get: () => resource } as any,
       source as any,
+      new UsuarioRestauranteAccesoService(source as any),
     );
     const context = {
       getHandler: () => ({}),
