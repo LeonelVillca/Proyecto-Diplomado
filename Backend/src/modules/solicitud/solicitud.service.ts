@@ -27,6 +27,7 @@ import { R2StorageService } from '../../core/storage/r2-storage.service';
 export class SolicitudService {
   private readonly logger = new Logger(SolicitudService.name);
 
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Solicitud)
     private readonly solicitudRepository: Repository<Solicitud>,
@@ -37,6 +38,7 @@ export class SolicitudService {
     private readonly r2Storage: R2StorageService,
   ) {}
 
+  // Crea una solicitud.
   async crear(
     dto: CrearSolicitudDto,
     files: {
@@ -156,6 +158,7 @@ export class SolicitudService {
     }
   }
 
+  // Verifica el correo de una solicitud.
   async verificarCorreo(token: string): Promise<{ mensaje: string }> {
     if (!/^[a-f0-9]{64}$/i.test(token))
       throw new BadRequestException('Enlace de verificación inválido.');
@@ -188,6 +191,7 @@ export class SolicitudService {
     };
   }
 
+  // Reenvía el correo de verificación.
   async reenviarVerificacion(correo: string): Promise<{ mensaje: string }> {
     const respuesta = {
       mensaje:
@@ -249,6 +253,7 @@ export class SolicitudService {
     return respuesta;
   }
 
+  // Lista las solicitudes.
   listarTodos(estado?: string): Promise<Solicitud[]> {
     const whereCondition = estado
       ? { estado: estado as Solicitud['estado'] }
@@ -260,6 +265,7 @@ export class SolicitudService {
     });
   }
 
+  // Busca una solicitud por su identificador.
   async buscarPorId(id: number): Promise<Solicitud> {
     const solicitud = await this.solicitudRepository.findOne({
       where: { id },
@@ -271,6 +277,7 @@ export class SolicitudService {
     return solicitud;
   }
 
+  // Lista las solicitudes de un usuario.
   listarPorUsuario(idUsuario: number): Promise<Solicitud[]> {
     return this.solicitudRepository.find({
       where: { usuario: { id: idUsuario } },
@@ -278,6 +285,7 @@ export class SolicitudService {
     });
   }
 
+  // Actualiza una solicitud.
   async actualizar(
     id: number,
     dto: ActualizarSolicitudDto,
@@ -417,6 +425,7 @@ export class SolicitudService {
     return guardada;
   }
 
+  // Reenvía la invitación al restaurante.
   async reenviarInvitacion(id: number): Promise<{ mensaje: string }> {
     this.logger.log(`Reenvío de invitación solicitado para solicitud=${id}`);
     try {
@@ -470,6 +479,7 @@ export class SolicitudService {
     }
   }
 
+  // Elimina una solicitud.
   async eliminar(id: number): Promise<void> {
     const solicitud = await this.buscarPorId(id);
     await this.solicitudRepository.delete(solicitud.id);

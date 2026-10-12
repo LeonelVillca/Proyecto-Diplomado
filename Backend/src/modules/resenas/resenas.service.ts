@@ -13,9 +13,11 @@ import { Restaurante } from '../restaurante/restaurante.entity';
 import { RespuestaResena } from '../respuesta-resena/respuesta-resena.entity';
 import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 import { Reserva } from '../reservas/reserva.entity';
+import { ReservasFinalizacionService } from '../reservas/reservas-finalizacion.service';
 
 @Injectable()
 export class ResenasService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Resena)
     private readonly resenasRepo: Repository<Resena>,
@@ -30,9 +32,12 @@ export class ResenasService {
     @InjectRepository(Reserva)
     private readonly reservasRepo: Repository<Reserva>,
     private readonly dataSource: DataSource,
+    private readonly finalizacionReservas: ReservasFinalizacionService,
   ) {}
 
+  // Crea una reseña.
   async crear(dto: CrearResenaDto): Promise<Resena> {
+    await this.finalizacionReservas.finalizarVencidas();
     const usuario = await this.usuariosRepo.findOne({
       where: { id: dto.idUsuario },
     });
@@ -95,12 +100,14 @@ export class ResenasService {
     });
   }
 
+  // Lista las reseñas.
   listarTodas(): Promise<Resena[]> {
     return this.resenasRepo.find({
       relations: { usuario: true, restaurante: true },
     });
   }
 
+  // Busca una reseña por su identificador.
   async buscarPorId(id: number): Promise<Resena> {
     const resena = await this.resenasRepo.findOne({
       where: { id },
@@ -110,6 +117,7 @@ export class ResenasService {
     return resena;
   }
 
+  // Lista las reseñas de un restaurante.
   async listarPorRestaurante(idRestaurante: number): Promise<any[]> {
     return this.resenasRepo
       .createQueryBuilder('resena')
@@ -152,6 +160,7 @@ export class ResenasService {
       );
   }
 
+  // Lista las reseñas de un usuario.
   async listarPorUsuario(idUsuario: number): Promise<any[]> {
     return this.resenasRepo
       .createQueryBuilder('resena')
@@ -194,6 +203,7 @@ export class ResenasService {
       );
   }
 
+  // Actualiza una reseña.
   async actualizar(
     id: number,
     dto: ActualizarResenaDto,
@@ -216,6 +226,7 @@ export class ResenasService {
     return this.resenasRepo.save(resena);
   }
 
+  // Elimina una reseña.
   async eliminar(id: number, actorId?: number): Promise<void> {
     const resena = await this.buscarPorId(id);
     const respuesta = await this.respuestasRepo.findOne({
@@ -229,6 +240,7 @@ export class ResenasService {
     await this.resenasRepo.remove(resena);
   }
 
+  // Comprueba si el usuario administra el sistema.
   private async esAdminSistema(actorId?: number): Promise<boolean> {
     if (!actorId) return false;
     const asignaciones = await this.usuarioRolesRepo.find({

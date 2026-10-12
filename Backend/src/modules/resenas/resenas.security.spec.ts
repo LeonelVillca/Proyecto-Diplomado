@@ -20,6 +20,7 @@ describe('Límite de creación de reseñas', () => {
     const source = {
       transaction: jest.fn(async (callback) => callback(manager)),
     };
+    const finalizacion = { finalizarVencidas: jest.fn() };
     const service = new ResenasService(
       {} as any,
       { findOne: async () => ({ id: dto.idUsuario }) } as any,
@@ -28,16 +29,20 @@ describe('Límite de creación de reseñas', () => {
       {} as any,
       { findOne: async () => ({ id: 9, estado: 'finalizada' }) } as any,
       source as any,
+      finalizacion as any,
     );
-    return { service, manager, source };
+    return { service, manager, source, finalizacion };
   }
 
   it('guarda la primera reseña y registra la fecha en la misma transacción', async () => {
-    const { service, manager, source } = setup([{ id_usuario: dto.idUsuario }]);
+    const { service, manager, source, finalizacion } = setup([
+      { id_usuario: dto.idUsuario },
+    ]);
     await expect(service.crear(dto)).resolves.toEqual(
       expect.objectContaining({ calificacion: 5 }),
     );
     expect(source.transaction).toHaveBeenCalledTimes(1);
+    expect(finalizacion.finalizarVencidas).toHaveBeenCalledTimes(1);
     expect(manager.query).toHaveBeenCalledWith(
       expect.stringContaining('ON CONFLICT'),
       [4, 7],

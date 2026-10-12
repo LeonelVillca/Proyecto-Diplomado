@@ -11,6 +11,7 @@ export type PublicImageKind = 'portada' | 'logo' | 'galeria' | 'platos';
 export class PublicImageStorageService {
   private readonly production: boolean;
 
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     config: ConfigService,
     private readonly r2: R2StorageService,
@@ -18,6 +19,7 @@ export class PublicImageStorageService {
     this.production = config.get<string>('NODE_ENV') === 'production';
   }
 
+  // Guarda una imagen WebP en el almacenamiento configurado.
   async uploadWebp(
     buffer: Buffer,
     idRestaurante: number,
@@ -45,6 +47,7 @@ export class PublicImageStorageService {
     return `/api/v1/publico/${key}`;
   }
 
+  // Lee un archivo del almacenamiento configurado.
   async read(
     idRestaurante: number,
     kind: PublicImageKind,
@@ -66,6 +69,7 @@ export class PublicImageStorageService {
     }
   }
 
+  // Quita una imagen de la galería del restaurante.
   async removeGalleryUrl(url: string): Promise<void> {
     const match =
       /^\/api\/v1\/publico\/restaurantes\/(\d+)\/galeria\/([0-9a-f-]{36}\.webp)$/i.exec(

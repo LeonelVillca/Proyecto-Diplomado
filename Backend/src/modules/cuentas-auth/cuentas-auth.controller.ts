@@ -18,8 +18,10 @@ import { CuentaAuth } from './cuenta-auth.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_sistema')
 export class CuentasAuthController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly cuentasAuthService: CuentasAuthService) {}
 
+  // Lista las cuentas de acceso.
   @Get()
   async listar() {
     return (await this.cuentasAuthService.listar()).map((cuenta) =>
@@ -27,6 +29,7 @@ export class CuentasAuthController {
     );
   }
 
+  // Actualiza una cuenta de acceso.
   @Patch(':id')
   async actualizar(
     @Param('id', ParseIntPipe) id: number,
@@ -35,6 +38,7 @@ export class CuentasAuthController {
     return this.aPublico(await this.cuentasAuthService.actualizar(id, dto));
   }
 
+  // Convierte la cuenta a su versión pública.
   private aPublico(cuenta: CuentaAuth) {
     return {
       id: cuenta.id,

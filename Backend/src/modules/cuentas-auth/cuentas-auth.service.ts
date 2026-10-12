@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_COST } from '../../common/constants/security.constants';
 import { Repository } from 'typeorm';
 import { CuentaAuth } from './cuenta-auth.entity';
 import { CrearCuentaAuthDto } from './dto/crear-cuenta-auth.dto';
@@ -12,15 +13,18 @@ import { ActualizarCuentaAuthDto } from './dto/actualizar-cuenta-auth.dto';
 
 @Injectable()
 export class CuentasAuthService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(CuentaAuth)
     private readonly cuentaAuthRepository: Repository<CuentaAuth>,
   ) {}
 
+  // Lista las cuentas de acceso.
   async listar(): Promise<CuentaAuth[]> {
     return this.cuentaAuthRepository.find({ relations: { usuario: true } });
   }
 
+  // Busca la cuenta de acceso de un usuario.
   buscarPorUsuario(idUsuario: number): Promise<CuentaAuth | null> {
     return this.cuentaAuthRepository.findOne({
       where: { usuario: { id: idUsuario } },
@@ -28,6 +32,7 @@ export class CuentasAuthService {
     });
   }
 
+  // Crea una cuenta de acceso.
   async crear(dto: CrearCuentaAuthDto): Promise<CuentaAuth> {
     const existente = await this.buscarPorUsuario(dto.idUsuario);
     if (existente) {
@@ -38,11 +43,12 @@ export class CuentasAuthService {
 
     const cuenta = this.cuentaAuthRepository.create({
       usuario: { id: dto.idUsuario } as never,
-      passwordHash: dto.password ? await bcrypt.hash(dto.password, 10) : null,
+      passwordHash: dto.password ? await bcrypt.hash(dto.password, BCRYPT_COST) : null,
     });
     return this.cuentaAuthRepository.save(cuenta);
   }
 
+  // Crea la cuenta de acceso si todavía no existe.
   async asegurarCuenta(
     idUsuario: number,
     password?: string,
@@ -51,24 +57,28 @@ export class CuentasAuthService {
     if (!cuenta) {
       cuenta = await this.crear({ idUsuario, password });
     } else if (password && !cuenta.passwordHash) {
-      cuenta.passwordHash = await bcrypt.hash(password, 10);
+      cuenta.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
       cuenta = await this.cuentaAuthRepository.save(cuenta);
     }
     return cuenta;
   }
 
+  // Guarda la fecha del último ingreso.
   async registrarUltimoIngreso(idUsuario: number): Promise<void> {
     await this.cuentaAuthRepository.update({ usuario: { id: idUsuario } }, { ultimoIngreso: new Date(), intentosFallidos: 0 });
   }
 
+  // Registra un intento fallido de acceso.
   async incrementarIntentosFallidos(idCuenta: number): Promise<void> {
     await this.cuentaAuthRepository.increment({ id: idCuenta }, 'intentosFallidos', 1);
   }
 
+  // Invalida las sesiones activas de un usuario.
   async revocarSesiones(idUsuario: number): Promise<void> {
     await this.cuentaAuthRepository.increment({ usuario: { id: idUsuario } }, 'sessionVersion', 1);
   }
 
+  // Actualiza una cuenta de acceso.
   async actualizar(
     idCuenta: number,
     dto: ActualizarCuentaAuthDto,
@@ -81,7 +91,7 @@ export class CuentasAuthService {
     }
 
     if (dto.password !== undefined) {
-      cuenta.passwordHash = await bcrypt.hash(dto.password, 10);
+      cuenta.passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
       cuenta.intentosFallidos = 0;
     }
     if (dto.estado !== undefined) {

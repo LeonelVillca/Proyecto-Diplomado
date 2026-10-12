@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { fakerES as faker } from '@faker-js/faker';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_COST } from './src/common/constants/security.constants';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -129,7 +130,7 @@ async function runSeeder() {
   ];
 
   // Crear Super Admin
-  const superAdminPasswordHash = await bcrypt.hash(adminPassword, 12);
+  const superAdminPasswordHash = await bcrypt.hash(adminPassword, BCRYPT_COST);
   const superUsuario = await usuarioRepo.save(
     usuarioRepo.create({
       nombre: 'Leonel',
@@ -162,7 +163,7 @@ async function runSeeder() {
     const nombreRest = faker.company.name() + ' Restaurant';
     const correo = `restaurante${i + 1}@mesachapaca.com`;
     const demoPassword = randomBytes(18).toString('base64url');
-    const demoPasswordHash = await bcrypt.hash(demoPassword, 12);
+    const demoPasswordHash = await bcrypt.hash(demoPassword, BCRYPT_COST);
     const telefonoFake = faker.phone.number().substring(0, 20);
 
     const usuario = await usuarioRepo.save(

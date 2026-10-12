@@ -9,6 +9,7 @@ import { CategoriaSoporte } from '../categoria-soporte/categoria-soporte.entity'
 
 @Injectable()
 export class SoporteService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Soporte)
     private readonly soporteRepository: Repository<Soporte>,
@@ -18,6 +19,7 @@ export class SoporteService {
     private readonly categoriaRepository: Repository<CategoriaSoporte>,
   ) {}
 
+  // Crea un ticket de soporte.
   async crear(dto: CrearSoporteDto): Promise<Soporte> {
     const usuario = await this.usuarioRepository.findOneBy({
       id: dto.idUsuario,
@@ -47,6 +49,7 @@ export class SoporteService {
     return this.soporteRepository.save(soporte);
   }
 
+  // Lista los tickets de soporte.
   listarTodos(): Promise<Soporte[]> {
     return this.soporteRepository.find({
       relations: { usuario: true, categoriaSoporte: true },
@@ -54,6 +57,7 @@ export class SoporteService {
     });
   }
 
+  // Busca un ticket de soporte por su identificador.
   async buscarPorId(id: number): Promise<Soporte> {
     const soporte = await this.soporteRepository.findOne({
       where: { id },
@@ -65,6 +69,7 @@ export class SoporteService {
     return soporte;
   }
 
+  // Lista los tickets de soporte de un usuario.
   listarPorUsuario(idUsuario: number): Promise<Soporte[]> {
     return this.soporteRepository.find({
       where: { usuario: { id: idUsuario } },
@@ -73,6 +78,7 @@ export class SoporteService {
     });
   }
 
+  // Lista los tickets de una categoría.
   listarPorCategoria(idCategoria: number): Promise<Soporte[]> {
     return this.soporteRepository.find({
       where: { categoriaSoporte: { id: idCategoria } },
@@ -81,6 +87,7 @@ export class SoporteService {
     });
   }
 
+  // Actualiza un ticket de soporte.
   async actualizar(id: number, dto: ActualizarSoporteDto): Promise<Soporte> {
     const soporte = await this.buscarPorId(id);
 
@@ -98,6 +105,7 @@ export class SoporteService {
     return this.soporteRepository.save(soporte);
   }
 
+  // Elimina un ticket de soporte.
   async eliminar(id: number): Promise<void> {
     const soporte = await this.buscarPorId(id);
     await this.soporteRepository.delete(soporte.id);

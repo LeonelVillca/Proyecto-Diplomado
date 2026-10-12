@@ -14,6 +14,7 @@ import {
 
 @Injectable()
 export class MesaService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Mesa)
     private readonly mesaRepository: Repository<Mesa>,
@@ -21,6 +22,7 @@ export class MesaService {
     private readonly restauranteRepository: Repository<Restaurante>,
   ) {}
 
+  // Crea una mesa.
   async crear(dto: CrearMesaDto): Promise<Mesa> {
     const restaurante = await this.restauranteRepository.findOneBy({
       id: dto.idRestaurante,
@@ -44,11 +46,13 @@ export class MesaService {
     return this.mesaRepository.save(mesa);
   }
 
+  // Lista las mesas.
   async listarTodos(): Promise<Mesa[]> {
     await liberarEstadosMesaVencidos(this.mesaRepository);
     return this.mesaRepository.find({ relations: { restaurante: true } });
   }
 
+  // Busca una mesa por su identificador.
   async buscarPorId(id: number): Promise<Mesa> {
     await liberarEstadosMesaVencidos(this.mesaRepository, id);
     const mesa = await this.mesaRepository.findOne({
@@ -61,6 +65,7 @@ export class MesaService {
     return mesa;
   }
 
+  // Lista las mesas de un restaurante.
   async listarPorRestaurante(idRestaurante: number): Promise<Mesa[]> {
     await liberarEstadosMesaVencidos(this.mesaRepository);
     return this.mesaRepository.find({
@@ -69,6 +74,7 @@ export class MesaService {
     });
   }
 
+  // Actualiza una mesa.
   async actualizar(id: number, dto: ActualizarMesaDto): Promise<Mesa> {
     return this.mesaRepository.manager.transaction(async (manager) => {
       await manager.query(
@@ -95,6 +101,7 @@ export class MesaService {
     });
   }
 
+  // Actualiza el estado de una mesa para un horario.
   async actualizarEstadoHorario(id: number, dto: ActualizarEstadoHorarioDto) {
     return this.mesaRepository.manager.transaction(async (manager) => {
       return actualizarBloqueoHorario(id, dto, (sql, params) =>
@@ -103,6 +110,7 @@ export class MesaService {
     });
   }
 
+  // Elimina una mesa.
   async eliminar(id: number): Promise<void> {
     const mesa = await this.buscarPorId(id);
     await this.mesaRepository.delete(mesa.id);

@@ -16,8 +16,10 @@ interface CorreoTransaccional {
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private configService: ConfigService) {}
 
+  // Envía un correo electrónico.
   private async enviarCorreo(correo: CorreoTransaccional): Promise<void> {
     const apiKey = this.configService.get<string>('BREVO_API_KEY')?.trim();
     const remitente = this.configService.get<string>('MAIL_FROM')?.trim();
@@ -79,6 +81,7 @@ export class MailService {
     }
   }
 
+  // Envía el correo de verificación de una solicitud.
   async enviarVerificacionSolicitud(correoDestino: string, token: string): Promise<void> {
     const apiBase = this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000';
     const url = new URL('/api/v1/solicitud/verificar-correo', apiBase);
@@ -91,6 +94,7 @@ export class MailService {
     });
   }
 
+  // Envía una invitación para crear la contraseña.
   async enviarInvitacion(correoDestino: string, token: string): Promise<void> {
     // Para entornos locales usamos el puerto por defecto de Flutter Web, en producción sería el dominio real
     const frontend = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:62532';
@@ -130,6 +134,7 @@ export class MailService {
     });
   }
 
+  // Envía el correo para recuperar la contraseña.
   async enviarRecuperacionPassword(correoDestino: string, pin: string): Promise<void> {
     const html = `
       <div style="background-color: #F5EEE0; padding: 40px 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">

@@ -22,8 +22,10 @@ import { Roles } from '../../core/decorators/roles.decorator';
 @Controller('respuesta-resena')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class RespuestaResenaController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly respuestaResenaService: RespuestaResenaService) {}
 
+  // Crea una respuesta a reseña.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('respuesta_resena')
   @Post()
@@ -34,6 +36,7 @@ export class RespuestaResenaController {
     return this.respuestaResenaService.crear(dto);
   }
 
+  // Lista las respuestas a reseñas.
   @Roles('admin_sistema')
   @Get()
   listarTodas() {
@@ -46,11 +49,13 @@ export class RespuestaResenaController {
     return this.respuestaResenaService.listarPorResena(idResena);
   }
 
+  // Busca una respuesta a reseña por su identificador.
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number) {
     return this.respuestaResenaService.buscarPorId(id);
   }
 
+  // Actualiza una respuesta a reseña.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('respuesta_resena')
   @Patch(':id')
@@ -61,6 +66,7 @@ export class RespuestaResenaController {
     return this.respuestaResenaService.actualizar(id, dto);
   }
 
+  // Elimina una respuesta a reseña.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('respuesta_resena')
   @Delete(':id')

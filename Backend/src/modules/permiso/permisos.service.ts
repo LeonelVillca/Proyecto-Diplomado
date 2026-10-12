@@ -7,11 +7,13 @@ import { ActualizarPermisoDto } from './dto/actualizar-permiso.dto';
 
 @Injectable()
 export class PermisosService implements OnModuleInit {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Permiso)
     private readonly permisoRepository: Repository<Permiso>,
   ) {}
 
+  // Prepara los datos iniciales de este módulo.
   async onModuleInit() {
     const defaultPermisos = [
       { nombre: 'Menú Solicitudes', codigo: 'menu_solicitudes', descripcion: 'Aprobar o rechazar solicitudes' },
@@ -41,15 +43,18 @@ export class PermisosService implements OnModuleInit {
     console.log('Permisos sincronizados correctamente.');
   }
 
+  // Crea un permiso.
   crear(dto: CrearPermisoDto): Promise<Permiso> {
     const permiso = this.permisoRepository.create(dto);
     return this.permisoRepository.save(permiso);
   }
 
+  // Lista los permisos.
   listarTodos(): Promise<Permiso[]> {
     return this.permisoRepository.find();
   }
 
+  // Busca un permiso por su identificador.
   async buscarPorId(id: number): Promise<Permiso> {
     const permiso = await this.permisoRepository.findOneBy({ id });
     if (!permiso) {
@@ -58,16 +63,19 @@ export class PermisosService implements OnModuleInit {
     return permiso;
   }
 
+  // Busca un permiso por su código.
   async buscarPorCodigo(codigo: string): Promise<Permiso | null> {
     return this.permisoRepository.findOneBy({ codigo });
   }
 
+  // Actualiza un permiso.
   async actualizar(id: number, dto: ActualizarPermisoDto): Promise<Permiso> {
     const permiso = await this.buscarPorId(id);
     Object.assign(permiso, dto);
     return this.permisoRepository.save(permiso);
   }
 
+  // Elimina un permiso.
   async eliminar(id: number): Promise<void> {
     const permiso = await this.buscarPorId(id);
     await this.permisoRepository.delete(permiso.id);

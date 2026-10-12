@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_COST } from '../../../common/constants/security.constants';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { DataSource } from 'typeorm';
@@ -141,7 +142,7 @@ export class RecuperacionService {
       }
       if (password !== undefined) {
         await manager.update(CuentaAuth, cuenta.id, {
-          passwordHash: await bcrypt.hash(password, 12),
+          passwordHash: await bcrypt.hash(password, BCRYPT_COST),
           intentosFallidos: 0,
           sessionVersion: () => 'session_version + 1',
         });

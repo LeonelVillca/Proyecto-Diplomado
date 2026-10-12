@@ -21,8 +21,10 @@ import { Roles } from '../../core/decorators/roles.decorator';
 @Controller('resenas')
 @UseGuards(JwtAuthGuard, RolesGuard, ClientOwnershipGuard)
 export class ResenasController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly resenasService: ResenasService) {}
 
+  // Crea una reseña.
   @CheckClientOwnership('resena')
   @Post()
   crear(@Body() dto: CrearResenaDto) {
@@ -35,24 +37,28 @@ export class ResenasController {
     return this.resenasService.listarPorRestaurante(idRestaurante);
   }
 
+  // Lista las reseñas de un usuario.
   @CheckClientOwnership('resena')
   @Get('usuario/:idUsuario')
   listarPorUsuario(@Param('idUsuario', ParseIntPipe) idUsuario: number) {
     return this.resenasService.listarPorUsuario(idUsuario);
   }
   
+  // Lista las reseñas.
   @Roles('admin_sistema')
   @Get()
   listarTodas() {
     return this.resenasService.listarTodas();
   }
 
+  // Busca una reseña por su identificador.
   @CheckClientOwnership('resena')
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number) {
     return this.resenasService.buscarPorId(id);
   }
 
+  // Actualiza una reseña.
   @CheckClientOwnership('resena')
   @Patch(':id')
   actualizar(

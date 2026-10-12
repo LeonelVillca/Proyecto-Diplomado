@@ -1,5 +1,8 @@
 import 'package:frontend/core/movil/consumer_design.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/screens/movil/profile/user_reviews_screen.dart';
 import 'package:frontend/screens/movil/profile/user_support_screen.dart';
@@ -20,6 +23,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _reservasCount = 0;
   int _resenasCount = 0;
   String? _statsError;
+  // TEMPORAL: retirar antes de hacer commit, junto con el botón de debug.
+  bool _copiandoToken = false;
+
+  Future<void> _copiarFirebaseIdToken() async {
+    if (!kDebugMode || _copiandoToken) return;
+    final auth = AuthScope.of(context, listen: false);
+    if (!auth.isAuthenticated) return;
+    setState(() => _copiandoToken = true);
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw StateError('No hay un usuario autenticado en Firebase');
+      }
+      final idToken = await user.getIdToken(true);
+      if (idToken == null || idToken.isEmpty) {
+        throw StateError('Firebase no devolvió un ID Token');
+      }
+      if (!mounted ||
+          !auth.isAuthenticated ||
+          FirebaseAuth.instance.currentUser?.uid != user.uid) {
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: idToken));
+      debugPrint('FIREBASE_ID_TOKEN: $idToken');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Firebase ID Token copiado')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo copiar el token. Revisa tu sesión de Google y conexión.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _copiandoToken = false);
+    }
+  }
 
   @override
   void initState() {
@@ -322,6 +366,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
+                // TEMPORAL: solo para pruebas manuales locales en modo debug.
+                if (kDebugMode &&
+                    auth.isAuthenticated &&
+                    auth.user != null) ...[
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    onPressed: _copiandoToken ? null : _copiarFirebaseIdToken,
+                    icon: _copiandoToken
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.copy_rounded),
+                    label: Text(
+                      _copiandoToken
+                          ? 'Obteniendo token...'
+                          : 'Copiar Firebase ID Token (temporal)',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                ],
               ]),
             ),
           ),

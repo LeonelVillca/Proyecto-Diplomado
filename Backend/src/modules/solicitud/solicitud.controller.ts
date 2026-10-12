@@ -29,8 +29,10 @@ import { ReenviarVerificacionDto } from './dto/reenviar-verificacion.dto';
 
 @Controller('solicitud')
 export class SolicitudController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly solicitudService: SolicitudService) { }
 
+  // Muestra el resultado de la confirmación por correo.
   @Get('verificar-correo')
   @Header('Content-Type', 'text/html; charset=utf-8')
   @Header('Cache-Control', 'no-store')
@@ -43,6 +45,7 @@ export class SolicitudController {
     return `<!doctype html><html lang="es"><meta charset="utf-8"><title>Confirmar correo</title><body style="font-family:sans-serif;max-width:38rem;margin:4rem auto;padding:1rem"><h1>Confirma tu correo</h1><p>Pulsa el botón para que podamos revisar tu solicitud.</p><form method="post" action="/api/v1/solicitud/confirmar-correo"><input type="hidden" name="token" value="${token}"><button type="submit">Confirmar correo</button></form></body></html>`;
   }
 
+  // Verifica el correo de una solicitud.
   @Post('confirmar-correo')
   @HttpCode(200)
   @Header('Content-Type', 'text/html; charset=utf-8')
@@ -54,6 +57,7 @@ export class SolicitudController {
     return '<!doctype html><html lang="es"><meta charset="utf-8"><title>Correo confirmado</title><body style="font-family:sans-serif;max-width:38rem;margin:4rem auto;padding:1rem"><h1>Correo confirmado</h1><p>Tu solicitud ya puede ser revisada. Puedes cerrar esta página.</p></body></html>';
   }
 
+  // Reenvía el correo de verificación.
   @Post('reenviar-verificacion')
   @HttpCode(200)
   @Throttle({ default: { limit: 3, ttl: 60 * 60 * 1000 } })
@@ -95,6 +99,7 @@ export class SolicitudController {
       });
   }
 
+  // Lista las solicitudes.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin_sistema')
   @Get()
@@ -102,6 +107,7 @@ export class SolicitudController {
     return this.solicitudService.listarTodos(estado);
   }
 
+  // Lista las solicitudes de un usuario.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin_sistema')
   @Get('usuario/:idUsuario')
@@ -111,6 +117,7 @@ export class SolicitudController {
     return this.solicitudService.listarPorUsuario(idUsuario);
   }
 
+  // Busca una solicitud por su identificador.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin_sistema')
   @Get(':id')
@@ -118,6 +125,7 @@ export class SolicitudController {
     return this.solicitudService.buscarPorId(id);
   }
 
+  // Actualiza una solicitud.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin_sistema')
   @Patch(':id')
@@ -128,6 +136,7 @@ export class SolicitudController {
     return this.solicitudService.actualizar(id, dto);
   }
 
+  // Reenvía la invitación al restaurante.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin_sistema')
   @Post(':id/reenviar-invitacion')
@@ -135,6 +144,7 @@ export class SolicitudController {
     return this.solicitudService.reenviarInvitacion(id);
   }
 
+  // Elimina una solicitud.
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin_sistema')
   @Delete(':id')

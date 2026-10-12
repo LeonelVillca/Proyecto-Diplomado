@@ -27,12 +27,14 @@ export const CheckOwnership = (resource: OwnedResource) =>
 
 @Injectable()
 export class OwnershipGuard implements CanActivate {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private reflector: Reflector,
     private dataSource: DataSource,
     private readonly accesoRestaurante: UsuarioRestauranteAccesoService,
   ) {}
 
+  // Comprueba si la solicitud tiene acceso a este recurso.
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const resource = this.reflector.get<OwnedResource>(
       RESOURCE_TYPE_KEY,
@@ -80,6 +82,7 @@ export class OwnershipGuard implements CanActivate {
     return true;
   }
 
+  // Valida el identificador recibido en la solicitud.
   private validId(value: unknown): number {
     if (
       !/^\d+$/.test(String(value)) ||
@@ -91,6 +94,7 @@ export class OwnershipGuard implements CanActivate {
     return Number(value);
   }
 
+  // Obtiene los restaurantes que administra el usuario.
   private async restaurantIds(
     type: OwnedResource,
     value: unknown,

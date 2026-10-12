@@ -16,6 +16,7 @@ import { ActualizarExcepcionHorarioDto } from './dto/actualizar-excepcion-horari
 
 @Injectable()
 export class HorarioAtencionService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(HorarioAtencion)
     private readonly horarioRepository: Repository<HorarioAtencion>,
@@ -25,6 +26,7 @@ export class HorarioAtencionService {
     private readonly excepcionRepository: Repository<ExcepcionHorario>,
   ) {}
 
+  // Crea un horario de atención.
   async crear(dto: CrearHorarioAtencionDto): Promise<HorarioAtencion> {
     const restaurante = await this.restauranteRepository.findOneBy({
       id: dto.idRestaurante,
@@ -42,6 +44,7 @@ export class HorarioAtencionService {
     return horario;
   }
 
+  // Crea un horario para un restaurante.
   crearEnRestaurante(
     manager: EntityManager,
     restaurante: Restaurante,
@@ -61,6 +64,7 @@ export class HorarioAtencionService {
     );
   }
 
+  // Reemplaza los horarios semanales de un restaurante.
   async reemplazarSemanales(
     manager: EntityManager,
     idRestaurante: number,
@@ -76,10 +80,12 @@ export class HorarioAtencionService {
     );
   }
 
+  // Lista los horarios de atención.
   listarTodos(): Promise<HorarioAtencion[]> {
     return this.horarioRepository.find({ relations: { restaurante: true } });
   }
 
+  // Busca un horario de atención por su identificador.
   async buscarPorId(id: number): Promise<HorarioAtencion> {
     const horario = await this.horarioRepository.findOne({
       where: { id },
@@ -91,6 +97,7 @@ export class HorarioAtencionService {
     return horario;
   }
 
+  // Lista los horarios de atención de un restaurante.
   listarPorRestaurante(idRestaurante: number): Promise<HorarioAtencion[]> {
     return this.horarioRepository.find({
       where: { restaurante: { id: idRestaurante } },
@@ -98,6 +105,7 @@ export class HorarioAtencionService {
     });
   }
 
+  // Actualiza un horario de atención.
   async actualizar(
     id: number,
     dto: ActualizarHorarioAtencionDto,
@@ -107,11 +115,13 @@ export class HorarioAtencionService {
     return this.horarioRepository.save(horario);
   }
 
+  // Elimina un horario de atención.
   async eliminar(id: number): Promise<void> {
     const horario = await this.buscarPorId(id);
     await this.horarioRepository.delete(horario.id);
   }
 
+  // Crea una excepción de horario.
   async crearExcepcion(
     dto: CrearExcepcionHorarioDto,
   ): Promise<ExcepcionHorario> {
@@ -136,6 +146,7 @@ export class HorarioAtencionService {
     );
   }
 
+  // Lista las excepciones de horario de un restaurante.
   listarExcepciones(idRestaurante: number): Promise<ExcepcionHorario[]> {
     return this.excepcionRepository.find({
       where: { restaurante: { id: idRestaurante } },
@@ -143,6 +154,7 @@ export class HorarioAtencionService {
     });
   }
 
+  // Actualiza una excepción de horario.
   async actualizarExcepcion(
     id: number,
     dto: ActualizarExcepcionHorarioDto,
@@ -161,11 +173,13 @@ export class HorarioAtencionService {
     return this.excepcionRepository.save(excepcion);
   }
 
+  // Elimina una excepción de horario.
   async eliminarExcepcion(id: number): Promise<void> {
     const excepcion = await this.buscarExcepcion(id);
     await this.excepcionRepository.remove(excepcion);
   }
 
+  // Busca una excepción de horario.
   private async buscarExcepcion(id: number): Promise<ExcepcionHorario> {
     const excepcion = await this.excepcionRepository.findOne({
       where: { id },
@@ -177,6 +191,7 @@ export class HorarioAtencionService {
     return excepcion;
   }
 
+  // Valida los datos de una excepción de horario.
   private validarExcepcion(
     cerrado: boolean,
     horaInicio?: string,

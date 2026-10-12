@@ -6,11 +6,13 @@ import { UsuarioRol } from '../../modules/usuario-rol/usuario-rol.entity';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private reflector: Reflector,
     private dataSource: DataSource,
   ) {}
 
+  // Comprueba si la solicitud tiene acceso a este recurso.
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
       context.getHandler(),

@@ -22,8 +22,10 @@ import { Menu } from './menu.entity';
 @Controller('menu')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class MenuController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly menuService: MenuService) {}
 
+  // Crea un menú.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('menu')
   @Post()
@@ -31,11 +33,13 @@ export class MenuController {
     return this.menuService.crear(dto);
   }
 
+  // Lista los menús.
   @Get()
   listarTodos(): Promise<Menu[]> {
     return this.menuService.listarTodos();
   }
 
+  // Lista los menús de un restaurante.
   @Get('restaurante/:idRestaurante')
   listarPorRestaurante(
     @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
@@ -43,11 +47,13 @@ export class MenuController {
     return this.menuService.listarPorRestaurante(idRestaurante);
   }
 
+  // Busca un menú por su identificador.
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Menu> {
     return this.menuService.buscarPorId(id);
   }
 
+  // Actualiza un menú.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('menu')
   @Patch(':id')
@@ -58,6 +64,7 @@ export class MenuController {
     return this.menuService.actualizar(id, dto);
   }
 
+  // Cambia la disponibilidad de un menú.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('menu')
   @Patch(':id/disponibilidad')
@@ -70,6 +77,7 @@ export class MenuController {
     });
   }
 
+  // Elimina un menú.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('menu')
   @Delete(':id')

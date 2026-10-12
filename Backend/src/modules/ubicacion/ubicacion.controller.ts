@@ -20,8 +20,10 @@ import { Ubicacion } from './ubicacion.entity';
 
 @Controller('ubicacion')
 export class UbicacionController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly ubicacionService: UbicacionService) {}
 
+  // Crea una ubicación.
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
   @CheckOwnership('ubicacion')
@@ -30,11 +32,13 @@ export class UbicacionController {
     return this.ubicacionService.crear(dto);
   }
 
+  // Lista las ubicaciones.
   @Get()
   listarTodos(): Promise<Ubicacion[]> {
     return this.ubicacionService.listarTodos();
   }
 
+  // Lista las ubicaciones de un restaurante.
   @Get('restaurante/:idRestaurante')
   listarPorRestaurante(
     @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
@@ -42,11 +46,13 @@ export class UbicacionController {
     return this.ubicacionService.listarPorRestaurante(idRestaurante);
   }
 
+  // Busca una ubicación por su identificador.
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Ubicacion> {
     return this.ubicacionService.buscarPorId(id);
   }
 
+  // Actualiza una ubicación.
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
   @CheckOwnership('ubicacion')
@@ -58,6 +64,7 @@ export class UbicacionController {
     return this.ubicacionService.actualizar(id, dto);
   }
 
+  // Elimina una ubicación.
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
   @CheckOwnership('ubicacion')

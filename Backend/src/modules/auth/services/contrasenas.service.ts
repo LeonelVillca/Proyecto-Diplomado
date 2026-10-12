@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_COST } from '../../../common/constants/security.constants';
 import { createHash } from 'crypto';
 import { DataSource } from 'typeorm';
 import { CuentaAuth } from '../../cuentas-auth/cuenta-auth.entity';
@@ -49,7 +50,7 @@ export class ContrasenasService {
       if (cuenta?.passwordHash) {
         throw new BadRequestException('La cuenta ya tiene contraseña creada.');
       }
-      const passwordHash = await bcrypt.hash(dto.password, 12);
+      const passwordHash = await bcrypt.hash(dto.password, BCRYPT_COST);
       if (!cuenta) {
         cuenta = cuentaRepo.create({
           usuario: { id: invitacion.usuario.id },

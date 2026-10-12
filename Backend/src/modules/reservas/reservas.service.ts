@@ -26,6 +26,7 @@ import {
 
 @Injectable()
 export class ReservasService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Reserva)
     private readonly reservasRepo: Repository<Reserva>,
@@ -41,6 +42,7 @@ export class ReservasService {
     private readonly notificaciones: NotificacionesService,
   ) {}
 
+  // Crea una reserva.
   async crear(dto: CrearReservaDto): Promise<Reserva> {
     let resultado: { guardada: Reserva; mesa: Mesa };
     try {
@@ -156,6 +158,7 @@ export class ReservasService {
     return guardada;
   }
 
+  // Consulta las mesas disponibles para un horario.
   async consultarDisponibilidad(dto: ConsultarDisponibilidadDto): Promise<{
     mesas: Array<{ idMesa: number; numeroMesa: string; capacidad: number }>;
   }> {
@@ -219,6 +222,7 @@ export class ReservasService {
     };
   }
 
+  // Consulta la ocupación de un restaurante.
   async consultarOcupacionRestaurante(
     idRestaurante: number,
     fecha: string,
@@ -321,12 +325,14 @@ export class ReservasService {
     };
   }
 
+  // Lista las reservas.
   listarTodas(): Promise<Reserva[]> {
     return this.reservasRepo.find({
       relations: { usuario: true, mesa: { restaurante: true } },
     });
   }
 
+  // Busca una reserva por su identificador.
   async buscarPorId(id: number): Promise<Reserva> {
     const reserva = await this.reservasRepo.findOne({
       where: { id },
@@ -336,6 +342,7 @@ export class ReservasService {
     return reserva;
   }
 
+  // Lista las reservas de un usuario.
   async listarPorUsuario(
     idUsuario: number,
   ): Promise<Array<Reserva & { cancelarHasta: string }>> {
@@ -349,6 +356,7 @@ export class ReservasService {
     }));
   }
 
+  // Lista las reservas de un restaurante.
   async listarPorRestaurante(idRestaurante: number): Promise<Reserva[]> {
     return this.reservasRepo.find({
       where: { mesa: { restaurante: { id: idRestaurante } } },
@@ -356,6 +364,7 @@ export class ReservasService {
     });
   }
 
+  // Actualiza una reserva.
   async actualizar(id: number, dto: ActualizarReservaDto): Promise<Reserva> {
     const reservaInicial = await this.buscarPorId(id);
     const idMesaBloqueada = dto.idMesa ?? reservaInicial.mesa.id;
@@ -509,12 +518,14 @@ export class ReservasService {
     return saved;
   }
 
+  // Elimina una reserva.
   async eliminar(id: number): Promise<void> {
     const reserva = await this.buscarPorId(id);
     reserva.estado = 'cancelada';
     await this.reservasRepo.save(reserva);
   }
 
+  // Cancela una reserva solicitada por su usuario.
   async cancelarPorUsuario(
     id: number,
     idUsuario: number,
@@ -559,6 +570,7 @@ export class ReservasService {
     return { id: cancelada.id, estado: cancelada.estado };
   }
 
+  // Calcula el plazo máximo para cancelar una reserva.
   private limiteCancelacion(reserva: Reserva): number {
     const zonaHoraria =
       reserva.mesa.restaurante.zonaHoraria || 'America/La_Paz';
@@ -572,6 +584,7 @@ export class ReservasService {
     );
   }
 
+  // Comprueba si dos intervalos de reserva se solapan.
   private isSlotConflict(error: unknown): boolean {
     const dbError = error as {
       code?: string;
@@ -587,6 +600,7 @@ export class ReservasService {
     );
   }
 
+  // Comprueba si una mesa ya tiene una reserva en ese horario.
   private async haySolapamiento(
     idMesa: number,
     fecha: string,
@@ -607,6 +621,7 @@ export class ReservasService {
     return (await consulta.getCount()) > 0;
   }
 
+  // Prepara la consulta de reservas que se solapan.
   private consultaSolapamientos(
     fecha: string,
     hora: string,
@@ -661,6 +676,7 @@ export class ReservasService {
       );
   }
 
+  // Valida la capacidad y el estado de la mesa.
   private validarCapacidadYEstadoMesa(
     mesa: Mesa,
     numeroPersonas: number,
@@ -679,11 +695,13 @@ export class ReservasService {
     }
   }
 
+  // Convierte una hora a minutos.
   private minutos(hora: string): number {
     const [horas, minutos] = hora.split(':').map(Number);
     return horas * 60 + minutos;
   }
 
+  // Comprueba que la reserva respete el horario del restaurante.
   private async validarHorarioRestaurante(
     idRestaurante: number,
     fecha: string,

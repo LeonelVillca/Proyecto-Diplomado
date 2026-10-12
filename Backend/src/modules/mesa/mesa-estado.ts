@@ -6,6 +6,7 @@ import { ActualizarEstadoHorarioDto } from './dto/actualizar-estado-horario.dto'
 export const DURACION_ESTADO_MESA_MINUTOS = 60;
 export const MARGEN_PREVIO_RESERVA_MINUTOS = 30;
 
+// Libera los estados temporales de mesa que ya vencieron.
 export async function liberarEstadosMesaVencidos(
   repository: Repository<Mesa>,
   id?: number,
@@ -20,6 +21,7 @@ export async function liberarEstadosMesaVencidos(
   );
 }
 
+// Convierte una fecha y hora local a un instante real.
 export function instanteEnZonaHoraria(
   fecha: string,
   hora: string,
@@ -66,6 +68,7 @@ export function instanteEnZonaHoraria(
   return new Date(instant);
 }
 
+// Obtiene el estado de una mesa en un horario.
 export function estadoMesaEnHorario(
   mesa: Mesa,
   fecha: string,
@@ -94,6 +97,7 @@ type BloqueoHorario = {
   hora: string;
 };
 
+// Busca bloqueos manuales de mesas en un horario.
 export async function bloqueosManualesEnHorario(
   idsMesa: number[],
   fecha: string,
@@ -114,6 +118,7 @@ export async function bloqueosManualesEnHorario(
   );
 }
 
+// Actualiza el bloqueo manual de una mesa.
 export async function actualizarBloqueoHorario(
   id: number,
   dto: ActualizarEstadoHorarioDto,

@@ -16,10 +16,12 @@ export type DatosPublicacion = Restaurante & {
 
 @Injectable()
 export class PublicacionRestauranteService {
+  // Comprueba si el perfil puede publicarse.
   perfilPublicable(restaurante: DatosPublicacion): boolean {
     return restaurante.estado === true && this.perfilCompleto(restaurante);
   }
 
+  // Comprueba si el perfil contiene los datos requeridos.
   perfilCompleto(restaurante: DatosPublicacion): boolean {
     const textoCompleto = (valor: unknown) =>
       typeof valor === 'string' && valor.trim().length > 0;
@@ -49,6 +51,7 @@ export class PublicacionRestauranteService {
     );
   }
 
+  // Activa el restaurante cuando su perfil está completo.
   async activarSiPerfilCompleto(
     id: number,
     estabaCompleto: boolean,

@@ -24,8 +24,10 @@ import { Imagen } from './imagen.entity';
 @Controller('imagen')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class ImagenController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly imagenService: ImagenService) {}
 
+  // Crea una imagen.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('imagen')
   @Post()
@@ -33,12 +35,14 @@ export class ImagenController {
     return this.imagenService.crear(dto);
   }
 
+  // Lista las imágenes.
   @Roles('admin_sistema')
   @Get()
   listarTodos(): Promise<Imagen[]> {
     return this.imagenService.listarTodos();
   }
 
+  // Lista las imágenes de un restaurante.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('imagen')
   @Get('restaurante/:idRestaurante')
@@ -48,6 +52,7 @@ export class ImagenController {
     return this.imagenService.listarPorRestaurante(idRestaurante);
   }
 
+  // Busca una imagen por su identificador.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('imagen')
   @Get(':id')
@@ -55,6 +60,7 @@ export class ImagenController {
     return this.imagenService.buscarPorId(id);
   }
 
+  // Actualiza una imagen.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('imagen')
   @Patch(':id')
@@ -65,6 +71,7 @@ export class ImagenController {
     return this.imagenService.actualizar(id, dto);
   }
 
+  // Elimina una imagen.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('imagen')
   @Delete(':id')

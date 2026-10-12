@@ -8,6 +8,7 @@ import { Rol } from '../rol/rol.entity';
 
 @Injectable()
 export class UsuarioRolService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(UsuarioRol)
     private readonly usuarioRolRepository: Repository<UsuarioRol>,
@@ -17,6 +18,7 @@ export class UsuarioRolService {
     private readonly rolRepository: Repository<Rol>,
   ) {}
 
+  // Asigna un rol a un usuario.
   async asignarRol(dto: CrearUsuarioRolDto): Promise<UsuarioRol> {
     const { idUsuario, idRol } = dto;
 
@@ -42,12 +44,14 @@ export class UsuarioRolService {
     return this.usuarioRolRepository.save(asignacion);
   }
 
+  // Lista las asignaciones de roles a usuarios.
   listarTodos(): Promise<UsuarioRol[]> {
     return this.usuarioRolRepository.find({
       relations: { usuario: true, rol: true },
     });
   }
 
+  // Lista los roles de un usuario.
   listarRolesPorUsuario(idUsuario: number): Promise<UsuarioRol[]> {
     return this.usuarioRolRepository.find({
       relations: { rol: true },
@@ -55,6 +59,7 @@ export class UsuarioRolService {
     });
   }
 
+  // Lista los usuarios que tienen un rol.
   listarUsuariosPorRol(idRol: number): Promise<UsuarioRol[]> {
     return this.usuarioRolRepository.find({
       relations: { usuario: true },
@@ -62,6 +67,7 @@ export class UsuarioRolService {
     });
   }
 
+  // Elimina una asignación existente.
   async eliminarAsignacion(idUsuario: number, idRol: number): Promise<void> {
     const asignacion = await this.usuarioRolRepository.findOneBy({
       usuario: { id: idUsuario },

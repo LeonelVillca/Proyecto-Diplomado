@@ -8,6 +8,7 @@ import {
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_COST } from '../../src/common/constants/security.constants';
 import request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { FirebaseAdminService } from '../../src/modules/auth/firebase/firebase-admin.service';
@@ -199,7 +200,7 @@ describe('E3: requisitos Must por API + PostgreSQL aislado', () => {
         estado: 'activo',
       }),
     );
-    const hash = await bcrypt.hash(adminPassword, 10);
+    const hash = await bcrypt.hash(adminPassword, BCRYPT_COST);
     await accounts.save(
       accounts.create({ usuario: admin, passwordHash: hash, estado: true }),
     );

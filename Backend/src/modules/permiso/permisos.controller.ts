@@ -21,23 +21,28 @@ import { Permiso } from './permiso.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_sistema')
 export class PermisosController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly permisosService: PermisosService) {}
 
+  // Crea un permiso.
   @Post()
   crear(@Body() dto: CrearPermisoDto): Promise<Permiso> {
     return this.permisosService.crear(dto);
   }
 
+  // Lista los permisos.
   @Get()
   listarTodos(): Promise<Permiso[]> {
     return this.permisosService.listarTodos();
   }
 
+  // Busca un permiso por su identificador.
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Permiso> {
     return this.permisosService.buscarPorId(id);
   }
 
+  // Actualiza un permiso.
   @Patch(':id')
   actualizar(
     @Param('id', ParseIntPipe) id: number,
@@ -46,6 +51,7 @@ export class PermisosController {
     return this.permisosService.actualizar(id, dto);
   }
 
+  // Elimina un permiso.
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.permisosService.eliminar(id);

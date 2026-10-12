@@ -8,6 +8,7 @@ import { Permiso } from '../permiso/permiso.entity';
 
 @Injectable()
 export class RolPermisoService implements OnModuleInit {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(RolPermiso)
     private readonly rolPermisoRepository: Repository<RolPermiso>,
@@ -17,6 +18,7 @@ export class RolPermisoService implements OnModuleInit {
     private readonly permisoRepository: Repository<Permiso>,
   ) {}
 
+  // Prepara los datos iniciales de este módulo.
   async onModuleInit() {
     // Definimos qué códigos van a cada rol
     const permisosAdminRestaurante = [
@@ -34,6 +36,7 @@ export class RolPermisoService implements OnModuleInit {
     console.log('Asignaciones de permisos predeterminadas sincronizadas.');
   }
 
+  // Asigna los permisos iniciales que aún faltan.
   private async asignarSiFaltan(nombreRol: string, codigosPermiso: string[]) {
     const rol = await this.rolRepository.findOneBy({ nombre: nombreRol });
     if (!rol) return; // Si no existe el rol, no hacemos nada
@@ -54,6 +57,7 @@ export class RolPermisoService implements OnModuleInit {
     }
   }
 
+  // Asigna un permiso a un rol.
   async asignarPermiso(dto: CrearRolPermisoDto): Promise<RolPermiso> {
     const { idRol, idPermiso } = dto;
 
@@ -79,12 +83,14 @@ export class RolPermisoService implements OnModuleInit {
     return this.rolPermisoRepository.save(asignacion);
   }
 
+  // Lista las asignaciones de permisos a roles.
   listarTodos(): Promise<RolPermiso[]> {
     return this.rolPermisoRepository.find({
       relations: { rol: true, permiso: true },
     });
   }
 
+  // Lista los permisos asignados a un rol.
   listarPermisosPorRol(idRol: number): Promise<RolPermiso[]> {
     return this.rolPermisoRepository.find({
       relations: { permiso: true },
@@ -92,6 +98,7 @@ export class RolPermisoService implements OnModuleInit {
     });
   }
 
+  // Lista los roles que tienen un permiso.
   listarRolesPorPermiso(idPermiso: number): Promise<RolPermiso[]> {
     return this.rolPermisoRepository.find({
       relations: { rol: true },
@@ -99,6 +106,7 @@ export class RolPermisoService implements OnModuleInit {
     });
   }
 
+  // Elimina una asignación existente.
   async eliminarAsignacion(idRol: number, idPermiso: number): Promise<void> {
     const asignacion = await this.rolPermisoRepository.findOneBy({
       rol: { id: idRol },

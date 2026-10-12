@@ -9,12 +9,14 @@ import { PlatoService } from '../plato/plato.service';
 
 @Injectable()
 export class MenuService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Menu)
     private readonly menuRepository: Repository<Menu>,
     private readonly platoService: PlatoService,
   ) {}
 
+  // Crea un menú.
   async crear(dto: CrearMenuDto): Promise<Menu> {
     const id = await this.menuRepository.manager.transaction(
       async (manager) => {
@@ -46,12 +48,14 @@ export class MenuService {
     return this.buscarPorId(id);
   }
 
+  // Lista los menús.
   listarTodos(): Promise<Menu[]> {
     return this.menuRepository.find({
       relations: { restaurante: true, platos: true },
     });
   }
 
+  // Busca un menú por su identificador.
   async buscarPorId(id: number): Promise<Menu> {
     const menu = await this.menuRepository.findOne({
       where: { id },
@@ -63,6 +67,7 @@ export class MenuService {
     return menu;
   }
 
+  // Lista los menús de un restaurante.
   listarPorRestaurante(idRestaurante: number): Promise<Menu[]> {
     return this.menuRepository.find({
       where: { restaurante: { id: idRestaurante } },
@@ -70,6 +75,7 @@ export class MenuService {
     });
   }
 
+  // Actualiza un menú.
   async actualizar(id: number, dto: ActualizarMenuDto): Promise<Menu> {
     await this.menuRepository.manager.transaction(async (manager) => {
       const menu = await manager.findOne(Menu, { where: { id } });
@@ -87,6 +93,7 @@ export class MenuService {
     return this.buscarPorId(id);
   }
 
+  // Elimina un menú.
   async eliminar(id: number): Promise<void> {
     const menu = await this.buscarPorId(id);
     await this.menuRepository.delete(menu.id);

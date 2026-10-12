@@ -22,6 +22,7 @@ import { CuentasAuthService } from '../cuentas-auth/cuentas-auth.service';
 @Controller('usuarios')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsuariosController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private readonly usuariosService: UsuariosService,
     private readonly cuentasAuthService: CuentasAuthService,
@@ -34,6 +35,7 @@ export class UsuariosController {
     return this.usuariosService.crear(dto);
   }
 
+  // Crea un usuario desde administración.
   @Roles('admin_sistema')
   @Post('admin-crear')
   async adminCrear(@Body() dto: any): Promise<Usuario> {
@@ -49,6 +51,7 @@ export class UsuariosController {
     return usuario;
   }
 
+  // Lista los usuarios.
   @Roles('admin_sistema')
   @Get()
   listarTodos(): Promise<Usuario[]> {
@@ -62,6 +65,7 @@ export class UsuariosController {
     return this.usuariosService.buscarPorId(id);
   }
 
+  // Actualiza un usuario.
   @Roles('admin_sistema')
   @Patch(':id')
   actualizar(
@@ -71,6 +75,7 @@ export class UsuariosController {
     return this.usuariosService.actualizar(id, dto);
   }
 
+  // Elimina un usuario.
   @Roles('admin_sistema')
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {

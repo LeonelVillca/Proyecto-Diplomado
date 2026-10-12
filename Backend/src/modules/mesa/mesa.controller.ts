@@ -22,8 +22,10 @@ import { Mesa } from './mesa.entity';
 @Controller('mesa')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class MesaController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly mesaService: MesaService) {}
 
+  // Crea una mesa.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('mesa')
   @Post()
@@ -31,11 +33,13 @@ export class MesaController {
     return this.mesaService.crear(dto);
   }
 
+  // Lista las mesas.
   @Get()
   listarTodos(): Promise<Mesa[]> {
     return this.mesaService.listarTodos();
   }
 
+  // Lista las mesas de un restaurante.
   @Get('restaurante/:idRestaurante')
   listarPorRestaurante(
     @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
@@ -43,11 +47,13 @@ export class MesaController {
     return this.mesaService.listarPorRestaurante(idRestaurante);
   }
 
+  // Busca una mesa por su identificador.
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Mesa> {
     return this.mesaService.buscarPorId(id);
   }
 
+  // Actualiza el estado de una mesa para un horario.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('mesa')
   @Patch(':id/estado-horario')
@@ -58,6 +64,7 @@ export class MesaController {
     return this.mesaService.actualizarEstadoHorario(id, dto);
   }
 
+  // Actualiza una mesa.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('mesa')
   @Patch(':id')
@@ -68,6 +75,7 @@ export class MesaController {
     return this.mesaService.actualizar(id, dto);
   }
 
+  // Elimina una mesa.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('mesa')
   @Delete(':id')

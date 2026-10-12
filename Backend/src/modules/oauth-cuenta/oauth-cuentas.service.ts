@@ -7,15 +7,18 @@ import { ActualizarOauthCuentaDto } from './dto/actualizar-oauth-cuenta.dto';
 
 @Injectable()
 export class OauthCuentasService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(OauthCuenta)
     private readonly oauthCuentaRepository: Repository<OauthCuenta>,
   ) {}
 
+  // Lista las cuentas OAuth.
   listar(): Promise<OauthCuenta[]> {
     return this.oauthCuentaRepository.find({ relations: { usuario: true } });
   }
 
+  // Busca la cuenta vinculada a un proveedor externo.
   buscarPorUsuarioYProveedor(
     idUsuario: number,
     proveedor: string,
@@ -25,6 +28,7 @@ export class OauthCuentasService {
     });
   }
 
+  // Crea una vinculación con un proveedor externo.
   async crear(dto: CrearOauthCuentaDto): Promise<OauthCuenta> {
     const existente = await this.buscarPorUsuarioYProveedor(
       dto.idUsuario,
@@ -45,6 +49,7 @@ export class OauthCuentasService {
     return this.oauthCuentaRepository.save(cuenta);
   }
 
+  // Vincula o crea una cuenta de acceso externo.
   async vincularOCrear(dto: CrearOauthCuentaDto): Promise<OauthCuenta> {
     const existente = await this.buscarPorUsuarioYProveedor(
       dto.idUsuario,
@@ -60,6 +65,7 @@ export class OauthCuentasService {
     return this.crear(dto);
   }
 
+  // Actualiza una cuenta OAuth.
   async actualizar(
     idOauth: number,
     dto: ActualizarOauthCuentaDto,

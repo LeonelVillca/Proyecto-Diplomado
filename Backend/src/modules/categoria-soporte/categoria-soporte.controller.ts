@@ -21,19 +21,23 @@ import { CategoriaSoporte } from './categoria-soporte.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_sistema')
 export class CategoriaSoporteController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly categoriaSoporteService: CategoriaSoporteService) {}
 
+  // Crea una categoría de soporte.
   @Post()
   crear(@Body() dto: CrearCategoriaSoporteDto): Promise<CategoriaSoporte> {
     return this.categoriaSoporteService.crear(dto);
   }
 
+  // Lista las categorías de soporte.
   @Roles()
   @Get()
   listarTodas(): Promise<CategoriaSoporte[]> {
     return this.categoriaSoporteService.listarTodas();
   }
 
+  // Busca una categoría de soporte por su identificador.
   @Get(':id')
   buscarPorId(
     @Param('id', ParseIntPipe) id: number,
@@ -41,6 +45,7 @@ export class CategoriaSoporteController {
     return this.categoriaSoporteService.buscarPorId(id);
   }
 
+  // Actualiza una categoría de soporte.
   @Patch(':id')
   actualizar(
     @Param('id', ParseIntPipe) id: number,
@@ -49,6 +54,7 @@ export class CategoriaSoporteController {
     return this.categoriaSoporteService.actualizar(id, dto);
   }
 
+  // Elimina una categoría de soporte.
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.categoriaSoporteService.eliminar(id);

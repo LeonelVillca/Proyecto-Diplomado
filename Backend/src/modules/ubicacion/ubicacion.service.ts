@@ -8,6 +8,7 @@ import { Restaurante } from '../restaurante/restaurante.entity';
 
 @Injectable()
 export class UbicacionService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Ubicacion)
     private readonly ubicacionRepository: Repository<Ubicacion>,
@@ -15,6 +16,7 @@ export class UbicacionService {
     private readonly restauranteRepository: Repository<Restaurante>,
   ) {}
 
+  // Crea una ubicación.
   async crear(dto: CrearUbicacionDto): Promise<Ubicacion> {
     const restaurante = await this.restauranteRepository.findOneBy({
       id: dto.idRestaurante,
@@ -34,10 +36,12 @@ export class UbicacionService {
     return this.ubicacionRepository.save(ubicacion);
   }
 
+  // Lista las ubicaciones.
   listarTodos(): Promise<Ubicacion[]> {
     return this.ubicacionRepository.find({ relations: { restaurante: true } });
   }
 
+  // Busca una ubicación por su identificador.
   async buscarPorId(id: number): Promise<Ubicacion> {
     const ubicacion = await this.ubicacionRepository.findOne({
       where: { id },
@@ -49,6 +53,7 @@ export class UbicacionService {
     return ubicacion;
   }
 
+  // Lista las ubicaciones de un restaurante.
   listarPorRestaurante(idRestaurante: number): Promise<Ubicacion[]> {
     return this.ubicacionRepository.find({
       where: { restaurante: { id: idRestaurante } },
@@ -56,6 +61,7 @@ export class UbicacionService {
     });
   }
 
+  // Actualiza una ubicación.
   async actualizar(
     id: number,
     dto: ActualizarUbicacionDto,
@@ -65,6 +71,7 @@ export class UbicacionService {
     return this.ubicacionRepository.save(ubicacion);
   }
 
+  // Elimina una ubicación.
   async eliminar(id: number): Promise<void> {
     const ubicacion = await this.buscarPorId(id);
     await this.ubicacionRepository.delete(ubicacion.id);

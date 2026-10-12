@@ -23,21 +23,25 @@ import { R2StorageService } from '../../core/storage/r2-storage.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_sistema')
 export class DocumentoAdjuntoController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private readonly documentoAdjuntoService: DocumentoAdjuntoService,
     private readonly r2Storage: R2StorageService,
   ) {}
 
+  // Crea un documento adjunto.
   @Post()
   crear(@Body() dto: CrearDocumentoAdjuntoDto): Promise<DocumentoAdjunto> {
     return this.documentoAdjuntoService.crear(dto);
   }
 
+  // Lista los documentos adjuntos.
   @Get()
   listarTodos(): Promise<DocumentoAdjunto[]> {
     return this.documentoAdjuntoService.listarTodos();
   }
 
+  // Lista los documentos de una solicitud.
   @Get('solicitud/:idSolicitud')
   listarPorSolicitud(
     @Param('idSolicitud', ParseIntPipe) idSolicitud: number,
@@ -45,6 +49,7 @@ export class DocumentoAdjuntoController {
     return this.documentoAdjuntoService.listarPorSolicitud(idSolicitud);
   }
 
+  // Entrega un documento a un usuario autorizado.
   @Get('privado/:idSolicitud/:filename')
   async servirDocumentoPrivado(
     @Param('idSolicitud', ParseIntPipe) idSolicitud: number,
@@ -67,6 +72,7 @@ export class DocumentoAdjuntoController {
     }
   }
 
+  // Busca un documento adjunto por su identificador.
   @Get(':id')
   buscarPorId(
     @Param('id', ParseIntPipe) id: number,
@@ -74,6 +80,7 @@ export class DocumentoAdjuntoController {
     return this.documentoAdjuntoService.buscarPorId(id);
   }
 
+  // Actualiza un documento adjunto.
   @Patch(':id')
   actualizar(
     @Param('id', ParseIntPipe) id: number,
@@ -82,6 +89,7 @@ export class DocumentoAdjuntoController {
     return this.documentoAdjuntoService.actualizar(id, dto);
   }
 
+  // Elimina un documento adjunto.
   @Delete(':id')
   eliminar(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.documentoAdjuntoService.eliminar(id);

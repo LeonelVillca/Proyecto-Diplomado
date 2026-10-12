@@ -10,6 +10,7 @@ export class R2StorageService {
   private readonly bucket?: string;
   private readonly configured: boolean;
 
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(config: ConfigService) {
     const accountId = config.get<string>('R2_ACCOUNT_ID');
     const accessKeyId = config.get<string>('R2_ACCESS_KEY_ID');
@@ -28,6 +29,7 @@ export class R2StorageService {
     }
   }
 
+  // Comprueba que el almacenamiento R2 esté configurado.
   private requireStorage(): { client: S3Client; bucket: string } {
     if (!this.configured || !this.client || !this.bucket) {
       throw new ServiceUnavailableException('El almacenamiento privado no está configurado');
@@ -35,6 +37,7 @@ export class R2StorageService {
     return { client: this.client, bucket: this.bucket };
   }
 
+  // Sube un archivo al almacenamiento R2.
   async upload(key: string, body: Buffer, contentType: string): Promise<void> {
     const { client, bucket } = this.requireStorage();
     try {
@@ -46,11 +49,13 @@ export class R2StorageService {
     }
   }
 
+  // Elimina un archivo del almacenamiento R2.
   async remove(key: string): Promise<void> {
     const { client, bucket } = this.requireStorage();
     await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
   }
 
+  // Descarga un archivo del almacenamiento R2.
   async download(key: string): Promise<{ body: Readable; contentType?: string; contentLength?: number }> {
     const { client, bucket } = this.requireStorage();
     const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));

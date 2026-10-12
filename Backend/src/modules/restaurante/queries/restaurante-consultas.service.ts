@@ -21,6 +21,7 @@ export type PerfilRestauranteRespuesta = DatosPublicacion & {
 
 @Injectable()
 export class RestauranteConsultasService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Restaurante)
     private readonly restaurantes: Repository<Restaurante>,
@@ -37,6 +38,7 @@ export class RestauranteConsultasService {
     private readonly publicacion: PublicacionRestauranteService,
   ) {}
 
+  // Añade datos complementarios a varios restaurantes.
   private async enriquecerMuchos(
     restaurantes: Restaurante[],
   ): Promise<PerfilRestauranteRespuesta[]> {
@@ -100,6 +102,7 @@ export class RestauranteConsultasService {
     });
   }
 
+  // Lista los restaurantes.
   async listarTodos(): Promise<PerfilRestauranteRespuesta[]> {
     const restaurantes = await this.restaurantes.find({
       relations: { solicitud: true, tiposComida: true },
@@ -110,6 +113,7 @@ export class RestauranteConsultasService {
     );
   }
 
+  // Lista restaurantes a partir de sus identificadores.
   async listarPorIds(ids: number[]): Promise<PerfilRestauranteRespuesta[]> {
     if (!ids.length) return [];
     const restaurantes = await this.restaurantes.find({
@@ -119,6 +123,7 @@ export class RestauranteConsultasService {
     return this.enriquecerMuchos(restaurantes);
   }
 
+  // Lista restaurantes para la administración del sistema.
   async listarParaAdministrador(): Promise<any[]> {
     const restaurantes = await this.restaurantes.find({
       relations: { solicitud: { usuario: true }, tiposComida: true },
@@ -147,6 +152,7 @@ export class RestauranteConsultasService {
     }));
   }
 
+  // Busca un restaurante por su identificador.
   async buscarPorId(id: number): Promise<Restaurante> {
     const restaurante = await this.restaurantes.findOne({
       where: { id },
@@ -158,6 +164,7 @@ export class RestauranteConsultasService {
     return restaurante;
   }
 
+  // Busca un restaurante visible para el público.
   async buscarPorIdPublico(id: number): Promise<Restaurante> {
     const restaurante = await this.buscarPorId(id);
     const datos = await this.datosParaPublicacion(id);
@@ -167,6 +174,7 @@ export class RestauranteConsultasService {
     return restaurante;
   }
 
+  // Reúne los datos necesarios para publicar un restaurante.
   async datosParaPublicacion(
     id: number,
     manager: EntityManager = this.restaurantes.manager,
@@ -196,6 +204,7 @@ export class RestauranteConsultasService {
     };
   }
 
+  // Obtiene el ranking de restaurantes.
   async obtenerRanking(limite = 10): Promise<PerfilRestauranteRespuesta[]> {
     const todos = await this.listarTodos();
     const limiteSeguro = Number.isFinite(limite)
@@ -206,6 +215,7 @@ export class RestauranteConsultasService {
       .slice(0, limiteSeguro);
   }
 
+  // Lista los tipos de comida disponibles.
   listarTiposComida(): Promise<TipoComida[]> {
     return this.restaurantes.manager.find(TipoComida, {
       where: { activo: true },

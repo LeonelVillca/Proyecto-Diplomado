@@ -7,8 +7,10 @@ import {
 
 @Controller('publico/restaurantes')
 export class PublicImageController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly images: PublicImageStorageService) {}
 
+  // Lee un archivo del almacenamiento configurado.
   @Get(':id/:kind/:filename')
   async read(
     @Param('id', ParseIntPipe) id: number,

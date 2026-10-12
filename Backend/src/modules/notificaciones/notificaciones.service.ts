@@ -13,6 +13,7 @@ export class NotificacionesService {
   private readonly logger = new Logger(NotificacionesService.name);
   private readonly firebaseApp: App | null;
 
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Notificacion)
     private readonly notificacionesRepo: Repository<Notificacion>,
@@ -28,6 +29,7 @@ export class NotificacionesService {
     }
   }
 
+  // Lista las notificaciones.
   async listar(idUsuario: number) {
     const [items, noLeidas] = await Promise.all([
       this.notificacionesRepo.find({
@@ -54,6 +56,7 @@ export class NotificacionesService {
     };
   }
 
+  // Marca una notificación como leída.
   async marcarLeida(idUsuario: number, id: string): Promise<void> {
     const result = await this.notificacionesRepo
       .createQueryBuilder()
@@ -66,6 +69,7 @@ export class NotificacionesService {
       throw new NotFoundException('Notificación no encontrada');
   }
 
+  // Registra un dispositivo para recibir avisos.
   async registrarDispositivo(
     idUsuario: number,
     token: string,
@@ -82,6 +86,7 @@ export class NotificacionesService {
     );
   }
 
+  // Elimina el registro de un dispositivo.
   async desregistrarDispositivo(
     idUsuario: number,
     token: string,
@@ -94,6 +99,7 @@ export class NotificacionesService {
       .execute();
   }
 
+  // Crea una notificación por un cambio de reserva.
   async crearPorCambioDeReserva(
     manager: EntityManager,
     reserva: Reserva,
@@ -114,6 +120,7 @@ export class NotificacionesService {
     );
   }
 
+  // Envía una notificación al dispositivo.
   async enviarPush(notificacion: Notificacion): Promise<void> {
     if (!this.firebaseApp) return;
     try {

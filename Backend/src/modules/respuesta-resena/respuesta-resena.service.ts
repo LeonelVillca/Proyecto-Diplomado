@@ -9,6 +9,7 @@ import { Usuario } from '../usuarios/usuario.entity';
 
 @Injectable()
 export class RespuestaResenaService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(RespuestaResena)
     private readonly respuestaRepo: Repository<RespuestaResena>,
@@ -18,6 +19,7 @@ export class RespuestaResenaService {
     private readonly usuariosRepo: Repository<Usuario>,
   ) {}
 
+  // Crea una respuesta a reseña.
   async crear(dto: CrearRespuestaResenaDto): Promise<RespuestaResena> {
     const resena = await this.resenasRepo.findOne({ where: { id: dto.idResena } });
     if (!resena) throw new NotFoundException('Reseña no encontrada');
@@ -34,10 +36,12 @@ export class RespuestaResenaService {
     return this.respuestaRepo.save(respuesta);
   }
 
+  // Lista las respuestas a reseñas.
   listarTodas(): Promise<RespuestaResena[]> {
     return this.respuestaRepo.find({ relations: { resena: true, usuarioRestaurante: true } });
   }
 
+  // Busca una respuesta a reseña por su identificador.
   async buscarPorId(id: number): Promise<RespuestaResena> {
     const respuesta = await this.respuestaRepo.findOne({
       where: { id },
@@ -47,6 +51,7 @@ export class RespuestaResenaService {
     return respuesta;
   }
   
+  // Lista las respuestas de una reseña.
   async listarPorResena(idResena: number): Promise<RespuestaResena[]> {
     return this.respuestaRepo.find({
       where: { resena: { id: idResena } },
@@ -55,6 +60,7 @@ export class RespuestaResenaService {
     });
   }
 
+  // Actualiza una respuesta a reseña.
   async actualizar(id: number, dto: ActualizarRespuestaResenaDto): Promise<RespuestaResena> {
     const respuesta = await this.buscarPorId(id);
 
@@ -63,6 +69,7 @@ export class RespuestaResenaService {
     return this.respuestaRepo.save(respuesta);
   }
 
+  // Elimina una respuesta a reseña.
   async eliminar(id: number): Promise<void> {
     const respuesta = await this.buscarPorId(id);
     await this.respuestaRepo.remove(respuesta);

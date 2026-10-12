@@ -18,11 +18,13 @@ export const CheckClientOwnership = (resource: 'soporte' | 'resena') =>
 
 @Injectable()
 export class ClientOwnershipGuard implements CanActivate {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private reflector: Reflector,
     private dataSource: DataSource,
   ) {}
 
+  // Comprueba si la solicitud tiene acceso a este recurso.
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const resourceType = this.reflector.get<string>(
       CLIENT_RESOURCE_KEY,

@@ -12,6 +12,7 @@ import { PublicImageStorageService } from '../../core/storage/public-image-stora
 @Injectable()
 export class ImagenService {
   private readonly logger = new Logger(ImagenService.name);
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Imagen)
     private readonly imagenRepository: Repository<Imagen>,
@@ -20,6 +21,7 @@ export class ImagenService {
     private readonly images: PublicImageStorageService,
   ) {}
 
+  // Crea una imagen.
   async crear(dto: CrearImagenDto): Promise<Imagen> {
     const restaurante = await this.restauranteRepository.findOneBy({
       id: dto.idRestaurante,
@@ -37,12 +39,14 @@ export class ImagenService {
     return this.imagenRepository.save(imagen);
   }
 
+  // Lista las imágenes.
   listarTodos(): Promise<Imagen[]> {
     return this.imagenRepository.find({
       relations: { restaurante: true },
     });
   }
 
+  // Busca una imagen por su identificador.
   async buscarPorId(id: number): Promise<Imagen> {
     const imagen = await this.imagenRepository.findOne({
       where: { id },
@@ -54,6 +58,7 @@ export class ImagenService {
     return imagen;
   }
 
+  // Lista las imágenes de un restaurante.
   listarPorRestaurante(idRestaurante: number): Promise<Imagen[]> {
     return this.imagenRepository.find({
       where: { restaurante: { id: idRestaurante } },
@@ -61,6 +66,7 @@ export class ImagenService {
     });
   }
 
+  // Actualiza una imagen.
   async actualizar(id: number, dto: ActualizarImagenDto): Promise<Imagen> {
     const imagen = await this.buscarPorId(id);
 
@@ -80,6 +86,7 @@ export class ImagenService {
     return this.imagenRepository.save(imagen);
   }
 
+  // Elimina una imagen.
   async eliminar(id: number): Promise<void> {
     const imagen = await this.buscarPorId(id);
     await this.imagenRepository.delete(imagen.id);

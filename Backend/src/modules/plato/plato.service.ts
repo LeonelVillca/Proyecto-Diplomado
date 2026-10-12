@@ -9,6 +9,7 @@ import { Menu } from '../menu/menu.entity';
 
 @Injectable()
 export class PlatoService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Plato)
     private readonly platoRepository: Repository<Plato>,
@@ -16,6 +17,7 @@ export class PlatoService {
     private readonly menuRepository: Repository<Menu>,
   ) {}
 
+  // Crea un plato.
   async crear(dto: CrearPlatoDto): Promise<Plato> {
     const menu = await this.menuRepository.findOneBy({ id: dto.idMenu });
     if (!menu) {
@@ -49,6 +51,7 @@ export class PlatoService {
     );
   }
 
+  // Reemplaza los platos de un menú.
   async reemplazarEnMenu(
     manager: EntityManager,
     menu: Menu,
@@ -58,10 +61,12 @@ export class PlatoService {
     await this.crearEnMenu(manager, menu, datos);
   }
 
+  // Lista los platos.
   listarTodos(): Promise<Plato[]> {
     return this.platoRepository.find({ relations: { menu: true } });
   }
 
+  // Busca un plato por su identificador.
   async buscarPorId(id: number): Promise<Plato> {
     const plato = await this.platoRepository.findOne({
       where: { id },
@@ -73,6 +78,7 @@ export class PlatoService {
     return plato;
   }
 
+  // Lista los platos de un menú.
   listarPorMenu(idMenu: number): Promise<Plato[]> {
     return this.platoRepository.find({
       where: { menu: { id: idMenu } },
@@ -80,12 +86,14 @@ export class PlatoService {
     });
   }
 
+  // Actualiza un plato.
   async actualizar(id: number, dto: ActualizarPlatoDto): Promise<Plato> {
     const plato = await this.buscarPorId(id);
     Object.assign(plato, dto);
     return this.platoRepository.save(plato);
   }
 
+  // Elimina un plato.
   async eliminar(id: number): Promise<void> {
     const plato = await this.buscarPorId(id);
     await this.platoRepository.delete(plato.id);

@@ -10,18 +10,22 @@ import { ActualizarOauthCuentaDto } from './dto/actualizar-oauth-cuenta.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_sistema')
 export class OauthCuentasController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly oauthCuentasService: OauthCuentasService) {}
 
+  // Lista las cuentas OAuth.
   @Get()
   listar() {
     return this.oauthCuentasService.listar();
   }
 
+  // Crea una vinculación con un proveedor externo.
   @Post()
   crear(@Body() dto: CrearOauthCuentaDto) {
     return this.oauthCuentasService.crear(dto);
   }
 
+  // Actualiza una cuenta OAuth.
   @Patch(':id')
   actualizar(
     @Param('id', ParseIntPipe) id: number,

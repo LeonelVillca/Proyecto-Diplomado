@@ -11,8 +11,10 @@ export interface AccesoRestaurante {
 
 @Injectable()
 export class UsuarioRestauranteAccesoService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly dataSource: DataSource) {}
 
+  // Obtiene el acceso de un usuario a un restaurante.
   async obtenerAcceso(idUsuario: number): Promise<AccesoRestaurante> {
     const [roles, asignaciones] = await Promise.all([
       this.dataSource.getRepository(UsuarioRol).find({
@@ -33,6 +35,7 @@ export class UsuarioRestauranteAccesoService {
     };
   }
 
+  // Comprueba si un usuario puede administrar el restaurante.
   puedeAdministrar(acceso: AccesoRestaurante, idRestaurante: number): boolean {
     return (
       acceso.adminSistema ||

@@ -27,10 +27,12 @@ import { ActualizarExcepcionHorarioDto } from './dto/actualizar-excepcion-horari
 @Controller('horario-atencion')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class HorarioAtencionController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private readonly horarioAtencionService: HorarioAtencionService,
   ) {}
 
+  // Crea un horario de atención.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('horario_atencion')
   @Post()
@@ -38,11 +40,13 @@ export class HorarioAtencionController {
     return this.horarioAtencionService.crear(dto);
   }
 
+  // Lista los horarios de atención.
   @Get()
   listarTodos(): Promise<HorarioAtencion[]> {
     return this.horarioAtencionService.listarTodos();
   }
 
+  // Lista los horarios de atención de un restaurante.
   @Get('restaurante/:idRestaurante')
   listarPorRestaurante(
     @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
@@ -50,6 +54,7 @@ export class HorarioAtencionController {
     return this.horarioAtencionService.listarPorRestaurante(idRestaurante);
   }
 
+  // Crea una excepción de horario.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('excepcion_horario')
   @Post('excepciones')
@@ -59,6 +64,7 @@ export class HorarioAtencionController {
     return this.horarioAtencionService.crearExcepcion(dto);
   }
 
+  // Lista las excepciones de horario de un restaurante.
   @Get('excepciones/restaurante/:idRestaurante')
   listarExcepciones(
     @Param('idRestaurante', ParseIntPipe) idRestaurante: number,
@@ -66,6 +72,7 @@ export class HorarioAtencionController {
     return this.horarioAtencionService.listarExcepciones(idRestaurante);
   }
 
+  // Actualiza una excepción de horario.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('excepcion_horario')
   @Patch('excepciones/:id')
@@ -76,6 +83,7 @@ export class HorarioAtencionController {
     return this.horarioAtencionService.actualizarExcepcion(id, dto);
   }
 
+  // Elimina una excepción de horario.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('excepcion_horario')
   @Delete('excepciones/:id')
@@ -83,11 +91,13 @@ export class HorarioAtencionController {
     return this.horarioAtencionService.eliminarExcepcion(id);
   }
 
+  // Busca un horario de atención por su identificador.
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<HorarioAtencion> {
     return this.horarioAtencionService.buscarPorId(id);
   }
 
+  // Actualiza un horario de atención.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('horario_atencion')
   @Patch(':id')
@@ -98,6 +108,7 @@ export class HorarioAtencionController {
     return this.horarioAtencionService.actualizar(id, dto);
   }
 
+  // Elimina un horario de atención.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('horario_atencion')
   @Delete(':id')

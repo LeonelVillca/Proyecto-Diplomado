@@ -10,6 +10,7 @@ import { AuthModule } from '../auth/auth.module';
 import { HorarioAtencion } from '../horario-atencion/horario-atencion.entity';
 import { ExcepcionHorario } from '../horario-atencion/excepcion-horario.entity';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
+import { ReservasFinalizacionService } from './reservas-finalizacion.service';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { NotificacionesModule } from '../notificaciones/notificaciones.module';
     ]),
   ],
   controllers: [ReservasController],
-  providers: [ReservasService, ReservasGateway],
-  exports: [ReservasService],
+  providers: [ReservasService, ReservasGateway, ReservasFinalizacionService],
+  exports: [ReservasService, ReservasFinalizacionService],
 })
 export class ReservasModule {}

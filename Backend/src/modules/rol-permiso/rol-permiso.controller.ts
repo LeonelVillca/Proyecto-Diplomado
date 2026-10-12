@@ -19,18 +19,22 @@ import { RolPermiso } from './rol-permiso.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin_sistema')
 export class RolPermisoController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly rolPermisoService: RolPermisoService) {}
 
+  // Asigna un permiso a un rol.
   @Post()
   asignarPermiso(@Body() dto: CrearRolPermisoDto): Promise<RolPermiso> {
     return this.rolPermisoService.asignarPermiso(dto);
   }
 
+  // Lista las asignaciones de permisos a roles.
   @Get()
   listarTodos(): Promise<RolPermiso[]> {
     return this.rolPermisoService.listarTodos();
   }
 
+  // Lista los permisos asignados a un rol.
   @Get('rol/:idRol')
   listarPermisosPorRol(
     @Param('idRol', ParseIntPipe) idRol: number,
@@ -38,6 +42,7 @@ export class RolPermisoController {
     return this.rolPermisoService.listarPermisosPorRol(idRol);
   }
 
+  // Lista los roles que tienen un permiso.
   @Get('permiso/:idPermiso')
   listarRolesPorPermiso(
     @Param('idPermiso', ParseIntPipe) idPermiso: number,
@@ -45,6 +50,7 @@ export class RolPermisoController {
     return this.rolPermisoService.listarRolesPorPermiso(idPermiso);
   }
 
+  // Elimina una asignación existente.
   @Delete('rol/:idRol/permiso/:idPermiso')
   eliminarAsignacion(
     @Param('idRol', ParseIntPipe) idRol: number,

@@ -30,11 +30,13 @@ import { Plato } from './plato.entity';
 @Controller('plato')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class PlatoController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private readonly platoService: PlatoService,
     private readonly images: PublicImageStorageService,
   ) {}
 
+  // Recibe la foto de un plato.
   @Roles('admin_restaurante', 'admin_sistema')
   @Post('restaurante/:idRestaurante/foto')
   @CheckOwnership('plato')
@@ -63,6 +65,7 @@ export class PlatoController {
     return { url };
   }
 
+  // Crea un plato.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('plato')
   @Post()
@@ -70,11 +73,13 @@ export class PlatoController {
     return this.platoService.crear(dto);
   }
 
+  // Lista los platos.
   @Get()
   listarTodos(): Promise<Plato[]> {
     return this.platoService.listarTodos();
   }
 
+  // Lista los platos de un menú.
   @Get('menu/:idMenu')
   listarPorMenu(
     @Param('idMenu', ParseIntPipe) idMenu: number,
@@ -82,11 +87,13 @@ export class PlatoController {
     return this.platoService.listarPorMenu(idMenu);
   }
 
+  // Busca un plato por su identificador.
   @Get(':id')
   buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Plato> {
     return this.platoService.buscarPorId(id);
   }
 
+  // Actualiza un plato.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('plato')
   @Patch(':id')
@@ -97,6 +104,7 @@ export class PlatoController {
     return this.platoService.actualizar(id, dto);
   }
 
+  // Elimina un plato.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('plato')
   @Delete(':id')

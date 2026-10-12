@@ -22,6 +22,7 @@ import { RestauranteConsultasService } from '../queries/restaurante-consultas.se
 
 @Injectable()
 export class PerfilRestauranteService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Restaurante)
     private readonly restauranteRepository: Repository<Restaurante>,
@@ -35,6 +36,7 @@ export class PerfilRestauranteService {
     private readonly horarioService: HorarioAtencionService,
   ) {}
 
+  // Crea el perfil de un restaurante.
   async crear(dto: CrearRestauranteDto): Promise<Restaurante> {
     return this.restauranteRepository.manager.transaction(async (manager) => {
       let solicitud: Solicitud | null = null;
@@ -82,6 +84,7 @@ export class PerfilRestauranteService {
     });
   }
 
+  // Cambia el estado de un restaurante desde administración.
   async cambiarEstadoComoAdministrador(
     id: number,
     estado: boolean,
@@ -104,6 +107,7 @@ export class PerfilRestauranteService {
     };
   }
 
+  // Activa el restaurante cuando su perfil está completo.
   private async activarSiPerfilCompleto(
     id: number,
     estabaCompleto: boolean,
@@ -117,6 +121,7 @@ export class PerfilRestauranteService {
     );
   }
 
+  // Lista los restaurantes de un usuario.
   async listarPorUsuario(idUsuario: number): Promise<any[]> {
     let asignaciones = await this.usuarioRestauranteRepository.find({
       where: { idUsuario, activo: true },
@@ -132,6 +137,7 @@ export class PerfilRestauranteService {
     return this.consultas.listarPorIds(ids);
   }
 
+  // Relaciona una solicitud con su restaurante.
   private async asegurarRestauranteDeSolicitud(
     idUsuario: number,
   ): Promise<void> {
@@ -190,10 +196,12 @@ export class PerfilRestauranteService {
     });
   }
 
+  // Busca un restaurante por su identificador.
   buscarPorId(id: number): Promise<Restaurante> {
     return this.consultas.buscarPorId(id);
   }
 
+  // Actualiza un restaurante.
   async actualizar(
     id: number,
     dto: ActualizarRestauranteDto,
@@ -311,6 +319,7 @@ export class PerfilRestauranteService {
     return this.buscarPorId(id);
   }
 
+  // Elimina un restaurante.
   async eliminar(id: number): Promise<void> {
     const restaurante = await this.buscarPorId(id);
     restaurante.estado = false;
@@ -318,6 +327,7 @@ export class PerfilRestauranteService {
     await this.restauranteRepository.softRemove(restaurante);
   }
 
+  // Sube la imagen de portada del restaurante.
   async subirPortada(
     id: number,
     file: Express.Multer.File,
@@ -345,6 +355,7 @@ export class PerfilRestauranteService {
     return guardado;
   }
 
+  // Sube el logotipo del restaurante.
   async subirLogo(id: number, file: Express.Multer.File): Promise<Restaurante> {
     if (!file) throw new BadRequestException('Se requiere una imagen de logo');
 
@@ -368,6 +379,7 @@ export class PerfilRestauranteService {
     return guardado;
   }
 
+  // Sube imágenes a la galería del restaurante.
   async subirGaleria(
     id: number,
     files: Express.Multer.File[],

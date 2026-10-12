@@ -8,9 +8,11 @@ import { Restaurante } from '../restaurante/restaurante.entity';
 import { RespuestaResena } from '../respuesta-resena/respuesta-resena.entity';
 import { UsuarioRol } from '../usuario-rol/usuario-rol.entity';
 import { Reserva } from '../reservas/reserva.entity';
+import { ReservasModule } from '../reservas/reservas.module';
 
 @Module({
   imports: [
+    ReservasModule,
     TypeOrmModule.forFeature([
       Resena,
       Usuario,

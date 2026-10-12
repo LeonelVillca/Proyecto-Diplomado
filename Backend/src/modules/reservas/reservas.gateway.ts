@@ -15,10 +15,12 @@ type ReservationEvent = { id: number; idUsuario: number; idRestaurante: number; 
 })
 export class ReservasGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ReservasGateway.name);
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(private readonly jwtService: JwtService, private readonly strategy: JwtStrategy, private readonly accesoRestaurante: UsuarioRestauranteAccesoService) {}
 
   @WebSocketServer() server: Server;
 
+  // Inicializa el canal de eventos de reservas.
   afterInit(server: Server) {
     // Autenticar ANTES de permitir que el socket entre en el conjunto de clientes conectados.
     server.use(async (socket, next) => {
@@ -33,6 +35,7 @@ export class ReservasGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     });
   }
 
+  // Autoriza una conexión al canal de reservas.
   handleConnection(socket: Socket) {
     const payload: JwtPayload = socket.data.auth;
     if (!payload) { socket.disconnect(true); return; }
@@ -42,13 +45,17 @@ export class ReservasGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     socket.data.expiryTimer = timer;
   }
 
+  // Atiende la desconexión del canal de reservas.
   handleDisconnect(socket: Socket) { clearTimeout(socket.data.expiryTimer); }
 
+  // Publica el evento de una nueva reserva.
   emitNuevaReserva(event: ReservationEvent) { return this.emitToAuthorized('nueva_reserva', event); }
+  // Publica el evento de una reserva actualizada.
   emitActualizacionReserva(id: number, estado: string, idRestaurante: number, idUsuario: number) {
     return this.emitToAuthorized('reserva_actualizada', { id, estado, idRestaurante, idUsuario });
   }
 
+  // Envía el evento a los usuarios autorizados.
   private async emitToAuthorized(name: string, event: ReservationEvent) {
     try {
       for (const socket of this.server.sockets.sockets.values()) {

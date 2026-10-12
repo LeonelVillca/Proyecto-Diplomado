@@ -29,11 +29,13 @@ import { UsuarioRestauranteAccesoService } from '../usuario-restaurante/usuario-
 @Controller('reservas')
 @UseGuards(JwtAuthGuard, RolesGuard, OwnershipGuard)
 export class ReservasController {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     private readonly reservasService: ReservasService,
     private readonly accesoRestaurante: UsuarioRestauranteAccesoService,
   ) {}
 
+  // Crea una reserva.
   @Post()
   crear(@Body() dto: CrearReservaDto, @Req() req: any) {
     if (dto.idUsuario !== req.user.id) {
@@ -44,17 +46,20 @@ export class ReservasController {
     return this.reservasService.crear(dto);
   }
 
+  // Lista las reservas.
   @Roles('admin_sistema')
   @Get()
   listarTodas() {
     return this.reservasService.listarTodas();
   }
 
+  // Consulta las mesas disponibles para un horario.
   @Get('disponibilidad')
   consultarDisponibilidad(@Query() dto: ConsultarDisponibilidadDto) {
     return this.reservasService.consultarDisponibilidad(dto);
   }
 
+  // Consulta la ocupación de un restaurante.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('reserva')
   @Get('restaurante/:idRestaurante/ocupacion')
@@ -70,6 +75,7 @@ export class ReservasController {
     );
   }
 
+  // Lista las reservas de un usuario.
   @Get('usuario/:idUsuario')
   listarPorUsuario(
     @Param('idUsuario', ParseIntPipe) idUsuario: number,
@@ -81,6 +87,7 @@ export class ReservasController {
     return this.reservasService.listarPorUsuario(idUsuario);
   }
 
+  // Lista las reservas de un restaurante.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('reserva')
   @Get('restaurante/:idRestaurante')
@@ -90,6 +97,7 @@ export class ReservasController {
     return this.reservasService.listarPorRestaurante(idRestaurante);
   }
 
+  // Busca una reserva por su identificador.
   @Get(':id')
   async buscarPorId(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
     const reserva = await this.reservasService.buscarPorId(id);
@@ -105,6 +113,7 @@ export class ReservasController {
     throw new ForbiddenException('No tienes permisos para ver esta reserva');
   }
 
+  // Actualiza una reserva.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('reserva')
   @Patch(':id')
@@ -115,6 +124,7 @@ export class ReservasController {
     return this.reservasService.actualizar(id, dto);
   }
 
+  // Cancela una reserva solicitada por su usuario.
   @Patch(':id/cancelar')
   cancelarPorUsuario(
     @Param('id', ParseIntPipe) id: number,
@@ -123,6 +133,7 @@ export class ReservasController {
     return this.reservasService.cancelarPorUsuario(id, req.user.id);
   }
 
+  // Elimina una reserva.
   @Roles('admin_restaurante', 'admin_sistema')
   @CheckOwnership('reserva')
   @Delete(':id')

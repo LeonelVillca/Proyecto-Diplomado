@@ -8,11 +8,13 @@ import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 
 @Injectable()
 export class UsuariosService {
+  // Recibe los servicios y repositorios que necesita esta clase.
   constructor(
     @InjectRepository(Usuario)
     private readonly usuarioRepository: Repository<Usuario>,
   ) {}
 
+  // Crea un usuario.
   crear(dto: CrearUsuarioDto): Promise<Usuario> {
     const usuario = this.usuarioRepository.create({
       ...dto,
@@ -21,6 +23,7 @@ export class UsuariosService {
     return this.usuarioRepository.save(usuario);
   }
 
+  // Lista los usuarios.
   async listarTodos(): Promise<any[]> {
     const usuarios = await this.usuarioRepository.query(`
       SELECT u.*, 
@@ -47,6 +50,7 @@ export class UsuariosService {
     }));
   }
 
+  // Busca un usuario por su identificador.
   async buscarPorId(id: number): Promise<Usuario> {
     const usuario = await this.usuarioRepository.findOneBy({ id });
     if (!usuario) {
@@ -55,10 +59,12 @@ export class UsuariosService {
     return usuario;
   }
 
+  // Busca un usuario por su correo.
   async buscarPorCorreo(correo: string): Promise<Usuario | null> {
     return this.usuarioRepository.findOneBy({ correo });
   }
 
+  // Actualiza un usuario.
   async actualizar(id: number, dto: ActualizarUsuarioDto): Promise<Usuario> {
     const usuario = await this.buscarPorId(id);
     if (dto.estado !== undefined && dto.estado !== usuario.estado) {
@@ -74,6 +80,7 @@ export class UsuariosService {
     return this.usuarioRepository.save(usuario);
   }
 
+  // Elimina un usuario.
   async eliminar(id: number): Promise<void> {
     const usuario = await this.buscarPorId(id);
     await this.usuarioRepository.manager.transaction(async (manager) => {
