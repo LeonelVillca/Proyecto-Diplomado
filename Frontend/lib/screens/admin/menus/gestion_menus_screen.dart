@@ -1,34 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/controllers/movil/auth_controller.dart';
 import 'package:frontend/models/admin/menu_admin_model.dart';
 import 'package:frontend/services/admin/menu_admin_service.dart';
-import 'formulario_menu_screen.dart';
-import 'detalles_menu_screen.dart';
 import 'package:frontend/widgets/admin/admin_notification_modal.dart';
-
-const Color kBurgundy900 = Color(0xFF26201A);
-const Color kBurgundy700 = Color(0xFFBE4B24);
-const Color kBurgundy600 = Color(0xFF9E3A18);
-const Color kBurgundy100 = Color(0xFFF8E7DC);
-const Color kCream = Color(0xFFFAF5EC);
-const Color kCard = Color(0xFFFFFFFF);
-const Color kLine = Color(0xFFEAE1D3);
-const Color kInk = Color(0xFF26201A);
-const Color kInkSoft = Color(0xFF6F6259);
-const Color kGreen = Color(0xFF1F7A4D);
-const Color kGreenBg = Color(0xFFE3F1E8);
-
-final List<BoxShadow> kShadow = [
-  BoxShadow(color: const Color(0xFF42101F).withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-  BoxShadow(color: const Color(0xFF42101F).withValues(alpha: 0.07), blurRadius: 28, offset: const Offset(0, 10)),
-];
+import 'package:frontend/widgets/admin/menus/menu_card.dart';
+import 'package:frontend/widgets/admin/menus/menu_design.dart';
+import 'detalles_menu_screen.dart';
+import 'formulario_menu_screen.dart';
 
 enum _MenuViewState { list, detail, form }
 
 class GestionMenusScreen extends StatefulWidget {
   const GestionMenusScreen({super.key});
-
   @override
   State<GestionMenusScreen> createState() => _GestionMenusScreenState();
 }
@@ -39,9 +22,8 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
   List<MenuAdminModel> _menus = [];
   String? _loadError;
   String _filtroTexto = '';
-  String _filtroEstado = 'todos'; 
+  String _filtroEstado = 'todos';
   int? _idRestaurante;
-
   _MenuViewState _currentView = _MenuViewState.list;
   MenuAdminModel? _selectedMenu;
 
@@ -64,7 +46,9 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
       final service = MenuAdminService(token);
       _idRestaurante = await service.obtenerIdRestaurante();
       if (_idRestaurante == null) {
-        throw StateError('No se encontró un restaurante asociado a esta cuenta.');
+        throw StateError(
+          'No se encontró un restaurante asociado a esta cuenta.',
+        );
       }
       _menus = await service.obtenerMenus(_idRestaurante!);
     } catch (e) {
@@ -75,7 +59,10 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
     }
   }
 
-  Future<void> _cambiarDisponibilidad(MenuAdminModel menu, bool nuevoEstado) async {
+  Future<void> _cambiarDisponibilidad(
+    MenuAdminModel menu,
+    bool nuevoEstado,
+  ) async {
     final original = List<MenuAdminModel>.from(_menus);
     setState(() {
       final index = _menus.indexWhere((m) => m.id == menu.id);
@@ -88,16 +75,24 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
           disponibilidad: nuevoEstado,
           platos: menu.platos,
         );
+        if (_selectedMenu?.id == menu.id) _selectedMenu = _menus[index];
       }
     });
-
     try {
       final token = AuthScope.of(context, listen: false).token!;
       await MenuAdminService(token).cambiarDisponibilidad(menu.id, nuevoEstado);
     } catch (e) {
       debugPrint('Error: $e');
-      setState(() => _menus = original);
-      if (mounted) AdminNotificationModal.error(context, 'No pudimos cambiar la disponibilidad.');
+      setState(() {
+        _menus = original;
+        if (_selectedMenu?.id == menu.id) _selectedMenu = menu;
+      });
+      if (mounted) {
+        AdminNotificationModal.error(
+          context,
+          'No pudimos cambiar la disponibilidad.',
+        );
+      }
     }
   }
 
@@ -130,9 +125,10 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
         menu: _selectedMenu!,
         onBack: _volverALista,
         onEdit: () => _abrirFormulario(menu: _selectedMenu),
+        onVisibilityChanged: (visible) =>
+            _cambiarDisponibilidad(_selectedMenu!, visible),
       );
     }
-
     if (_currentView == _MenuViewState.form && _idRestaurante != null) {
       return FormularioMenuScreen(
         idRestaurante: _idRestaurante!,
@@ -144,337 +140,318 @@ class _GestionMenusScreenState extends State<GestionMenusScreen> {
         },
       );
     }
-
     final filtrados = _menus.where((m) {
       if (_filtroEstado == 'activos' && !m.disponibilidad) return false;
       if (_filtroEstado == 'inactivos' && m.disponibilidad) return false;
-      if (_filtroTexto.isNotEmpty && !m.nombre.toLowerCase().contains(_filtroTexto.toLowerCase())) return false;
+      if (_filtroTexto.isNotEmpty &&
+          !m.nombre.toLowerCase().contains(_filtroTexto.toLowerCase())) {
+        return false;
+      }
       return true;
     }).toList();
 
-    return Container(
-      color: Colors.transparent,
-      padding: const EdgeInsets.fromLTRB(40, 30, 40, 60),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildHeader(),
-          const SizedBox(height: 24),
-          _buildToolbar(),
-          const SizedBox(height: 24),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: kBurgundy700))
-                : _loadError != null
-                    ? _buildLoadError()
-                    : _buildTable(filtrados),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadError() {
-    return Container(
-      decoration: BoxDecoration(
-        color: kCard,
-        border: Border.all(color: kLine),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: kShadow,
-      ),
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 780;
+        final horizontal = constraints.maxWidth < 600 ? 0.0 : 32.0;
+        final heading = const MenuPageHeading(
+          before: 'Gestión de ',
+          emphasis: 'Menús.',
+          kicker: 'Tu restaurante',
+          subtitle: 'Crea, edita y organiza tus menús y platillos.',
+        );
+        final create = MenuPrimaryButton(
+          label: 'Crear nuevo menú',
+          icon: Icons.add,
+          onPressed: () => _abrirFormulario(),
+        );
+        return Padding(
+          padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 36),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                _loadError!,
-                style: GoogleFonts.manrope(fontSize: 13.5, color: kInkSoft),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              TextButton.icon(
-                onPressed: _cargarDatos,
-                icon: const Icon(Icons.refresh, color: kBurgundy700),
-                label: Text(
-                  'Reintentar',
-                  style: GoogleFonts.manrope(
-                    color: kBurgundy700,
-                    fontWeight: FontWeight.bold,
-                  ),
+              if (compact)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [heading, const SizedBox(height: 18), create],
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(child: heading),
+                    const SizedBox(width: 20),
+                    create,
+                  ],
                 ),
+              const SizedBox(height: 24),
+              _MenuToolbar(
+                compact: compact,
+                selected: _filtroEstado,
+                menus: _menus,
+                onSearch: (val) => setState(() => _filtroTexto = val),
+                onFilter: (val) => setState(() => _filtroEstado = val),
+              ),
+              const SizedBox(height: 22),
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: MenuDesign.accent,
+                        ),
+                      )
+                    : _loadError != null
+                    ? _MenuMessage(
+                        icon: Icons.error_outline,
+                        title: _loadError!,
+                        description: '',
+                        action: 'Reintentar',
+                        onPressed: _cargarDatos,
+                      )
+                    : filtrados.isEmpty
+                    ? _MenuMessage(
+                        icon: Icons.menu_book_outlined,
+                        title: _menus.isEmpty
+                            ? 'No existen menús registrados.'
+                            : 'No se encontraron menús con los filtros actuales.',
+                        description: _menus.isEmpty
+                            ? 'Crea tu primer menú para mostrar tus platillos.'
+                            : 'Prueba otra búsqueda o cambia el filtro.',
+                        action: _menus.isEmpty ? 'Crear nuevo menú' : null,
+                        onPressed: _menus.isEmpty
+                            ? () => _abrirFormulario()
+                            : null,
+                      )
+                    : LayoutBuilder(
+                        builder: (context, grid) {
+                          final columns = ((grid.maxWidth + 18) / 348)
+                              .floor()
+                              .clamp(1, 4);
+                          return GridView.builder(
+                            itemCount: filtrados.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  mainAxisSpacing: 18,
+                                  crossAxisSpacing: 18,
+                                  mainAxisExtent: 310,
+                                ),
+                            itemBuilder: (context, index) {
+                              final menu = filtrados[index];
+                              return MenuCard(
+                                index: index,
+                                menu: menu,
+                                onView: () => _verDetalles(menu),
+                                onEdit: () => _verDetalles(menu),
+                                onVisibilityChanged: (visible) =>
+                                    _cambiarDisponibilidad(menu, visible),
+                              );
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+class _MenuToolbar extends StatelessWidget {
+  const _MenuToolbar({
+    required this.compact,
+    required this.selected,
+    required this.menus,
+    required this.onSearch,
+    required this.onFilter,
+  });
+  final bool compact;
+  final String selected;
+  final List<MenuAdminModel> menus;
+  final ValueChanged<String> onSearch;
+  final ValueChanged<String> onFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final search = SizedBox(
+      height: 48,
+      child: TextField(
+        onChanged: onSearch,
+        style: MenuDesign.body(13.5, color: MenuDesign.ink),
+        decoration: InputDecoration(
+          hintText: 'Buscar menú...',
+          prefixIcon: const Icon(Icons.search, size: 19),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(999),
+            borderSide: const BorderSide(color: MenuDesign.line),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(999),
+            borderSide: const BorderSide(color: MenuDesign.accent, width: 1.5),
+          ),
         ),
       ),
     );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Gestión de menús', style: GoogleFonts.instrumentSerif(fontSize: 32, fontWeight: FontWeight.w400, color: kBurgundy900, letterSpacing: -0.4)),
-            const SizedBox(height: 6),
-            Text('Crea, edita y organiza tus menús y platillos.', style: GoogleFonts.manrope(fontSize: 14, color: kInkSoft)),
-          ],
-        ),
-        InkWell(
-          onTap: () => _abrirFormulario(),
-          borderRadius: BorderRadius.circular(11),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [kBurgundy600, kBurgundy900],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(11),
-              boxShadow: [
-                BoxShadow(color: kBurgundy700.withValues(alpha: 0.28), blurRadius: 20, offset: const Offset(0, 8)),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-                Text('Crear nuevo menú', style: GoogleFonts.manrope(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildToolbar() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: kCard,
-              border: Border.all(color: kLine),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.search, size: 16, color: kInkSoft),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    onChanged: (val) => setState(() => _filtroTexto = val),
-                    style: GoogleFonts.manrope(fontSize: 13.5, color: kInk),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar menú...',
-                      hintStyle: GoogleFonts.manrope(fontSize: 13.5, color: kInkSoft),
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: kCard,
-            border: Border.all(color: kLine),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _filtroEstado,
-              icon: const Padding(
-                padding: EdgeInsets.only(left: 8),
-                child: Icon(Icons.keyboard_arrow_down, size: 18, color: kInk),
-              ),
-              isDense: true,
-              style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.bold, color: kInk),
-              items: const [
-                DropdownMenuItem(value: 'todos', child: Text('Todos los estados')),
-                DropdownMenuItem(value: 'activos', child: Text('Solo activos')),
-                DropdownMenuItem(value: 'inactivos', child: Text('Solo inactivos')),
-              ],
-              onChanged: (val) => setState(() => _filtroEstado = val!),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTable(List<MenuAdminModel> filtrados) {
-    return Container(
-      decoration: BoxDecoration(
-        color: kCard,
-        border: Border.all(color: kLine),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: kShadow,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final filters = Container(
+      padding: const EdgeInsets.all(4),
+      decoration: MenuDesign.card(radius: 999),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: const BoxDecoration(
-              color: kCard,
-              border: Border(bottom: BorderSide(color: kLine)),
-            ),
-            child: Row(
-              children: [
-                Expanded(flex: 24, child: Text('MENÚ', style: _headerStyle())),
-                Expanded(flex: 10, child: Text('TIPO', style: _headerStyle())),
-                Expanded(flex: 10, child: Text('ESTADO', style: _headerStyle())),
-                Expanded(flex: 10, child: Text('EDITAR', style: _headerStyle())),
-                Expanded(flex: 6, child: Align(alignment: Alignment.centerRight, child: Text('VISIBLE', style: _headerStyle()))),
-              ],
-            ),
+          _chip('todos', 'Todos', Icons.apps_outlined, menus.length),
+          _chip(
+            'activos',
+            'Visibles',
+            Icons.visibility_outlined,
+            menus.where((m) => m.disponibilidad).length,
           ),
-          Expanded(
-            child: filtrados.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 60),
-                    child: Text(
-                      _menus.isEmpty
-                          ? 'No existen menús registrados.'
-                          : 'No se encontraron menús con los filtros actuales.',
-                      style: GoogleFonts.manrope(fontSize: 13.5, color: kInkSoft),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
-              : ListView.separated(
-                  itemCount: filtrados.length,
-                  separatorBuilder: (_, __) => Container(height: 1, color: kLine),
-                  itemBuilder: (context, index) {
-                    final m = filtrados[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 24,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(color: kBurgundy100, borderRadius: BorderRadius.circular(11)),
-                                  child: const Icon(Icons.menu_book, color: kBurgundy700, size: 20),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(m.nombre, style: GoogleFonts.manrope(fontSize: 14.5, fontWeight: FontWeight.bold, color: kInk), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      const SizedBox(height: 2),
-                                      Text('#${m.id} · ${m.platos.length} platillo${m.platos.length == 1 ? '' : 's'}', style: GoogleFonts.manrope(fontSize: 12, color: kInkSoft)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            flex: 10,
-                            child: Text(m.tipo, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: kInk)),
-                          ),
-                          Expanded(
-                            flex: 10,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: m.disponibilidad ? kGreenBg : kLine.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(shape: BoxShape.circle, color: m.disponibilidad ? kGreen : kInkSoft),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(m.disponibilidad ? 'Activo' : 'Inactivo', style: GoogleFonts.manrope(fontSize: 11.5, fontWeight: FontWeight.bold, color: m.disponibilidad ? kGreen : kInkSoft)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 10,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: InkWell(
-                                onTap: () => _verDetalles(m),
-                                borderRadius: BorderRadius.circular(9),
-                                child: Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(color: kCard, border: Border.all(color: kLine), borderRadius: BorderRadius.circular(9)),
-                                  child: const Icon(Icons.edit_outlined, color: kBurgundy700, size: 18),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 6,
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: GestureDetector(
-                                onTap: () => _cambiarDisponibilidad(m, !m.disponibilidad),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: 42,
-                                  height: 24,
-                                  decoration: BoxDecoration(color: m.disponibilidad ? kGreen : kLine, borderRadius: BorderRadius.circular(99)),
-                                  padding: const EdgeInsets.all(3),
-                                  alignment: m.disponibilidad ? Alignment.centerRight : Alignment.centerLeft,
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2, offset: const Offset(0, 1))],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+          _chip(
+            'inactivos',
+            'Ocultos',
+            Icons.visibility_off_outlined,
+            menus.where((m) => !m.disponibilidad).length,
           ),
         ],
       ),
     );
+    return compact
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              search,
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: filters,
+              ),
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(child: search),
+              const SizedBox(width: 12),
+              filters,
+            ],
+          );
   }
 
-  TextStyle _headerStyle() {
-    return GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.6, color: kInkSoft);
+  Widget _chip(String value, String label, IconData icon, int count) {
+    final active = selected == value;
+    return InkWell(
+      onTap: () => onFilter(value),
+      borderRadius: BorderRadius.circular(999),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? MenuDesign.accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: active ? Colors.white : MenuDesign.muted,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: MenuDesign.body(
+                12,
+                color: active ? Colors.white : MenuDesign.ink,
+                weight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: active
+                    ? Colors.white.withValues(alpha: .2)
+                    : MenuDesign.cream,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '$count',
+                style: MenuDesign.body(
+                  10,
+                  color: active ? Colors.white : MenuDesign.muted,
+                  weight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+}
+
+class _MenuMessage extends StatelessWidget {
+  const _MenuMessage({
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.action,
+    this.onPressed,
+  });
+  final IconData icon;
+  final String title;
+  final String description;
+  final String? action;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: MenuDashedBox(
+      child: Container(
+        width: 480,
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: MenuDesign.accentSoft,
+                borderRadius: BorderRadius.circular(17),
+              ),
+              child: Icon(icon, size: 26, color: MenuDesign.accent),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: MenuDesign.title(22),
+            ),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: MenuDesign.body(13),
+              ),
+            ],
+            if (action != null && onPressed != null) ...[
+              const SizedBox(height: 18),
+              MenuPrimaryButton(
+                label: action!,
+                icon: Icons.add,
+                onPressed: onPressed,
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
 }

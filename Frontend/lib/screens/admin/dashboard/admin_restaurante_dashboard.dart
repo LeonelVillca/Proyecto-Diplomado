@@ -172,6 +172,7 @@ class _AdminRestauranteDashboardState extends State<AdminRestauranteDashboard> {
       nombreUsuario: nombre,
       correoUsuario: correo,
       rolLabel: 'Admin Restaurante',
+      restaurantName: _restaurante?.nombre,
       body: _screens[_selectedIndex],
     );
   }

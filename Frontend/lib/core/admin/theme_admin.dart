@@ -28,9 +28,9 @@ abstract final class AdminTheme {
   static const Color error = Color(0xFFC0341B);
   static const Color errorSoft = Color(0xFFFBE9E4);
 
-  static const Color sidebar = Color(0xFF241D16);
-  static const Color sidebarText = Color(0x9EFDF4EE);
-  static const Color sidebarActiveText = Color(0xFFFDF4EE);
+  static const Color sidebar = Color(0xFFFFFFFF);
+  static const Color sidebarText = Color(0xFF8B7F73);
+  static const Color sidebarActiveText = Color(0xFF44543C);
 
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(22));
   static const BorderRadius mediumRadius = BorderRadius.all(Radius.circular(18));

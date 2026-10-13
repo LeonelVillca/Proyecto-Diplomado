@@ -7,6 +7,9 @@ class _BentoSidebar extends StatelessWidget {
     required this.onItemSelected,
     required this.onLogout,
     required this.isMobile,
+    required this.restaurantName,
+    required this.nombreUsuario,
+    required this.rolLabel,
   });
 
   final int selectedIndex;
@@ -14,20 +17,30 @@ class _BentoSidebar extends StatelessWidget {
   final ValueChanged<int> onItemSelected;
   final VoidCallback onLogout;
   final bool isMobile;
+  final String? restaurantName;
+  final String nombreUsuario;
+  final String rolLabel;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 264,
-      color: AdminTheme.sidebar,
+      decoration: const BoxDecoration(
+        color: AdminTheme.sidebar,
+        border: Border(right: BorderSide(color: AdminTheme.border)),
+      ),
       padding: const EdgeInsets.fromLTRB(16, 26, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _SidebarBrand(),
           const SizedBox(height: 12),
-          const Divider(color: Color(0x1AFDF4EE), height: 1),
+          const Divider(color: Color(0xFFF0EAE0), height: 1),
           const SizedBox(height: 12),
+          if (restaurantName != null && restaurantName!.trim().isNotEmpty) ...[
+            _SidebarRestaurantCard(name: restaurantName!),
+            const SizedBox(height: 12),
+          ],
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
@@ -38,7 +51,7 @@ class _BentoSidebar extends StatelessWidget {
                     child: Text(
                       section.title.toUpperCase(),
                       style: const TextStyle(
-                        color: Color(0x73FDF4EE),
+                        color: AdminTheme.sidebarText,
                         fontSize: 10.5,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.4,
@@ -55,9 +68,136 @@ class _BentoSidebar extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(color: Color(0x1AFDF4EE), height: 1),
+          const Divider(color: Color(0xFFF0EAE0), height: 1),
           const SizedBox(height: 8),
+          _SidebarUser(name: nombreUsuario, role: rolLabel),
           _LogoutNavItem(onLogout: onLogout),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidebarRestaurantCard extends StatelessWidget {
+  const _SidebarRestaurantCard({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFAF6EE),
+      border: Border.all(color: const Color(0xFFF0EAE0)),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AdminTheme.accentColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            name.trim().substring(0, 1).toUpperCase(),
+            style: const TextStyle(
+              fontFamily: 'Fraunces',
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: 'InstrumentSans',
+                  fontSize: 13,
+                  color: AdminTheme.textDark,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Text(
+                'Restaurante',
+                style: TextStyle(
+                  fontFamily: 'InstrumentSans',
+                  fontSize: 11,
+                  color: AdminTheme.sidebarText,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _SidebarUser extends StatelessWidget {
+  const _SidebarUser({required this.name, required this.role});
+  final String name;
+  final String role;
+
+  @override
+  Widget build(BuildContext context) {
+    final display = name.trim().isEmpty ? 'Administrador' : name.trim();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AdminTheme.accentColor,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              display.substring(0, 1).toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  display,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AdminTheme.textDark,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  role,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AdminTheme.sidebarText,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -78,10 +218,14 @@ class _SidebarBrand extends StatelessWidget {
             height: 36,
             alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: AdminTheme.primaryColor,
+              color: AdminTheme.textDark,
               borderRadius: BorderRadius.all(Radius.circular(11)),
             ),
-            child: const Icon(LucideIcons.utensils, color: Colors.white, size: 19),
+            child: const Icon(
+              LucideIcons.utensils,
+              color: Colors.white,
+              size: 19,
+            ),
           ),
           const SizedBox(width: 11),
           const Expanded(
@@ -92,7 +236,7 @@ class _SidebarBrand extends StatelessWidget {
                   'Mesa Chapaca',
                   style: TextStyle(
                     fontFamily: 'Fraunces',
-                    color: AdminTheme.sidebarActiveText,
+                    color: AdminTheme.textDark,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                     height: 1.08,
@@ -102,7 +246,7 @@ class _SidebarBrand extends StatelessWidget {
                 Text(
                   'OPERACIONES',
                   style: TextStyle(
-                    color: Color(0x8CFDF4EE),
+                    color: AdminTheme.sidebarText,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.62,
@@ -117,39 +261,71 @@ class _SidebarBrand extends StatelessWidget {
   }
 }
 
-class _BentoNavItem extends StatelessWidget {
-  const _BentoNavItem({required this.item, required this.isSelected, required this.onTap});
+class _BentoNavItem extends StatefulWidget {
+  const _BentoNavItem({
+    required this.item,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   final SidebarItem item;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
+  State<_BentoNavItem> createState() => _BentoNavItemState();
+}
+
+class _BentoNavItemState extends State<_BentoNavItem> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final content = Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
-        hoverColor: const Color(0x12FDF4EE),
-        focusColor: const Color(0x22FDF4EE),
+        hoverColor: const Color(0xFFFAF5EC),
+        focusColor: const Color(0xFFFAF5EC),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0x38BE4B24) : Colors.transparent,
+            color: widget.isSelected
+                ? const Color(0x1A55684B)
+                : _hovered
+                ? const Color(0xFFFAF5EC)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hovered && !widget.isSelected
+                  ? const Color(0xFFF0EAE0)
+                  : Colors.transparent,
+            ),
           ),
           child: Row(
             children: [
-              Icon(item.icon, size: 19, color: isSelected ? AdminTheme.sidebarActiveText : AdminTheme.sidebarText),
+              Icon(
+                widget.item.icon,
+                size: 19,
+                color: widget.isSelected
+                    ? AdminTheme.sidebarActiveText
+                    : _hovered
+                    ? AdminTheme.textDark
+                    : AdminTheme.sidebarText,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  item.label,
+                  widget.item.label,
                   style: TextStyle(
-                    color: isSelected ? AdminTheme.sidebarActiveText : AdminTheme.sidebarText,
+                    color: widget.isSelected
+                        ? AdminTheme.sidebarActiveText
+                        : _hovered
+                        ? AdminTheme.textDark
+                        : AdminTheme.sidebarText,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -161,27 +337,10 @@ class _BentoNavItem extends StatelessWidget {
       ),
     );
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          content,
-          if (isSelected)
-            const Positioned(
-              left: -16,
-              top: 9,
-              bottom: 9,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AdminTheme.primaryColor,
-                  borderRadius: BorderRadius.only(topRight: Radius.circular(4), bottomRight: Radius.circular(4)),
-                ),
-                child: SizedBox(width: 4),
-              ),
-            ),
-        ],
-      ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Padding(padding: const EdgeInsets.only(bottom: 2), child: content),
     );
   }
 }
@@ -198,17 +357,25 @@ class _LogoutNavItem extends StatelessWidget {
       child: InkWell(
         onTap: onLogout,
         borderRadius: BorderRadius.circular(12),
-        hoverColor: const Color(0x14C0341B),
+        hoverColor: const Color(0xFFFAF5EC),
         child: const Padding(
           padding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
           child: Row(
             children: [
-              Icon(Icons.logout_rounded, size: 19, color: Color(0xFFF5B2A5)),
+              Icon(
+                Icons.logout_rounded,
+                size: 19,
+                color: AdminTheme.sidebarText,
+              ),
               SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Cerrar sesión',
-                  style: TextStyle(color: Color(0xFFF5B2A5), fontSize: 14, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: AdminTheme.sidebarText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

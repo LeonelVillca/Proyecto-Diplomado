@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:frontend/core/admin/theme_admin.dart';
@@ -17,6 +16,7 @@ class AdminShell extends StatelessWidget {
   final String nombreUsuario;
   final String correoUsuario;
   final String rolLabel;
+  final String? restaurantName;
 
   const AdminShell({
     super.key,
@@ -28,11 +28,12 @@ class AdminShell extends StatelessWidget {
     required this.nombreUsuario,
     required this.correoUsuario,
     required this.rolLabel,
+    this.restaurantName,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1020;
+    final isDesktop = MediaQuery.of(context).size.width >= 1080;
     final currentSection = sections
         .expand((section) => section.items)
         .map((item) => item.index == selectedIndex ? item.label : '')
@@ -46,6 +47,9 @@ class AdminShell extends StatelessWidget {
         if (!isDesktop) Navigator.of(context).pop();
       },
       onLogout: onLogout,
+      restaurantName: restaurantName,
+      nombreUsuario: nombreUsuario,
+      rolLabel: rolLabel,
     );
 
     return Theme(
@@ -55,7 +59,10 @@ class AdminShell extends StatelessWidget {
         appBar: isDesktop
             ? null
             : AppBar(
-                title: Text('Mesa Chapaca', style: AdminTheme.titleStyle.copyWith(fontSize: 20)),
+                title: Text(
+                  'Mesa Chapaca',
+                  style: AdminTheme.titleStyle.copyWith(fontSize: 20),
+                ),
                 iconTheme: const IconThemeData(color: AdminTheme.textDark),
                 actions: [
                   _ProfileCapsule(
@@ -69,10 +76,7 @@ class AdminShell extends StatelessWidget {
               ),
         drawer: isDesktop
             ? null
-            : Drawer(
-                backgroundColor: AdminTheme.sidebar,
-                child: sidebar,
-              ),
+            : Drawer(backgroundColor: AdminTheme.sidebar, child: sidebar),
         body: isDesktop
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

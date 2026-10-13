@@ -1,204 +1,172 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/models/admin/menu_admin_model.dart';
-import 'package:frontend/core/utils/network/api_endpoints.dart';
-import 'formulario_menu_screen.dart';
-
-const Color kBurgundy900 = Color(0xFF26201A);
-const Color kBurgundy700 = Color(0xFFBE4B24);
-const Color kBurgundy600 = Color(0xFF9E3A18);
-const Color kBurgundy100 = Color(0xFFF8E7DC);
-const Color kGoldDeep = Color(0xFFC08A2D);
-const Color kGoldSoft = Color(0xFFFBF0D9);
-const Color kCream = Color(0xFFFAF5EC);
-const Color kCard = Color(0xFFFFFFFF);
-const Color kLine = Color(0xFFEAE1D3);
-const Color kInk = Color(0xFF26201A);
-const Color kInkSoft = Color(0xFF6F6259);
-
-final List<BoxShadow> kShadow = [
-  BoxShadow(color: const Color(0xFF42101F).withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-  BoxShadow(color: const Color(0xFF42101F).withValues(alpha: 0.07), blurRadius: 28, offset: const Offset(0, 10)),
-];
+import 'package:frontend/widgets/admin/menus/menu_design.dart';
+import 'package:frontend/widgets/admin/menus/menu_detail_widgets.dart';
 
 class DetallesMenuScreen extends StatelessWidget {
   final MenuAdminModel menu;
   final VoidCallback onBack;
   final VoidCallback onEdit;
+  final ValueChanged<bool> onVisibilityChanged;
 
-  const DetallesMenuScreen({super.key, required this.menu, required this.onBack, required this.onEdit});
+  const DetallesMenuScreen({
+    super.key,
+    required this.menu,
+    required this.onBack,
+    required this.onEdit,
+    required this.onVisibilityChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.transparent,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(40, 30, 40, 60),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Volver
-            InkWell(
-              onTap: onBack,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.arrow_back, size: 16, color: kBurgundy700),
-                  const SizedBox(width: 6),
-                  Text('Volver a Gestión de menús', style: GoogleFonts.manrope(fontSize: 13.5, fontWeight: FontWeight.bold, color: kBurgundy700)),
-                ],
+    final prices = menu.platos.map((p) => p.precio).toList();
+    final min = prices.isEmpty ? null : prices.reduce((a, b) => a < b ? a : b);
+    final max = prices.isEmpty ? null : prices.reduce((a, b) => a > b ? a : b);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontal = constraints.maxWidth < 600 ? 0.0 : 32.0;
+        final compact = constraints.maxWidth < 640;
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(horizontal, 28, horizontal, 36),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MenuGhostButton(
+                label: 'Volver a Gestión de menús',
+                icon: Icons.arrow_back,
+                onPressed: onBack,
               ),
-            ),
-            const SizedBox(height: 18),
-            // Header Card
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 26),
-              decoration: BoxDecoration(
-                color: kCard,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kLine),
-                boxShadow: kShadow,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(menu.nombre, style: GoogleFonts.instrumentSerif(fontSize: 28, color: kBurgundy900)),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
-                        decoration: BoxDecoration(color: kBurgundy100, borderRadius: BorderRadius.circular(99)),
-                        child: Text(menu.tipo, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: kBurgundy700)),
+              const SizedBox(height: 22),
+              if (compact) ...[
+                MenuPageHeading(
+                  before: menu.nombre,
+                  emphasis: '.',
+                  kicker: menu.tipo,
+                  subtitle: 'Platillos y datos de este menú.',
+                ),
+                const SizedBox(height: 9),
+                Row(
+                  children: [
+                    MenuStatusBadge(visible: menu.disponibilidad),
+                    MenuVisibilitySwitch(
+                      value: menu.disponibilidad,
+                      onChanged: onVisibilityChanged,
+                    ),
+                  ],
+                ),
+              ] else
+                Row(
+                  children: [
+                    Expanded(
+                      child: MenuPageHeading(
+                        before: menu.nombre,
+                        emphasis: '.',
+                        kicker: menu.tipo,
+                        subtitle: 'Platillos y datos de este menú.',
                       ),
-                    ],
-                  ),
-                  InkWell(
-                    onTap: onEdit,
-                    borderRadius: BorderRadius.circular(11),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                      decoration: BoxDecoration(
-                        color: kCard,
-                        border: Border.all(color: kBurgundy700, width: 1.5),
-                        borderRadius: BorderRadius.circular(11),
+                    ),
+                    const SizedBox(width: 16),
+                    MenuStatusBadge(visible: menu.disponibilidad),
+                    MenuVisibilitySwitch(
+                      value: menu.disponibilidad,
+                      onChanged: onVisibilityChanged,
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 22),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 17,
+                ),
+                decoration: MenuDesign.card(),
+                child: Wrap(
+                  spacing: 24,
+                  runSpacing: 14,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    MenuSummaryItem(
+                      icon: Icons.tag_outlined,
+                      text: '#${menu.id}',
+                    ),
+                    MenuSummaryItem(
+                      icon: Icons.restaurant_menu_outlined,
+                      text: menu.tipo,
+                    ),
+                    MenuSummaryItem(
+                      icon: Icons.restaurant_outlined,
+                      text: '${menu.platos.length} platillos',
+                    ),
+                    if (min != null && max != null)
+                      MenuSummaryItem(
+                        icon: Icons.paid_outlined,
+                        text:
+                            'Bs ${min.toStringAsFixed(2)} – Bs ${max.toStringAsFixed(2)}',
+                      ),
+                    MenuStatusBadge(visible: menu.disponibilidad),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              Text(
+                'Platillos incluidos (${menu.platos.length})',
+                style: MenuDesign.title(21),
+              ),
+              const SizedBox(height: 15),
+              if (menu.platos.isEmpty)
+                Text(
+                  'Este menú no tiene platillos registrados.',
+                  style: MenuDesign.body(13),
+                )
+              else
+                ...menu.platos.map((p) => MenuDetailDishRow(plato: p)),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: MenuDesign.card(),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16,
+                  runSpacing: 14,
+                  children: [
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: compact ? constraints.maxWidth - 36 : 420,
                       ),
                       child: Row(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.edit_outlined, size: 16, color: kBurgundy700),
+                          const Icon(
+                            Icons.shield_outlined,
+                            size: 19,
+                            color: MenuDesign.olive,
+                          ),
                           const SizedBox(width: 8),
-                          Text('Modificar este menú', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.bold, color: kBurgundy700)),
+                          Flexible(
+                            child: Text(
+                              menu.disponibilidad
+                                  ? 'Este menú está visible en tu perfil.'
+                                  : 'Este menú está oculto para los comensales.',
+                              style: MenuDesign.body(12.5),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text('Platillos incluidos (${menu.platos.length})', style: GoogleFonts.instrumentSerif(fontSize: 19, color: kInk)),
-            const SizedBox(height: 16),
-            if (menu.platos.isEmpty)
-              Text('Este menú no tiene platillos registrados.', style: GoogleFonts.manrope(color: kInkSoft))
-            else
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 300,
-                  mainAxisSpacing: 18,
-                  crossAxisSpacing: 18,
-                  childAspectRatio: 0.85,
+                    MenuPrimaryButton(
+                      label: 'Modificar este menú',
+                      icon: Icons.edit_outlined,
+                      onPressed: onEdit,
+                    ),
+                  ],
                 ),
-                itemCount: menu.platos.length,
-                itemBuilder: (ctx, i) {
-                  final plato = menu.platos[i];
-                  final hasImage = plato.fotoUrl != null && plato.fotoUrl!.isNotEmpty;
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: kCard,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: kLine),
-                      boxShadow: kShadow,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          height: 140,
-                          child: hasImage
-                              ? Image.network(
-                                  plato.fotoUrl!.startsWith('/') ? '${ApiEndpoints.baseUrl}${plato.fotoUrl}' : plato.fotoUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      decoration: const BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [kGoldSoft, Color(0xFFFBF6EA)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                      ),
-                                      child: const Center(
-                                        child: Icon(Icons.restaurant, color: kGoldDeep, size: 40),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Container(
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [kGoldSoft, Color(0xFFFBF6EA)],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.restaurant, color: kGoldDeep, size: 40),
-                                  ),
-                                ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Text(plato.nombre, style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.bold, color: kInk), maxLines: 2, overflow: TextOverflow.ellipsis),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text('Bs ${plato.precio.toStringAsFixed(2)}', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w800, color: kBurgundy700)),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Expanded(
-                                  child: Text(
-                                    plato.descripcion.isNotEmpty ? plato.descripcion : 'Sin descripción.',
-                                    style: GoogleFonts.manrope(fontSize: 12.5, color: kInkSoft, height: 1.5),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
               ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
