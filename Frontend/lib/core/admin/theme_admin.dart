@@ -12,6 +12,7 @@ abstract final class AdminTheme {
 
   static const Color background = Color(0xFFFAF5EC);
   static const Color surface = Color(0xFFFFFFFF);
+  static const Color darkSurface = Color(0xFF241D16);
   static const Color surfaceMuted = Color(0xFFF7F1E5);
   static const Color rowHover = Color(0xFFFCF7EE);
 

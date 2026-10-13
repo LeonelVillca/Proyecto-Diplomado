@@ -148,7 +148,7 @@ class _SummaryBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(color: AdminTheme.sidebar, borderRadius: AdminTheme.cardRadius, boxShadow: AdminTheme.shadowMd),
+        decoration: BoxDecoration(color: AdminTheme.darkSurface, borderRadius: AdminTheme.cardRadius, boxShadow: AdminTheme.shadowMd),
         child: Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(

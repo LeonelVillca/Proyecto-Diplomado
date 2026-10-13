@@ -56,7 +56,7 @@ class _RestaurantIdentity extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         constraints: BoxConstraints(minHeight: compact ? 158 : 392),
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(color: AdminTheme.sidebar),
+        decoration: const BoxDecoration(color: AdminTheme.darkSurface),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
