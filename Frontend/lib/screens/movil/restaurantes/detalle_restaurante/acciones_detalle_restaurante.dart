@@ -4,7 +4,10 @@ extension _AccionesDetalleRestaurante on _RestaurantDetailScreenState {
   void _seleccionarPestana(int index) {
     if (index == _activeTab) return;
     setState(() => _activeTab = index);
-    final tabsTop = _RestaurantDetailScreenState._heroHeight + _RestaurantDetailScreenState._summaryHeight - _RestaurantDetailScreenState._summaryOverlap;
+    final tabsTop =
+        _RestaurantDetailScreenState._heroHeight +
+        _RestaurantDetailScreenState._summaryHeight -
+        _RestaurantDetailScreenState._summaryOverlap;
     if (_scrollController.hasClients && _scrollController.offset > tabsTop) {
       _scrollController.jumpTo(tabsTop);
     }
@@ -24,6 +27,12 @@ extension _AccionesDetalleRestaurante on _RestaurantDetailScreenState {
 
   Widget _construirContenidoPestana() {
     if (_activeTab == 0) {
+      if (_errorPlatos != null) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: InlineErrorBanner(message: _errorPlatos!),
+        );
+      }
       if (_dishes == null)
         return const Center(
           child: Padding(

@@ -26,8 +26,8 @@ export class Mesa {
   @Column({ name: 'numero_mesa', type: 'varchar', length: 20 })
   numeroMesa: string;
 
-  @Column({ name: 'capacidad', type: 'int', nullable: true })
-  capacidad: number | null;
+  @Column({ name: 'capacidad', type: 'int', nullable: false })
+  capacidad: number;
 
   @Column({ name: 'estado', type: 'varchar', length: 20, default: 'libre' })
   estado: (typeof ESTADO_MESA)[number];

@@ -56,13 +56,11 @@ class RestauranteController extends ChangeNotifier {
   }
 
   Future<List<DishItem>> obtenerPlatos(String restauranteId) async {
-    if (_service == null) return [];
-    try {
-      return await _service!.obtenerPlatosRestaurante(restauranteId);
-    } catch (e) {
-      debugPrint('Error al cargar platos del backend: $e');
-      return []; // Devolver vacío si falla
+    if (_service == null) {
+      throw StateError('No hay sesión activa para consultar los menús.');
     }
+    // Una lista vacía solo representa una consulta exitosa sin contenido.
+    return _service!.obtenerPlatosRestaurante(restauranteId);
   }
 
   Future<List<ReviewItem>> obtenerResenas(String restauranteId) async {

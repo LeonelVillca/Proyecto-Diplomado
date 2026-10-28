@@ -50,19 +50,23 @@ describe('Cancelación de reservas por el cliente', () => {
     expect(resultado[0].cancelarHasta).toBe('2026-09-29T19:45:00.000Z');
   });
 
-  it('permite cancelar antes del límite y comunica el cambio', async () => {
-    await expect(service.cancelarPorUsuario(9, 26)).resolves.toEqual({
-      id: 9,
-      estado: 'cancelada',
-    });
-    expect(manager.save).toHaveBeenCalledTimes(1);
-    expect(gateway.emitActualizacionReserva).toHaveBeenCalledWith(
-      9,
-      'cancelada',
-      3,
-      26,
-    );
-  });
+  it.each(['pendiente', 'confirmada'])(
+    'permite cancelar una reserva %s antes del límite y comunica el cambio',
+    async (estado) => {
+      reserva.estado = estado;
+      await expect(service.cancelarPorUsuario(9, 26)).resolves.toEqual({
+        id: 9,
+        estado: 'cancelada',
+      });
+      expect(manager.save).toHaveBeenCalledTimes(1);
+      expect(gateway.emitActualizacionReserva).toHaveBeenCalledWith(
+        9,
+        'cancelada',
+        3,
+        26,
+      );
+    },
+  );
 
   it('rechaza la cancelación exactamente 15 minutos antes', async () => {
     jest.setSystemTime(new Date('2026-09-29T19:45:00Z'));

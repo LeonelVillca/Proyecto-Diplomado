@@ -6,6 +6,7 @@ import 'package:frontend/models/movil/restaurant_detail.dart';
 import 'package:frontend/controllers/movil/restaurante_controller.dart';
 import 'package:frontend/screens/movil/reservations/reservation_screen.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_menu_tab.dart';
+import 'package:frontend/widgets/movil/restaurant/inline_error_banner.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_info_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/detail_reviews_tab.dart';
 import 'package:frontend/widgets/movil/restaurant/create_review_modal.dart';
@@ -35,6 +36,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   int _activeTab = 0;
   List<DishItem>? _dishes;
+  String? _errorPlatos;
+  int _solicitudPlatos = 0;
   List<ReviewItem>? _reviews;
   final ScrollController _scrollController = ScrollController();
 
@@ -42,9 +45,22 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _cargarPlatos();
       _cargarResenas();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant RestaurantDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.restaurant.id != widget.restaurant.id) {
+      _dishes = null;
+      _errorPlatos = null;
+      _reviews = null;
+      _cargarPlatos();
+      _cargarResenas();
+    }
   }
 
   @override
@@ -55,6 +71,36 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // El detalle reutiliza los datos generales ya recuperados por el catálogo.
+    final ctrl = RestauranteScope.of(context);
+    String? errorGeneral;
+    if (ctrl.errorMessage != null) {
+      errorGeneral =
+          'No se pudo recuperar la información del restaurante. Revisa tu conexión e inténtalo de nuevo.';
+    } else if (!ctrl.isLoading &&
+        !ctrl.restaurants.any((r) => r.id == widget.restaurant.id)) {
+      errorGeneral = 'La información de este restaurante no está disponible.';
+    }
+    if (errorGeneral != null) {
+      return Scaffold(
+        backgroundColor: ConsumerColors.paper,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BotonRedondoDetalle(
+                icon: LucideIcons.arrowLeft,
+                onTap: () => Navigator.pop(context),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: InlineErrorBanner(message: errorGeneral),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final openStatus = _obtenerEstadoApertura();
     return Scaffold(
       backgroundColor: ConsumerColors.paper,

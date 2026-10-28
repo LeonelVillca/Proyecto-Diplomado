@@ -4,7 +4,10 @@ import { TipoComida } from './tipo-comida.entity';
 import { CrearRestauranteDto } from './dto/crear-restaurante.dto';
 import { ActualizarRestauranteDto } from './dto/actualizar-restaurante.dto';
 import { PerfilRestauranteService } from './services/perfil-restaurante.service';
-import { RestauranteConsultasService } from './queries/restaurante-consultas.service';
+import {
+  RestauranteConsultasService,
+  RestaurantePublicoRespuesta,
+} from './queries/restaurante-consultas.service';
 
 // Contrato estable para el controlador; cada operación delega al responsable del dominio.
 @Injectable()
@@ -51,7 +54,7 @@ export class RestauranteService {
   }
 
   // Busca un restaurante visible para el público.
-  buscarPorIdPublico(id: number): Promise<Restaurante> {
+  buscarPorIdPublico(id: number): Promise<RestaurantePublicoRespuesta> {
     return this.consultas.buscarPorIdPublico(id);
   }
 

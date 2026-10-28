@@ -1,0 +1,25 @@
+{
+  "id": 21,
+  "nombre": "Casa Tarija",
+  "tipoComida": "Típica",
+  "tiposComida": [
+    { "id": 1, "nombre": "Típica", "slug": "tarijena-chapaca", "activo": true }
+  ],
+  "descripcion": "Comida local",
+  "telefono": "70000000",
+  "correo": "casa@example.test",
+  "fotoPortada": "https://example.test/portada.webp",
+  "logo": "https://example.test/logo.webp",
+  "estado": true,
+  "zonaHoraria": "America/La_Paz",
+  "actualizadoAt": "2026-10-01T12:00:00.000Z",
+  "eliminadoAt": null,
+  "direccion": "Tarija 123",
+  "latitud": -21.53,
+  "longitud": -64.73,
+  "horarios": [{ "diaSemana": 0, "horaInicio": "12:00", "horaFin": "23:00" }],
+  "mesas": [{ "id": 1 }],
+  "imagenes": [{ "url": "https://example.test/galeria.webp" }],
+  "rating": 4.5,
+  "reviewCount": 2
+}

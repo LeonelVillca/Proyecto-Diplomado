@@ -406,6 +406,20 @@ export class ReservasService {
             );
           }
           const estadoAnterior = reserva.estado;
+          // RF-12: el panel solo confirma o rechaza solicitudes pendientes.
+          // Cancelación del cliente y finalización automática tienen sus propios flujos.
+          if (
+            dto.estado !== undefined &&
+            dto.estado !== estadoAnterior &&
+            !(
+              estadoAnterior === 'pendiente' &&
+              ['confirmada', 'rechazada'].includes(dto.estado)
+            )
+          ) {
+            throw new BadRequestException(
+              `No se permite cambiar una reserva de ${estadoAnterior} a ${dto.estado}`,
+            );
+          }
 
           if (dto.idMesa !== undefined) reserva.mesa = mesaBloqueada;
           if (dto.estado) reserva.estado = dto.estado;

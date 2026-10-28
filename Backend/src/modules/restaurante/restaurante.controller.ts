@@ -26,6 +26,7 @@ import { RestauranteService } from './restaurante.service';
 import { CrearRestauranteDto } from './dto/crear-restaurante.dto';
 import { ActualizarRestauranteDto } from './dto/actualizar-restaurante.dto';
 import { Restaurante } from './restaurante.entity';
+import { RestaurantePublicoRespuesta } from './queries/restaurante-consultas.service';
 import { imageUploadOptions } from '../../core/security/uploads';
 
 @Controller('restaurante')
@@ -85,7 +86,9 @@ export class RestauranteController {
   }
   // Busca un restaurante por su identificador.
   @Get(':id')
-  buscarPorId(@Param('id', ParseIntPipe) id: number): Promise<Restaurante> {
+  buscarPorId(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<RestaurantePublicoRespuesta> {
     return this.restauranteService.buscarPorIdPublico(id);
   }
 

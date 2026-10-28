@@ -19,6 +19,20 @@ export type PerfilRestauranteRespuesta = DatosPublicacion & {
   reviewCount: number;
 };
 
+export type RestaurantePublicoRespuesta = Omit<Restaurante, 'solicitud'>;
+export type PerfilPublicoRestauranteRespuesta = RestaurantePublicoRespuesta &
+  Pick<
+    PerfilRestauranteRespuesta,
+    | 'direccion'
+    | 'latitud'
+    | 'longitud'
+    | 'horarios'
+    | 'mesas'
+    | 'imagenes'
+    | 'rating'
+    | 'reviewCount'
+  >;
+
 @Injectable()
 export class RestauranteConsultasService {
   // Recibe los servicios y repositorios que necesita esta clase.
@@ -103,14 +117,45 @@ export class RestauranteConsultasService {
   }
 
   // Lista los restaurantes.
-  async listarTodos(): Promise<PerfilRestauranteRespuesta[]> {
+  async listarTodos(): Promise<PerfilPublicoRestauranteRespuesta[]> {
     const restaurantes = await this.restaurantes.find({
       relations: { solicitud: true, tiposComida: true },
     });
     const perfiles = await this.enriquecerMuchos(restaurantes);
-    return perfiles.filter((perfil) =>
-      this.publicacion.perfilPublicable(perfil),
-    );
+    // La solicitud se usa para decidir visibilidad, pero no se publica.
+    return perfiles
+      .filter((perfil) => this.publicacion.perfilPublicable(perfil))
+      .map((perfil) => ({
+        ...this.proyectarRestaurantePublico(perfil),
+        direccion: perfil.direccion,
+        latitud: perfil.latitud,
+        longitud: perfil.longitud,
+        horarios: perfil.horarios,
+        mesas: perfil.mesas,
+        imagenes: perfil.imagenes,
+        rating: perfil.rating,
+        reviewCount: perfil.reviewCount,
+      }));
+  }
+
+  private proyectarRestaurantePublico(
+    restaurante: Restaurante,
+  ): RestaurantePublicoRespuesta {
+    return {
+      id: restaurante.id,
+      nombre: restaurante.nombre,
+      tipoComida: restaurante.tipoComida,
+      tiposComida: restaurante.tiposComida,
+      descripcion: restaurante.descripcion,
+      telefono: restaurante.telefono,
+      correo: restaurante.correo,
+      fotoPortada: restaurante.fotoPortada,
+      logo: restaurante.logo,
+      estado: restaurante.estado,
+      zonaHoraria: restaurante.zonaHoraria,
+      actualizadoAt: restaurante.actualizadoAt,
+      eliminadoAt: restaurante.eliminadoAt,
+    };
   }
 
   // Lista restaurantes a partir de sus identificadores.
@@ -165,13 +210,13 @@ export class RestauranteConsultasService {
   }
 
   // Busca un restaurante visible para el público.
-  async buscarPorIdPublico(id: number): Promise<Restaurante> {
+  async buscarPorIdPublico(id: number): Promise<RestaurantePublicoRespuesta> {
     const restaurante = await this.buscarPorId(id);
     const datos = await this.datosParaPublicacion(id);
     if (!datos || !this.publicacion.perfilPublicable(datos)) {
       throw new NotFoundException(`Restaurante con id ${id} no disponible`);
     }
-    return restaurante;
+    return this.proyectarRestaurantePublico(restaurante);
   }
 
   // Reúne los datos necesarios para publicar un restaurante.
@@ -205,7 +250,9 @@ export class RestauranteConsultasService {
   }
 
   // Obtiene el ranking de restaurantes.
-  async obtenerRanking(limite = 10): Promise<PerfilRestauranteRespuesta[]> {
+  async obtenerRanking(
+    limite = 10,
+  ): Promise<PerfilPublicoRestauranteRespuesta[]> {
     const todos = await this.listarTodos();
     const limiteSeguro = Number.isFinite(limite)
       ? Math.min(Math.max(Math.trunc(limite), 1), 50)
