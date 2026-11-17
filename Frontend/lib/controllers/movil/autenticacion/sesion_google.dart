@@ -4,12 +4,12 @@ extension _FlujoGoogle on AuthController {
   /// Intenta restaurar una sesión previa guardada en [SessionService].
   Future<bool> _restaurarSesion() async {
     final generation = _generacionSesion;
-    final token = await _session.obtenerToken();
-    if (token == null || token.isEmpty) {
-      return false;
-    }
-
     try {
+      // Una lectura nativa fallida tampoco debe impedir que se dibuje el login.
+      final token = await _session.obtenerToken();
+      if (token == null || token.isEmpty) {
+        return false;
+      }
       final response = await _httpClient
           .get(
             Uri.parse(ApiConfig.authPerfil),

@@ -98,8 +98,8 @@ class LandingFooter extends StatelessWidget {
       _FooterColumn(
         title: 'Contacto',
         links: [
-          _FooterLink('hola@mesachapaca.bo', () => _open(Uri.parse('mailto:hola@mesachapaca.bo'))),
-          _FooterLink('+591 700 00000', () => _open(Uri.parse('tel:+591700000000'))),
+          _FooterLink('mesachapaca@gmail.com ', () => _open(Uri.parse('mailto:hola@mesachapaca.bo'))),
+          _FooterLink('+591 65473914', () => _open(Uri.parse('tel:+59165473914'))),
           _FooterLink('Tarija, Bolivia', () => _open(Uri.parse('https://maps.google.com/?q=Tarija,Bolivia'))),
         ],
       ),
